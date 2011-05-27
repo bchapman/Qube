@@ -1,0 +1,696 @@
+###########################################################################
+#
+# Copyright (c) PipelineFX L.L.C. All rights reserved.
+#
+###########################################################################
+#
+# Filename: RELEASE.txt
+#
+# Description:
+#  Release notes for the maya jobtype for Qube!
+#
+###########################################################################
+IMPORTANT!!!
+
+Please read the README.txt file for the latest important information
+regarding the installation and use of this package.
+
+
+###########################################################################
+@RELEASE: 6.1-1
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 6.1-x.  It is a
+maintenance release to add installation paths for "Subscription Advantage
+Pack" version of Maya and Maya 2012.
+
+@NEW: add support for Maya 2012
+
+@NEW: adding application search paths for "Subscription Advantage Pack" installations.
+	BUGZID:
+	ZD: 2890
+	
+###########################################################################
+@RELEASE: 6.1-0
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 6.1-x.
+
+@FIX: fixed issue where extraneous folders are created in incorrect
+	locations if a resource directory name (as returned by "workspace
+	-q -fileRule") contains space characters.  
+	ZD: 2245
+
+@FIX: added code to properly parse the stderr/stdout to catch
+	multilple image output paths when multi-pass mental ray renders
+	are performed, and correctly put it in OutputPaths.
+	ZD:	2056
+
+@FIX: fixed code to properly feedback the output path to the
+	resultpackage, even if the "ignoreRenderTimeErrors" is set.
+	ZD: 1912
+
+@CHANGE: mayajt: removing built-in (and questionable) frame-retry from
+	MayaJob.pm
+
+@CHANGE: added "Autodesk" directories to the glob() call in
+	findMayaExecutable().
+
+
+###########################################################################
+@RELEASE: 6.0-1
+
+@SUMMARY:
+
+This is a minor bug fix release.
+
+@FIX: installdir_windows_registry_paths fixed to be delimited by ",", not";"
+	ZD: 1759
+
+@FIX: added code to print out error messages and abort job when the scene
+	contains no renderable cameras or layers.
+	ZD: 1587
+
+@FIX: Added Maya 2011 paths to maya_paths in job.conf for mayajt.
+
+
+###########################################################################
+@RELEASE: 6.0-0
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 6.0-x.
+
+
+###########################################################################
+@RELEASE: 5.5-4
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.5-x.
+It includes a few fixes.
+
+@FIX: modified call to 'system('perl -e "sleep 1"')' to 'pause -sec 2'
+  as some customer reported that the system() version is causing the
+  subjobs to stall.  ZD: 1168
+
+
+@FIX: Added code to flush/clear any output that maybe remaining in the
+  communication pipe to maya, before handling a new communication.
+  Hopefully, this fixes the occasional issue with maya output
+  capturing (capturing the result of commands from stdout/err) when
+  "nudge" is done.
+
+###########################################################################
+@RELEASE: 5.5-3
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.5-x.
+It adds support for Maya 2011.
+
+@NEW: Added Maya2011 paths to the executable search path, in job.conf.
+
+@FIX: modified regex that determines Maya version of an executable so it
+  correctly detects the version even when Maya is run for the first time.
+
+@CHANGE: modified to only generate a warning, instead of flagging as
+  an error, when "result" returned from the rendering procedure is
+  empty.
+
+###########################################################################
+@RELEASE: 5.5-2
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.5-x.
+It includes a few fixes since the last release.
+
+@NEW: add ports for mentalray satellite for maya 2009, 2010
+
+@FIX: properly determine output directories for all fileRuleEntries;
+	don't trip over "Adobe(R) Ilustrator(R)"
+
+@CHANGE: Updated windows qube.ico files for all jobtypes.
+	
+	The icon shows in the "add/remove program" panel on Windows, among
+	possibly other places.
+	
+	This is a cleaner-looking transparent background icon, and was
+	converted from the icon that's used on OSX (qube_icon.icns).
+
+###########################################################################
+@RELEASE: 5.5-1
+
+@SUMMARY:
+
+@FIX:
+    Added thread count controlling code.  Exposed thread counts.
+    Needed to set the "defaultRenderGlobals.numCpusToUse" parameter.
+    This addresses an issue with Maya only running on 2 threads on the Nahalem
+    processors instead of all of them.
+  
+###########################################################################
+@RELEASE: 5.5-0
+
+@SUMMARY:
+
+This release is built for Qube 5.5-x.  It adds Maya 2010 support.  The
+other largest change is the elimination of the submission dialog that
+is based on a binary plug-in and mel scripting-- this new jobtype now
+shares the Qube GUI submission dialog.
+
+@NEW: Maya 2010 support
+
+@CHANGE: Consolidated submission dialog with Qube GUI
+
+	Now the jobtype shares the submission dialog with the Qube GUI.
+	This allows for better maintainability, eliminates the need for a
+	compiled maya plugin, thus allowing us to quickly support any new
+	future maya versions as soon as they come out.  The old binary
+	plugin (qb.mll, qb.so, qb.bundle) and mel scripts have been
+	deprecated.
+
+
+###########################################################################
+@RELEASE: 5.4-3
+
+@SUMMARY:
+
+This is a bug fix release.
+
+@FIX: Fixed issue with PromptMayaJob.pm and the way it calls
+	"workspace -renderTypeEntry".
+
+@FIX: Found and fixed a bug in the "batch mode" invocation of the maya
+	jobtype.
+	
+	The maya executable name is "maya" on Linux, but "mayaBatch.exe" on
+	Windows. In batch mode, they're supposed to be translated to "Render" and
+	"Render.exe" respectively, but the latter wasn't working properly.
+	
+	As a result of this issue, "batch mode" renders were "complete"-ing, but in
+	fact they were failing.  The stdout from these jobs would have errors like
+	the following:
+	
+	----
+	requesting work for: 340.0
+	got work: 340:1 - running
+	INFO: renderer not specified... using default
+	Flags:
+	-v                       prints the product version and cut number
+	-batch                   for batch mode
+	[snip...]
+	----
+	
+	BUGZID: 61105
+
+@CHANGE: Moved the call to check for fatal errors
+	(checkForFatalMayaErrors()) to earlier in the code.
+
+	... in order to catch errors earlier.
+	
+	BUGZID: 61201
+
+
+###########################################################################
+@RELEASE: 5.4-2
+
+@SUMMARY:
+
+This is a bug fix release, for windows.
+Linux and OSX releases are identical to previous releases.
+
+@FIX: Fixed issue with Maya 2009 support on Windows.
+
+
+###########################################################################
+@RELEASE: 5.4-1
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.4-x.
+
+@FEATURE: Added Maya 2009 support for Linux, Windows, and OSX.
+
+
+###########################################################################
+@RELEASE: 5.4-0
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.4-x.
+
+@CHANGE: Built for Qube! version 5.4-x
+
+@FIX: Added a new regex to fatal_regexs. BUGZID: 55237
+
+@FIX: Added $successRegex for mayaHardware renders. BUGZID: 53651
+
+@FEATURE: Added code specific to supporting turtle 3.1 and above.
+	BUGZID: 51379
+
+@FEATURE: Added "qbtimelimit" option to qbMayaRender.pl. BUGZID: 51568
+
+@FIX: Fixed mayajt bug where a plugin (renderer) may not load corretly.
+	In particular, this was causing the 3delight renderer plugin not to load 
+	properly.
+
+@FIX: Added workaround for issues with Paint FX scenes. BUGZID: 51243
+
+@FIX: Removed seemingly unnecessary code in timeout "nudging" mechanism, 
+	in hopes of fixing a related "false-negative" bug. BUGZID: 46326 47978
+
+@FIX: Added "-qbmail", "-qbmailaddress", and "ignoreRenderTimeErrors"
+	options to qbMayaRender.pl. BUGZID: 51201
+
+@FIX: Made sure that paths are dirmapped. BUGZID: 50760
+
+
+###########################################################################
+@RELEASE: 5.3-0
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.3-x.  It also
+includes some bugfixes and minor feature enhancements, such as added
+support for 3delight.
+
+@CHANGE: Built for Qube! version 5.3-x
+
+Built against Qube! version 5.3-x.
+
+@BUGFIX: Added "-rl" option support for command line (qbMayaRender.pl)
+	submitted jobs.  
+	BUGZID: 48906 48569
+
+@CHANGE: internal change for jobtype developers.
+
+	Modified maya jt files to support multiple "Qube Options" tabs in
+	one submission dialog.
+	
+	This is necessary so that jobtypes like the single-action miGen
+	can submit more than one job with different Qube parameters.  I
+	suspect that the mtor and mental ray for Maya satellite rendering
+	can take advantage of this change.
+	
+	Implication: the new miGen jobtype will need the new maya jobtype
+	  installed on the system as well.
+	
+@BUGFIX: Added code to set global variables for verbose output for
+	mental ray for maya 2008 and above.  Added fix to only set
+	string-type defaultRenderGlobals.* parameters if they are
+	non-empty.
+	BUGZID: 40945 41331
+
+@CHANGE: Changed wording of "INFO:" message at the end, to avoid false
+	alarm.
+
+@BUGFIX: Fixed bug in determining command line renderer executable in
+	batch-mode.
+	BUGZID: 41112 41114
+
+@FEATURE: Added some back-end code to support 3delight's
+	maya-compliant renderer.
+
+###########################################################################
+@RELEASE: 5.2-2
+
+@COMPATIBILITY:
+
+This release is designed to work with Qube! version 5.2-x.
+
+@SUMMARY:
+
+This release adds an important workaround for an issue with mental ray
+for Maya 2008.  It also fixes a bug 
+
+@BUGFIX: Added code to automatically turn off postFrameErrorCheck
+
+To work around a bug with mental ray for Maya 2008, code has been
+added to automatically turn off postFrameErrorCheck on mental ray
+renders.
+BUGZID: 40945
+
+@BUGFIX: correct reporting of subjob to supe
+
+Fixed a bug where the subjob wasn't reporting the supe its correct
+status upon exiting.
+BUGZID: 40692
+
+###########################################################################
+@RELEASE: 5.2-1
+
+@COMPATIBILITY:
+
+This release is designed to work with Qube! version 5.2-x.
+
+@SUMMARY:
+
+This release adds Maya 2008 support for all supported platforms and
+makes a few small improvements.
+
+@FEATURE: added Maya 2008 support
+
+This jobtype now works with Maya 2008 for all supported 32- and 64-bit 
+platforms.
+
+@FEATURE: added textbox to explicitly specify maya executable
+
+A textbox has been added to the Maya in-app job submission dialog box
+for the user to explicitly specify the path to the maya executable.
+
+@CHANGE: jobs that ignore render-time errors skip post-render checks
+
+If a job has the ignoreRenderTimeErrors flag set, it will also skip
+post-frame-render checks.
+
+###########################################################################
+@RELEASE: 5.2-0
+
+@SUMMARY:
+
+This release is designed to work with Qube! version 5.2-x.
+
+It is built against the new Qube! 5.2 libraries, and includes a few
+feature enhancements and bug fixes.  Among the biggest feature
+enhancements are the native support for 64-bit maya, and the support
+for mental ray satellite renders.
+
+@FEATURE: added mental ray satellite support
+
+The mental ray for Maya satellite rendering is now supported.
+Please refer to the README-satellite.txt file for details on 
+properly setting up and using it.
+
+@FEATURE: added 64-bit maya support
+
+The 64-bit version of maya is now supported.  You will need the
+64-bit version of Qube! installed on our 64-bit platform for the
+64-bit jobtype to work properly.
+
+
+@FEATURE: added support for renderers other than mayasw for batch mode
+
+The "batch mode" should now support renderers other than the maya
+software renderer, such as mental ray or maya hardware.
+BUGZID: 33663
+
+@BUGFIX: rename camera names of referenced cameras
+
+Added code to replace ":" to "_" in camera/layer names when creating
+subfolders for output images in multi-camera/layer renders.  Colons in
+camera names happen when the camera is referenced into the scene.
+BUGZID: 35284
+
+@BUGFIX: unlock defaultRenderGlobals.{start,end,by}Frame
+
+Added code to attempt to unlock defaultRenderGlobals.startFrame,
+endFrame, and byFrameStep before rendering a frame.
+BUGZID: 34858
+
+@CHANGE: behavior when the maya version cannot be detected from scenefile
+
+It rarely happens, but apparently sometimes the maya version cannot be
+detected frome the scenefile.  When that happens, execute.pm was
+running legacy code instead of UniversalMayaRenderJob.pm.  That's been
+modified so that when a scene version detection returns "", it assumes
+that the maya is version 7.x or above, and run the new code.
+BUGZID: 35284
+
+
+###########################################################################
+@RELEASE: 5.1-1
+
+@COMPATIBILITY:
+
+This release is designed to work with Qube! version 5.1-x.
+
+@SUMMARY:
+
+This release is a minor update, and includes workarounds to avoid
+mental ray for maya renders from terminating prematurely.
+
+@FEATURE: added "ignore render-time errors" switch
+
+Added "Ignore render-time errors" switch to the submission interface,
+which allows the user to tell the job to ignore all render-time
+errors, on a job-by-job basis.
+
+@BUGFIX: ignore "Error: ...ignored" error messages
+
+Added code to automatically ignore error messages that look like
+"Error:... ignored" printed by the renderer (most notably by mental
+ray), and go on with processing frames.  Earlier versions terminated
+the job, and didn't process further frames when it saw those error
+messages.
+
+###########################################################################
+@RELEASE: 5.1-0
+
+@COMPATIBILITY:
+
+This release is designed to work with Qube! version 5.1-x.
+
+@SUMMARY:
+
+This release is built against the new Qube! 5.1 libraries.
+It also includes Maya 8.5 support on all supported 32-bit platforms.
+
+@FEATURE: Maya 8.5 support
+
+Maya 8.5 support has been added.
+
+
+###########################################################################
+@RELEASE: 5.0-0
+
+@COMPATIBILITY:
+
+This release should work with Qube! version 5.0-0 and above.
+
+@SUMMARY:
+
+This release is built against the new Qube! 5.0 libraries.
+Additionally, for Maya 7.0 and above, it has a brand new submission
+interface to submit jobs from within Maya, as well as a new back-end
+that takes advantage of Maya's new plug-in renderer architecture to
+ease support for different renderers.
+
+@FEATURE: New in-application submission dialog
+
+For Maya 7.0 and above, the jobtype supports a new and improved
+submission dialog.
+
+@FEATURE: New back-end mechanism to handle renders
+
+The new back-end code takes advantage of Maya's new plug-in renderer
+architecture to ease supporting different plug-in renderers.
+
+
+###########################################################################
+@RELEASE: 4.0-9 (2006-09-19)
+
+@SUMMARY:
+
+This release includes support for Maya 8.0 (32-bit only).
+Otherwise, this is a maintenance release, including better 
+error-checking on I/O directories, and a more robust mechanism 
+to find the executable in the back-end.
+
+@FEATURE: Maya 8.0 (32-bit) support
+
+Support for Maya 8.0 has been added.  This time, however, it is only
+for the 32-bit port.  The 64-bit version is on its way.
+
+@FEATURE: Better I/O error-checking
+
+The back-end code now checks for read/write permissions on the
+input scenefile and output directory.
+
+@FEATURE: Better support for Maya installed in non-default location
+
+The back-end code now supports a more robust mechanism of searching 
+for the mayabatch.exe program.  It searches the $PATH first, then 
+the paths specified in the windows registry, and then the default 
+installation locations.
+
+@CHANGE: Internal code cleanup 
+
+Some internal cleanup of code has been done, for better maintainability.
+
+
+###########################################################################
+@RELEASE: 4.0-7 (2006-06-07)
+
+@SUMMARY:
+
+This release includes new support for Illuminate Labs' Turtle
+renderer, as well as the Maya Vector renderer, for supported
+platforms.  Several bug fixes also have been rolled in.
+
+@FEATURE: Turtle support
+
+This version added support for Illuminate Labs' Turtle renderer
+version 3.0 for Maya 6.5 and Maya 7.0.
+
+@FEATURE: Vector renderer support
+
+This version added support for Maya's Vector renderer.
+
+@FEATURE: Added automatic plugin loading capability
+
+Added code to automatically load necessary renderer plugins, for
+Mayatomr, VectorRender, and Turtle.
+
+@FEATURE: proper MAYA_LOCATION override
+
+Added code to override the MAYA_LOCATION environment variable when it
+is improperly set.
+BUGZID: 14305
+
+@BUGFIX: detection of Maya version
+
+Fixed bug where the routine to find the appropriate version of maya on
+the system would incorrectly detect maya versions of executables.
+
+@BUGFIX: fixed bug in setting up various paths
+
+Fixed a bug which may have affected the "dirmap" feature of Maya
+during Qube renders, while setting up paths such as projdir and
+imagedir.
+
+@BUGFIX: OSX window server issue
+
+Added "-batch" flag to the invocations of maya, to avoid problem
+on some OSX installations.  The OSX version of maya tries to connect
+to the window server when the "-v" or "-prompt" option was specified
+w/o the "-batch" option.
+BUGZID: 14886
+
+@BUGFIX: Rogue mayabatch processes
+
+Added code to minimize the chance of having rogue mayabatch processes
+on the worker when problems occur with the renderer.
+
+
+###########################################################################
+@RELEASE: 4.0-6 (2006-04-19)
+
+@COMPATIBILITY:
+
+This release requires qube-core version 4.0-5 or above.
+
+@SUMMARY:
+
+This is mainly a bug-fix maintenance release, for a more reliable and
+stable operation of the Maya jobtype.  Upgrading from the previous
+version is strongly recommended.
+
+@BUGFIX: submission dialog and unsupported image formats
+
+Fixed bug where the Qube! submission dialog will not open if an
+unknown or unsupported image file format was specified in the render
+globals.
+
+@BUGFIX: scenefile parsing bug
+
+Fixed bug where parsing a scenefile for the scenefile version can end
+up in a very long loop.
+
+@BUGFIX: executable search skips directories
+
+Fixed a bug where the routine that searches for maya executables would
+test directories as executables (it was treating $HOME/maya, usually a
+directory, as a possible maya executable).
+
+@BUGFIX: added fail-over renderer in back-end
+
+Added code to the back-end to avoid problems with jobs submitted
+without explicitly specifying the "renderer".  In those cases, the
+back-end uses the renderer specified in the scenefile now.
+
+@CHANGE: errors now ignored while scenefile loading
+
+Since Maya is known to spit out "Error: " messages during scenefile
+loading for non-fatal errors, all errors during scenefile loading are
+now being ignored.
+
+@CHANGE: more verbose output during the search for maya executable 
+
+More informational messages are printed by the back-end code during
+the search for an appropriate maya executable.
+
+
+###########################################################################
+@RELEASE: 4.0-5 (2006-03-20)
+
+@COMPATIBILITY:
+
+This release requires qube-core version 4.0-5 or above.
+
+@SUMMARY:
+
+The biggest change in this release is the better handling of stdout
+and stderr log output, which will enable easier troubleshooting of
+render job problems.  Also, this release includes a number of
+bug-fixes and/or small enhancements, along with some internal changes
+for future maintainability.  Upgrading from the previous version is
+strongly recommended.
+
+@FEATURE: Better logging
+
+This version supports better handling of maya stdout and stderr
+log messages.
+
+@FEATURE: Better OSX support
+
+Added back-end code to search default system directories for Maya
+installation, and set up MAYA_LOCATION properly, to better support OSX
+maya installations.
+
+@BUGFIX: mentalray render problem
+
+Fixed issues where mentalray for Maya would repeatedly render every
+single frame in the frame range.
+
+@BUGFIX: mayaFormat implementation
+
+The mayaFormat (-mf) option has been implemented.
+
+@BUGFIX: Qubic! GUI "format:" field 
+
+The "format:" field in the Qubic! GUI submission dialog now works
+properly.
+
+@CHANGE: Launch Qubic! menu item removed
+
+@CHANGE: Internal cleanup and reorganization of files and functions
+
+Internal cleanup of code and reorganization of files and functions
+were done, for better maintainability.
+
+
+
+###########################################################################
+@RELEASE: 4.0-0 (2005-12-12)
+
+@COMPATIBILITY:
+
+This release should work with qube-core version 4.0-0 and above.
+
+@SUMMARY:
+
+This release is a new distribution package of the maya jobtype for
+Qube! release 4.0-0.
+
+@CHANGE: Updated for Qube! v4.0-0
+
+Package rebuilt for the new Qube! version, 4.0-0.
+
+@CHANGE: Installation location
+
+New installation location is C:/Program Files/pfx/jobtypes/maya/
+
