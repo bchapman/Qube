@@ -7,7 +7,6 @@ Features:
           Shows Drop Down list of render queue items
           Outputs for each render queue item are shown.
           Automatically adjusts settings if rendering to a Quicktime vs image sequence.
-
           Submission Interface that loads render queue info from After Effects.
           Same exact submission interface from After Effects if it's launched from the Qube GUI.
           Saves a separate copy of the after effects project for rendering.
