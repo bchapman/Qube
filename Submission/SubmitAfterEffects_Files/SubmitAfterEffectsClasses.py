@@ -91,16 +91,16 @@ class Controller:
         result = False
         for key, value in SCRIPTS.iteritems():
             result = False
-            self.logger.info("KEY: " + str(key) + " VALUE: " + str(value))
+            self.logger.debug("KEY: " + str(key) + " VALUE: " + str(value))
             hostScript = os.path.dirname(self.getAERenderPath()) + '/Scripts/' + value
             servScript = os.path.dirname(inspect.getfile(inspect.currentframe())) + '/' + key
-            self.logger.info("hostScript: " + str(hostScript))
-            self.logger.info("servScript: " + str(servScript))
+            self.logger.debug("hostScript: " + str(hostScript))
+            self.logger.debug("servScript: " + str(servScript))
 
             if os.path.exists(hostScript):
-                self.logger.info("hostScript exists")
+                self.logger.debug("hostScript exists")
                 if self.compareHash(hostScript, servScript):
-                    self.logger.info("Hash Codes match")
+                    self.logger.debug("Hash Codes match")
                     result = True
 
             if not result:
@@ -121,15 +121,17 @@ class Controller:
             cmd += " -makedatafile"
 
             self.logger.info("Generating Data File...")
-            self.logger.info("Data File CMD: " + cmd)
+            self.logger.debug("Data File CMD: " + cmd)
             
             progDlg = wx.ProgressDialog ( 'Loading Project Data...', 'Lauching After Effects...', maximum = 100)
             p = subprocess.Popen(shlex.split(cmd))
             
             progDlg.Update( 25, 'Retrieving Data...')
             p.wait()
-            self.logger.debug("Get Data File Exit Code: " + str(p.returncode))
+
             progDlg.Update( 100, 'Complete!')
+            self.logger.info("Data File Created.")
+            self.logger.info("Get Data File Exit Code: " + str(p.returncode))
 
             try:
                 p.kill()
@@ -146,6 +148,8 @@ class Controller:
             return False
 
     def makeCopyOfProject(self, sourcePath, subDirectory):
+        self.logger.info("Making a copy of the project for rendering...")
+
         #Create the time string to be placed on the end of the AE file
         fileTimeStr = time.strftime("_%m%d%y_%H%M%S", time.gmtime())
 
@@ -177,7 +181,7 @@ class Controller:
         try:
             return AERENDERPATH[version][sysOS]
         except:
-            print 'ERROR: No AERender path for OS: ' + sys.platform + ' and Version: ' + str(version)
+            self.logger.error('ERROR: No AERender path for OS: ' + sys.platform + ' and Version: ' + str(version))
             return None
 
     def getDataHash(self):
@@ -263,6 +267,7 @@ class Data:
         self.dataFile = ''
         self.projectPath = ''
         self.selRQIndex = ''
+        self.isSequence = False
     
     def __str__(self):
         result = str(self.data) + '\n'

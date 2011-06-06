@@ -19,6 +19,7 @@ Features:
 import os, sys
 import inspect
 import logging
+sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
 
 # Gotta be a better way to do this.  Suggestions?
@@ -26,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.curre
 print 'PATH: ' + str(sys.path)
 import Job
 import Render
+import atexit
 
 # ---------------------------------------------------------------------------
 # Set up the logger module
@@ -48,6 +50,10 @@ logger.addHandler(ch)
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def exit():
+    print 'Testing'
+
+atexit.register(exit)
 
 def initJob():
     # Get the job object

@@ -106,6 +106,27 @@ class Render():
         h, m = divmod(m, 60)
         return "%d:%02d:%02d" % (h, m, s)
 
+    # Get each aerendercore process and the open files associated with them
+    def getAERenderCoreProcesses(self):
+        # Command to list all Process IDs (PID) of aerendercore processes
+        cmd = "ps A | grep 'aerendercore'"
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+        # Search through the output and gather the PIDs
+        pids = []
+        for line in p.stdout.readlines():
+            if ('aerendercore -noui' in line):
+                pids.append(line.split(' ')[0])
+    
+        # List all open files for each pid
+        processes = {}
+        for pid in pids:
+            cmd = "lsof -p " + str(pid)
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            processes[str(pid)] = p.stdout.readlines()
+        
+        return processes
+
     def getAERenderPath(self):
         result = ''
         if (sys.platform == 'win32'):
@@ -130,6 +151,35 @@ class Render():
             if (job.multProcs == True):
                 cmd += " -mp"
         return cmd
+
+    # Kill AERenderCore Processes for the specified project.
+    #
+    # The aerendercore process isn't directly tied to aerender.
+    # It is spawned by launchd.
+    #
+    # So to find which aerendercore process correlates to each render
+    # we sort through open files, the log files are most always open.
+    # By default, these carry the name of the project.
+    # We search for these to associate each aerendercore process
+    # with it's project.
+    def killAERenderCoreProcesses(self, projectFile):
+    
+        processes = self.getAERenderCoreProcesses()
+    
+        # Scan each process for open files matching the project file
+        relatedPIDs = []
+        for pid,files in processes.iteritems():
+            for f in files:
+                found = False
+                if projectFile in f:
+                    found = True
+                if found:
+                    relatedPIDs.append(pid)
+
+        # Kill each of these processes
+        for pid in relatedPIDs:
+            self.logger.info('Killing AERenderCore (' + str(pid) + ')')
+            os.kill(int(pid), 9)
 
     # Monitor the render, print a status bar at a specified frequency,
     # and report the progress to Qube

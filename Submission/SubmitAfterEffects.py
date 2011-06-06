@@ -62,7 +62,7 @@ def create():
     cmdjob.add_option( 'notes', 'string', 'Notes about render', label='Notes',
                         required=True, lines=4, default=' ')
     cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email',
-                        required=True, lines=1, default='')
+                        required=True, lines=1)
 
     # Additional properties to set
     cmdjob.properties['flagsstring'] = 'disable_windows_job_object'  # Needs to be disabled for Windows
@@ -70,6 +70,8 @@ def create():
     # Set some default job options
     cmdjob.properties['hostorder'] = '+host.memory.avail'
     cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
+    cmdjob.properties['retrysubjob'] = 3
+    cmdjob.properties['retrywork'] = 3
     cmdjob.package.setdefault('shell', '/bin/bash')
     
     return [cmdjob]
@@ -97,8 +99,12 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
     # Pointers
     valuesPkg = values.setdefault('package', {})
     ctrl = cmdjob.ctrl
-    
-    sequence = False
+
+    # Playing with the dialog colors :)
+    # for s in dlg.propertyBoxSizers:
+    #     s.SetBackgroundColour("#7b7b7b")
+    # dlg.SetBackgroundColour("#7b7b7b")
+    # dlg.Refresh()
 
     # Project Path Updates
     if (optionName == "projectPath"):
@@ -124,7 +130,7 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
                 # Load the data and check the hash
                 if not ctrl.loadDataFile(dataPath):
                     makeDataFile = True
-                    logging.info('Invalid Data File.')
+                    logging.warning('Invalid Data File.')
         
                 # Calculate the hash of the project file
                 projHash = ctrl.getFileHash(projectPath)
@@ -175,10 +181,10 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
                 updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
             
                 # Use expand flag if the output is a sequence
-                sequence = False
+                ctrl.job.isSequence = False
                 for item in outputs:
                     if ctrl.isSequence(item):
-                        sequence = True
+                        ctrl.job.isSequence = True
             else:
                 logging.info("No items in the projects Render Queue.")
             
@@ -204,12 +210,12 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
             updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
             
             # Use expand flag if the output is a sequence
-            sequence = False
+            ctrl.job.isSequence = False
             for item in outputs:
                 if ctrl.isSequence(item):
-                    sequence = True
+                    ctrl.job.isSequence = True
 
-    if sequence:
+    if ctrl.job.isSequence:
         values['flagsstring'] = values['flagsstring'] + ",expand"
     else:
         values['flagsstring'] = values['flagsstring'].replace(',expand', '')
@@ -257,8 +263,12 @@ def postDialog(cmdjob, values):
         mail = mail + "@fellowshipchurch.com"
     values['mailaddress'] = mail
     values['callbacks'] = [{'triggers':'done-job-self', 'language':'mail'}]
-    logging.info("Callbacks: " + str(values['callbacks']))
-    if valuesPkg.has_key('email'):     del valuesPkg['email'] # Delete the original option for cleanlinesss
+    logging.debug("Callbacks: " + str(values['callbacks']))
+    # If I delete the email here, the Qube GUI Submission dialog won't remember it for next time
+    # if valuesPkg.has_key('email'):     del valuesPkg['email'] # Delete the original option for cleanlinesss
+
+    # Use the email as the user in Qube
+    values['user'] = mail.split('@')[0]
 
     #################################################################################################################
     #
@@ -268,7 +278,8 @@ def postDialog(cmdjob, values):
 
     notes = valuesPkg.get('notes', '')
     values['notes'] = notes
-    if valuesPkg.has_key('notes'):     del valuesPkg['notes'] # Delete the original option for cleanlinesss
+    # If I delete the notes here, the Qube GUI Submission dialog won't remember it for next time
+    # if valuesPkg.has_key('notes'):     del valuesPkg['notes'] # Delete the original option for cleanlinesss
 
     #################################################################################################################
     #
@@ -285,14 +296,15 @@ def postDialog(cmdjob, values):
     valuesPkg['aerenderwin'] = ctrl.getAERenderPath(sysOS='win32')
     valuesPkg['aerendermac'] = ctrl.getAERenderPath(sysOS='darwin')
     
+    
 ## ======================================================================
 
 
 if __name__ == '__main__':
-    import logging
-    import sys
     import simplecmd
-    import submit
+    # import logging
+    # import sys
+    # import submit
     logging.basicConfig(level=logging.DEBUG)
     app = simplecmd.TestApp(redirect=False)
     cmds = create()
