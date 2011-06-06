@@ -1,22 +1,22 @@
 Qube - Submit After Effects Jobtype
 
 
-Features:     Submission:
+Features:
+	Submission:
           Simplified interface that's very easy to use.
-                    Shows Drop Down list of render queue items
-                              Outputs for each render queue item are shown.
-                                        Automatically adjusts settings if rendering to a Quicktime vs image sequence.
+          Shows Drop Down list of render queue items
+          Outputs for each render queue item are shown.
+          Automatically adjusts settings if rendering to a Quicktime vs image sequence.
 
-                                                  Submission Interface that loads render queue info from After Effects.
-                                                            Same exact submission interface from After Effects if it's launched from the Qube GUI.
-                                                                      Saves a separate copy of the after effects project for rendering.
+          Submission Interface that loads render queue info from After Effects.
+          Same exact submission interface from After Effects if it's launched from the Qube GUI.
+          Saves a separate copy of the after effects project for rendering.
 
 
-                                                                           Jobtype:
-                                                                                     Reports Progress on all After Effects renders to Qube.  Not just image sequences that are split up into chunks.
-                                                                                               Automatically kills extra aerendercore processes.
-                                                                                                         Uses a separate thread to report progress to Qube.
-                                                                                                                   If job is killed before completion, automatically terminates stray aerendercore threads.
-
+     Jobtype:
+          Reports Progress on all After Effects renders to Qube.  Not just image sequences that are split up into chunks.
+          Automatically kills extra aerendercore processes.
+          Uses a separate thread to report progress to Qube.
+          If job is killed before completion, automatically terminates stray aerendercore threads.
 
 
