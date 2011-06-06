@@ -121,7 +121,7 @@ class Render():
         # List all open files for each pid
         processes = {}
         for pid in pids:
-            cmd = "lsof -p " + str(pid)
+            cmd = "/usr/sbin/lsof -p " + str(pid)
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             processes[str(pid)] = p.stdout.readlines()
         
@@ -162,24 +162,36 @@ class Render():
     # By default, these carry the name of the project.
     # We search for these to associate each aerendercore process
     # with it's project.
-    def killAERenderCoreProcesses(self, projectFile):
+    def killAERenderCoreProcesses(self):
+    
+        # Wait a few seconds to make sure aerendercore has enough time to load the log file
+        time.sleep(10)
+    
+        projectFile = self.job.projectPath
+        log = open('/tmp/aeLog.log', 'a')
+        log.write(str(os.path.basename(projectFile)) + '\n')
     
         processes = self.getAERenderCoreProcesses()
+        # log.write("AERender Core Processes:" + str(processes))
     
         # Scan each process for open files matching the project file
         relatedPIDs = []
         for pid,files in processes.iteritems():
             for f in files:
                 found = False
-                if projectFile in f:
+                log.write("Scanning:" + str(f) + '\n')
+                if os.path.basename(projectFile) in f:
                     found = True
                 if found:
                     relatedPIDs.append(pid)
 
+        log.write("Related AERender Core Processes:" + str(relatedPIDs) + '\n')
         # Kill each of these processes
         for pid in relatedPIDs:
-            self.logger.info('Killing AERenderCore (' + str(pid) + ')')
+            log.write('Killing AERenderCore (' + str(pid) + ')\n')
             os.kill(int(pid), 9)
+
+        log.close()
 
     # Monitor the render, print a status bar at a specified frequency,
     # and report the progress to Qube

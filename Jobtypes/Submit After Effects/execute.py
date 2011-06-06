@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.curre
 print 'PATH: ' + str(sys.path)
 import Job
 import Render
-import atexit
+import signal
 
 # ---------------------------------------------------------------------------
 # Set up the logger module
@@ -50,10 +50,18 @@ logger.addHandler(ch)
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def exit():
-    print 'Testing'
 
-atexit.register(exit)
+# Global variable for render controller.  Used so cleanup method can access it.
+render = None
+
+# If on mac, cleanup extra aerendercore processes if job is killed early
+def cleanup(signum, frame):
+    # If we have a render class
+    if render:
+        render.killAERenderCoreProcesses()
+
+if (os.uname()[0].lower() == 'darwin'):
+    signal.signal(signal.SIGTERM, cleanup)
 
 def initJob():
     # Get the job object
@@ -66,6 +74,7 @@ def initJob():
 
 
 def executeJob(job):
+    global render
     jobstate = 'complete'
 
     # Run the job independently of the subjobs.

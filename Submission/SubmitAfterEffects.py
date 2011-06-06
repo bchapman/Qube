@@ -181,10 +181,10 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
                 updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
             
                 # Use expand flag if the output is a sequence
-                ctrl.job.isSequence = False
+                ctrl.data.isSequence = False
                 for item in outputs:
                     if ctrl.isSequence(item):
-                        ctrl.job.isSequence = True
+                        ctrl.data.isSequence = True
             else:
                 logging.info("No items in the projects Render Queue.")
             
@@ -210,13 +210,13 @@ def controlChanged(cmdjob, values, optionName, value, dlg, container):
             updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
             
             # Use expand flag if the output is a sequence
-            ctrl.job.isSequence = False
+            ctrl.data.isSequence = False
             for item in outputs:
                 if ctrl.isSequence(item):
-                    ctrl.job.isSequence = True
+                    ctrl.data.isSequence = True
 
-    if ctrl.job.isSequence:
-        values['flagsstring'] = values['flagsstring'] + ",expand"
+    if ctrl.data.isSequence:
+        values['flagsstring'] = values['flagsstring'].replace(',expand', '') + ",expand"
     else:
         values['flagsstring'] = values['flagsstring'].replace(',expand', '')
         
@@ -263,7 +263,7 @@ def postDialog(cmdjob, values):
         mail = mail + "@fellowshipchurch.com"
     values['mailaddress'] = mail
     values['callbacks'] = [{'triggers':'done-job-self', 'language':'mail'}]
-    logging.debug("Callbacks: " + str(values['callbacks']))
+    # logging.info("Callbacks: " + str(values['callbacks']))
     # If I delete the email here, the Qube GUI Submission dialog won't remember it for next time
     # if valuesPkg.has_key('email'):     del valuesPkg['email'] # Delete the original option for cleanlinesss
 
@@ -291,6 +291,10 @@ def postDialog(cmdjob, values):
     #################################################################################################################
 
     values['agenda'] = qb.genframes("1-100")
+    
+    # Load the output paths
+    # rqItem = ctrl.getRQIndex(valuesPkg['rqIndex'][0])
+    # valuesPkg['outputs'] = rqItem.getOutputNames()
     
     # Store the paths to aerender for mac and pc
     valuesPkg['aerenderwin'] = ctrl.getAERenderPath(sysOS='win32')

@@ -36,6 +36,7 @@ import inspect
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/simplejson.egg')
+# sys.path.insert(0, '/Library/Python/2.6/site-packages/simplejson-2.1.6-py2.6.egg')
 import simplejson as json
 
 # --------------------------------------------------------------------
