@@ -20,11 +20,21 @@ class Reporter(threading.Thread):
         threading.Thread.__init__(self)
         self.queue = queue
         self.currAgendaItem = {}
+        self.logFile = open('/tmp/agenda.log', 'a')
     
     def run(self):
         
+        print "start"
+        self.logFile.write("start\n")
+
         # Grab the first agenda item
+        print "Requesting Work:"
+        self.logFile.write("Requesting Work\n")
         self.currAgendaItem = qb.requestwork()
+        print "Got Work"
+        self.logFile.write("Got Work\n")
+        self.logFile.write("Work: " + str(self.currAgendaItem) + '\n')
+        print "Work: " + str(self.currAgendaItem)
         
         while True:
             # Get the progress from the queue
@@ -39,6 +49,8 @@ class Reporter(threading.Thread):
                 
                     # Get a new agenda item if possible
                     self.currAgendaItem = qb.requestwork()
+                    self.logFile.write("Work: " + str(self.currAgendaItem) + '\n')
+                    print "Work: " + str(self.currAgendaItem)
                     if (int(self.currAgendaItem['id']) == -1 or int(self.currAgendaItem['id']) == 101):
                         break
                 elif (progress < agendaProgress):
@@ -53,3 +65,5 @@ class Reporter(threading.Thread):
                 while True:
                     self.queue.get()
                     self.queue.task_done()
+    
+        self.logFile.close()

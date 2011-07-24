@@ -1,0 +1,471 @@
+<version>1</version>
+<object type = 'job'>
+	<id>651</id>
+	<pid>1</pid>
+	<priority>50</priority>
+	<local_order>0</local_order>
+	<global_order>0</global_order>
+	<pgrp>651</pgrp>
+	<user>bchapman</user>
+	<domain>.</domain>
+	<password></password>
+	<status>
+		<object type = 'status'>
+			<value>320</value>
+		</object>
+	</status>
+	<subjobs>
+		<object type = 'subjob_list'>
+			<item>
+				<object type = 'subjob'>
+					<id>0</id>
+					<pid>1734962246</pid>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<data>(=)</data>
+					<result>(=)</result>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+					<retry>-1</retry>
+					<count>0</count>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+				</object>
+			</item>
+		</object>
+	</subjobs>
+	<name>Transcoder Test</name>
+	<cpus>1</cpus>
+	<todo>5</todo>
+	<cluster>/Active</cluster>
+	<children>
+		<object type = 'job_list'>
+		</object>
+	</children>
+	<agenda>
+		<object type = 'work_list'>
+			<item>
+				<object type = 'work'>
+					<name>1-100</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>651</pid>
+					<data>(=(outputPath=SampleSegmentPath)(startFrame=1)(endFrame=100))</data>
+					<id>1</id>
+					<result>(=)</result>
+					<retry>-1</retry>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>101-200</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>651</pid>
+					<data>(=(outputPath=SampleSegmentPath)(startFrame=1)(endFrame=100))</data>
+					<id>2</id>
+					<result>(=)</result>
+					<retry>-1</retry>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>201-300</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>651</pid>
+					<data>(=(outputPath=SampleSegmentPath)(startFrame=1)(endFrame=100))</data>
+					<id>3</id>
+					<result>(=)</result>
+					<retry>-1</retry>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>301-400</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>651</pid>
+					<data>(=(outputPath=SampleSegmentPath)(startFrame=1)(endFrame=100))</data>
+					<id>4</id>
+					<result>(=)</result>
+					<retry>-1</retry>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>401-500</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>320</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>651</pid>
+					<data>(=(outputPath=SampleSegmentPath)(startFrame=1)(endFrame=100))</data>
+					<id>5</id>
+					<result>(=)</result>
+					<retry>-1</retry>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>363985802</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+		</object>
+	</agenda>
+	<callbacks>
+		<object type = 'callback_list'>
+			<item>
+				<object type = 'callback'>
+					<id>1</id>
+					<pid>651</pid>
+					<code></code>
+					<triggers>failed-work-self-*</triggers>
+					<language>9</language>
+					<max>-1</max>
+					<count>0</count>
+					<user>bchapman</user>
+					<ready>failed-work-self-* 0 </ready>
+					<lastupdate>
+						<object type = 'time'>
+							<value>363985804</value>
+						</object>
+					</lastupdate>
+				</object>
+			</item>
+		</object>
+	</callbacks>
+	<requirements></requirements>
+	<reservations>host.processors=1</reservations>
+	<restrictions></restrictions>
+	<groups></groups>
+	<hosts></hosts>
+	<host_order></host_order>
+	<data>(=(outputFile=/tmp/trancoderTest.mov)(blenderScenePreset=/Volumes/theGrill/.qube/Staging/Transcoder/Presets/Animation/Final_QT_4444.blend)(selfContained=1)(sequenceFolder=~/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/)(frameRate=29.97)(resolution=1280x720)(audioFile=~/Projects/Scripts+Apps/Qube/Compressor/Testing/blindness.wav))</data>
+	<queue></queue>
+	<prototype>Submit Transcoder</prototype>
+	<path></path>
+	<reason></reason>
+	<logpath></logpath>
+	<cpus_tally>
+		<object type = 'status_tally'>
+			<running>0</running>
+			<blocked>0</blocked>
+			<complete>0</complete>
+			<pending>1</pending>
+			<suspended>0</suspended>
+			<failed>0</failed>
+			<killed>0</killed>
+			<waiting>0</waiting>
+			<unknown>0</unknown>
+			<warning>0</warning>
+			<badlogin>0</badlogin>
+		</object>
+	</cpus_tally>
+	<todo_tally>
+		<object type = 'status_tally'>
+			<running>0</running>
+			<blocked>0</blocked>
+			<complete>0</complete>
+			<pending>5</pending>
+			<suspended>0</suspended>
+			<failed>0</failed>
+			<killed>0</killed>
+			<waiting>0</waiting>
+			<unknown>0</unknown>
+			<warning>0</warning>
+			<badlogin>0</badlogin>
+		</object>
+	</todo_tally>
+	<time_submit>
+		<object type = 'time'>
+			<value>363985803</value>
+		</object>
+	</time_submit>
+	<time_start>
+		<object type = 'time'>
+			<value>0</value>
+		</object>
+	</time_start>
+	<time_complete>
+		<object type = 'time'>
+			<value>0</value>
+		</object>
+	</time_complete>
+	<flags>16392</flags>
+	<label>qube1</label>
+	<account></account>
+	<env>
+		<object type = 'env'>
+			<keys>
+				<object type = 'string_list'>
+				</object>
+			</keys>
+			<values>
+				<object type = 'string_list'>
+				</object>
+			</values>
+			<umask>0</umask>
+			<cwd>/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder</cwd>
+			<mounts>
+				<object type = 'string_hash'>
+				</object>
+			</mounts>
+		</object>
+	</env>
+	<kind></kind>
+	<server_id>0</server_id>
+	<last_update>
+		<object type = 'time'>
+			<value>363985802</value>
+		</object>
+	</last_update>
+	<timeout>-1</timeout>
+	<variables>
+		<object type = 'variable_list'>
+		</object>
+	</variables>
+	<agenda_status>
+		<object type = 'status'>
+			<value>320</value>
+		</object>
+	</agenda_status>
+	<subjob_status>
+		<object type = 'status'>
+			<value>320</value>
+		</object>
+	</subjob_status>
+	<path_map>
+		<object type = 'pathmap'>
+			<logical_map>
+				<object type = 'string_hash'>
+				</object>
+			</logical_map>
+			<direct_map>
+				<object type = 'string_hash'>
+				</object>
+			</direct_map>
+		</object>
+	</path_map>
+	<retry_subjob>-1</retry_subjob>
+	<retry_work>-1</retry_work>
+	<omit_hosts></omit_hosts>
+	<omit_groups></omit_groups>
+	<dependency></dependency>
+	<deadline>
+		<object type = 'time'>
+			<value>0</value>
+		</object>
+	</deadline>
+	<mail_address></mail_address>
+	<notes></notes>
+	<prototype_path></prototype_path>
+	<source_host>
+		<object type = 'address'>
+			<value>0</value>
+		</object>
+	</source_host>
+	<immediate_cpus>0</immediate_cpus>
+	<mask_status>
+		<object type = 'status'>
+			<value>0</value>
+		</object>
+	</mask_status>
+	<eta>
+		<object type = 'time'>
+			<value>0</value>
+		</object>
+	</eta>
+	<range></range>
+	<agenda_timeout>-1</agenda_timeout>
+	<auto_migrate_count>0</auto_migrate_count>
+</object>

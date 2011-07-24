@@ -68,9 +68,9 @@ class Job:
     def loadOptions(self, qubejob):
         self.qubejob = qubejob
         pkg = qubejob.setdefault('package', {})
-        self.projectPath = self.loadOption("projectPath", pkg.get('projectPath', ''), required=True, fullpath=True)
-        self.rqIndex = self.loadOption('rqIndex', pkg.get('rqIndex', '')[0], required=False)
-        self.multProcs = self.loadOption('renderProjectPath', pkg.get('multProcs', ''), required=False)
+        self.projectPath = self.loadOption("renderProjectPath", pkg.get('renderProjectPath', ''), required=True, fullpath=True)
+        self.rqIndex = self.loadOption('rqIndex', pkg.get('rqIndex', '').split('.')[0], required=False)
+        self.multProcs = self.loadOption('multProcs', pkg.get('multProcs', ''), required=False)
         self.aerenderwin = self.loadOption('aerenderwin', pkg.get('aerenderwin', ''), required=True)
         self.aerendermac = self.loadOption('aerendermac', pkg.get('aerendermac', ''), required=True)
 

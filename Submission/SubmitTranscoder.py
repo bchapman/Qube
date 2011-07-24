@@ -43,7 +43,7 @@ import SubmitAfterEffectsClasses
 
 
 def create():        
-    cmdjob = SimpleSubmit('Submit After Effects', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", controlChanged=controlChanged, preDialog=preDialog, postDialog=postDialog, install=install)
+    cmdjob = SimpleSubmit('Submit Transcoder', hasRange=False, canChunk=False, help='Cluster based transcoder using blender.', category="2D", controlChanged=controlChanged, preDialog=preDialog, postDialog=postDialog, install=install)
 
     # Initialize the AE Data Class
     cmdjob.ctrl = SubmitAfterEffectsClasses.Controller(logging)

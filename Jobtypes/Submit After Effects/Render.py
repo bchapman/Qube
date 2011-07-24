@@ -9,7 +9,6 @@ Class to store all methods to needed to control the render.
 '''
 
 import os, sys
-sys.path.insert(0, '/Volumes/theGrill/.qube/Jobtypes/AERenderX/')
 import Queue
 import re
 import shlex, subprocess
@@ -58,7 +57,7 @@ class Render():
             if os.path.exists(destFile):
                 if (backup == True):
                     sourceName = os.path.splitext(os.path.basename(sourceFile)) # Array with [name, ext]
-                    bkpFolder = os.path.dirname(sourceFile) + '/(backup)/'
+                    bkpFolder = os.path.dirname(destFile) + '/(backup)/'
                     bkpPath = bkpFolder + sourceName[0] + '_' + str(int(time.time())) + sourceName[1]
                     self.logger.info('Backing up original to ' + os.path.basename(bkpPath))
 
@@ -148,7 +147,7 @@ class Render():
         else:
             if (job.rqIndex != ""):
                 cmd += " -rqindex " + job.rqIndex
-            if (job.multProcs == True):
+            if (job.multProcs == '1'):
                 cmd += " -mp"
         return cmd
 
@@ -286,6 +285,7 @@ class Render():
         
         renderCMD = self.getCMD()
         self.logger.info("Render CMD: " + renderCMD)
+        self.logger.info("MultProcs: " + str(self.job.multProcs))
         
         self.proc = subprocess.Popen(shlex.split(renderCMD), bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         

@@ -71,9 +71,9 @@ class Controller:
             if os.path.exists(destFile):
                 if (backup == True):
                     sourceName = os.path.splitext(os.path.basename(sourceFile)) # Array with [name, ext]
-                    bkpFolder = os.path.dirname(sourceFile) + '/(backup)/'
+                    bkpFolder = os.path.dirname(destFile) + '/(backup)/'
                     bkpPath = bkpFolder + sourceName[0] + '_' + str(int(time.time())) + sourceName[1]
-                    self.logger.info('Backing up original to ' + os.path.basename(bkpPath))
+                    self.logger.info('Backing up original to ' + bkpPath)
 
                     if not os.path.exists(bkpFolder):
                         os.mkdir(bkpFolder)
