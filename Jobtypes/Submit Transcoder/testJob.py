@@ -33,18 +33,35 @@ def main():
     job['package']['sequenceFolder'] = '~/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/'
     job['package']['audioFile'] = '~/Projects/Scripts+Apps/Qube/Compressor/Testing/blindness.wav'
     job['package']['outputFile'] = '/tmp/trancoderTest.mov'
-    job['package']['blenderScenePreset'] = '/Volumes/theGrill/.qube/Staging/Transcoder/Presets/Animation/Final_QT_4444.blend'
+    job['package']['preset'] = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
     job['package']['resolution'] = '1280x720'
     job['package']['frameRate'] = '29.97'
     job['package']['selfContained'] = True
+    job['package']['smartUpdate'] = True
 
     # Calculate agenda from range
+    chunkSize = 100
     agendaRange = '1-500'
-    agenda = qb.genchunks(100, agendaRange)
     
-    # Set the outputPaths in the resultpackage for each agenda item
-    for i in agenda:
-        i.package({'outputPath': 'SampleSegmentPath', 'startFrame': '1', 'endFrame': '100'})
+    segmentAgenda = qb.genchunks(chunkSize, agendaRange)
+    for segment in segmentAgenda:
+        folder, name = os.path.split(job['package']['outputFile'])
+        name, extension = os.path.splitext(name)
+        outputPath = folder + '/Segments/' + name + '_' + segment['name'].split('-')[0] + extension
+        segment.package({'outputPath': outputPath})
+
+    '''
+    Setup the agenda
+        1 - First subjob is the initialization to setup the blender scene
+        2-n - Subsequent subjobs are for the sections of the sequence
+        n+1 - Last subjob is for the finalizing to merge the segments together
+    '''
+    agenda = []
+    agenda.append(qb.Work({'name':'Initialize'}))
+    agenda.extend(segmentAgenda)
+    agenda.append(qb.Work({'name':'Finalize'}))
+    
+    print agenda
 
     # Set the job agenda
     job['agenda'] = agenda

@@ -48,7 +48,7 @@ class PreFlight:
             self.logger.info("+ Blender(" + ''.join(version) + ") Installed.")
             result = True
         else:
-            self.logger.error("X Blender not installed.")
+            self.logger.error("- Blender not installed.")
         
         return result
     
@@ -59,7 +59,7 @@ class PreFlight:
             self.logger.info("+ QTCoffee Installed.")
             result = True
         else:
-            self.logger.info("X QTCoffee not installed.")
+            self.logger.info("- QTCoffee not installed.")
         
         return result
             

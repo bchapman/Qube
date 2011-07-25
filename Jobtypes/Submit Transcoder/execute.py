@@ -31,6 +31,7 @@ import PreFlight
 import Job
 import Render
 import signal
+import shlex, subprocess
 
 # ---------------------------------------------------------------------------
 # Set up the logger module
@@ -66,8 +67,44 @@ def executeJob(job):
     global render
     jobstate = 'complete'
 
-    # Run the job independently of the subjobs.
-    # We will update the subjobs based on frames completed
+    jobObject = job.qubejob
+    while 1:
+        agendaItem = qb.requestwork()
+
+        print agendaItem['status']
+
+        # == Handle non-running state cases ==
+        if agendaItem['status'] in ('complete', 'pending', 'blocked'):
+            # complete -- no more frames
+            # pending -- preempted, so bail out
+            # blocked -- perhaps item is part of a dependency
+            jobstate = agendaItem['status']
+            print 'job %s state is now %s' % (jobObject['id'], jobstate)
+            break
+
+        # == Running, so execute now ==
+        logger.info("Starting render...")
+        
+        renderCMD = job.getCMD(agendaItem)
+        logger.info("Render CMD: " + renderCMD)        
+        proc = subprocess.Popen(shlex.split(renderCMD), bufsize=-1)
+        proc.wait()
+        
+        # == Set the agenda item parameters ==
+        # Assess the work and update item status
+        if proc.returncode == 0:
+            agendaItem['status'] = 'complete'
+        else:
+            agendaItem['status'] = 'failed'
+
+        # ADVANCED OPTION: Set the resultpackage to send data back
+        # agendaItem['resultpackage'] = { 'outputPaths': 'C:/YOUR/PATH/GOES/HERE/image'+agendaItem['name']+'.tga' }
+        
+        # == Report back the results to the Supervisor ==
+        qb.reportwork(agendaItem)
+
+        # print '%s END %04d %s' % ('='*20, int(agendaItem['name']), '='*20)
+
     render = Render.Render(job)
     render.startRender()
 
@@ -85,15 +122,14 @@ def main():
     if (preflight.check()):
         # Preflight has succeeded, now for the job
         job      = initJob()
-        print "Job Loaded"
-        print str(job)
-        work = qb.requestwork()
-        print "Init Command: \n" + job.getInitCMD() + "\n"
-        print "Segment Command: \n" + job.getSegmentCMD(work) + "\n"
-        print "Finalize Command: \n" + job.getFinalizeCMD() + "\n"
-        print "Work-Command: \n" + job.getCMD(work)
-        # state    = executeJob(job)
-        # cleanupJob(job, state)
+        # print "Job Loaded"
+        # print str(job)
+        # work = qb.requestwork()
+        # print "Work-Command: \n" + job.getCMD(work)
+        # workB = qb.requestwork()
+        # print "Work-Command: \n" + job.getCMD(workB)
+        state    = executeJob(job)
+        cleanupJob(job, state)
     
 if __name__ == "__main__":
     main()

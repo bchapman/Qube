@@ -15,6 +15,7 @@ import inspect
 BLENDERLOCATION = "/Applications/blender.app/Contents/MacOS/blender"
 BLENDERINITSCRIPT = "Blender_InitSequence.py"
 CATMOVIELOCATION = "/usr/local/bin/catmovie"
+MODMOVIELOCATION = "/usr/local/bin/modmovie"
 
 
 class Job:
@@ -25,11 +26,12 @@ class Job:
         
         # Output Settings
         self.outputFile = ''
-        self.blenderScenePreset = ''
+        self.preset = ''
         self.resolution = ''
         self.frameRate = ''
 
         self.selfContained = True
+        self.smartUpdate = True
         
         # Other Settings
         self.qubejob = {}
@@ -44,11 +46,12 @@ class Job:
         self.audioFile = self.loadOption("audioFile", pkg.get('audioFile', ''), required=False, fullpath=True)
         
         self.outputFile = self.loadOption("outputFile", pkg.get('outputFile', ''), required=True, folderpath=True)
-        self.blenderScenePreset = self.loadOption("blenderScenePreset", pkg.get('blenderScenePreset', ''), required=True, fullpath=True)
+        self.preset = self.loadOption("preset", pkg.get('preset', ''), required=True, fullpath=True)
         self.resolution = self.loadOption("resolution", pkg.get('resolution', ''), required=True)
         self.frameRate = self.loadOption("frameRate", pkg.get('frameRate', ''), required=True)
         
-        self.selfContained = self.loadOption("selfContained", pkg.get('selfContained', ''))
+        self.selfContained = self.loadOption("selfContained", pkg.get('selfContained', True))
+        self.smartUpdate = self.loadOption("smartUpdate", pkg.get('smartUpdate', True))
 
 
     # Load an option with error checking
@@ -123,7 +126,7 @@ class Job:
         cmd = '\'' + BLENDERLOCATION + '\''
         
         # Add the preset blender file which has the base conversion settings
-        cmd += ' -b \'' + self.blenderScenePreset + '\''
+        cmd += ' -b \'' + self.preset + '\''
         
         # Add the initialization script
         cwd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # Current working directory
@@ -151,31 +154,45 @@ class Job:
         cmd = '\'' + BLENDERLOCATION + '\''
         cmd += ' -b \'' + self.getTempBlendSceneName() + '\''
         cmd += ' -x 1' # Use an extension on the end of the file
-        cmd += ' -s ' + workPkg.get('startFrame', '')
-        cmd += ' -e ' + workPkg.get('endFrame', '')
+        # Get the start and end frames from the Work name
+        print "Work: " + str(work)
+        start, end = work.get('name', '').split('-')
+        cmd += ' -s ' + start
+        cmd += ' -e ' + end
         cmd += ' -o ' + workPkg.get('outputPath', '')
         cmd += ' -a'
         
         return cmd
 
 
-    # Setup the finalize command to use QTCoffee's catmovie to merge
-    # all the segments together
     def getFinalizeCMD(self):
-        #Template: catmovie (-self-contained) (audioFile -track "Sound Track") -o outputFile -track "Video Track" (Segments)
+        '''
+        Setup the finalize command to use QTCoffee's catmovie to merge
+        the segments together. Then use muxmovie to add in the audio if needed.
+        
+        Template: catmovie (-self-contained) -o outputFile (Segments)
+                  modmovie audioFile -track "Sound Track" ouputFile -track "Video Track" -save-in-place
+        '''
+
         cmd = '\'' + CATMOVIELOCATION + '\''
         if (self.selfContained): cmd += ' -self-contained'
         cmd += ' -o \'' + self.outputFile + '\''
-        if (self.audioFile != ''): cmd += ' \'' + self.audioFile + '\' -track \'Sound Track\''
         
         # Add the segments
-        cmd += ' -track \'Video Track\'' # Only use the video tracks from the segments
         cmd += ' -' # End argument processing
 
         segments = self.getAllSegments()
         for segment in segments:
             if not (segment['name'].endswith(('Initialize', 'Finalize'))):
                 cmd += ' ' + segment.get('package', {}).get('outputPath', '')
+
+        # muxmovie
+        if (self.audioFile):
+            cmd += '; \'' + MODMOVIELOCATION + '\''
+            cmd += ' \'' + self.audioFile + '\' -track \'Sound Track\''
+            cmd += ' \'' + self.outputFile + '\' -track \'Video Track\''
+            cmd += ' -save-in-place'
+        
 
         return cmd
 
