@@ -10,6 +10,7 @@ DATAPREFIX = ".DATA."
 QUBESUBMISSIONSFOLDERNAME = "_Qube_Submissions"
 
 import os, sys
+import wx
 
 # == import qb ==
 # Determine qbdir (currently used for locating qb module and docs)
@@ -41,33 +42,151 @@ import inspect
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/SubmitAfterEffects_Files/')
 import SubmitAfterEffectsClasses
 
+class TranscoderJobDlg(wx.Dialog):
+    def __init__(self, parent, id, title, *args, **kwargs):
+        wx.Dialog.__init__(self, parent, id, title, wx.DefaultPosition, wx.Size(400, 600))
+
+        mainbox = wx.BoxSizer(wx.VERTICAL)        
+        mainPanel = wx.Panel(self, -1)
+        mainPanel.SetBackgroundColour('#595959')
+        mainbox.Add(mainPanel, 1, wx.EXPAND|wx.ALL)
+        self.SetSizer(mainbox)
+        
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        self.OKButton = wx.Button(mainPanel, -1, "OK")
+        vbox.Add(self.OKButton, 1, wx.TOP)
+        self.OKButton.Bind(wx.EVT_BUTTON, self.OnYes)
+        mainPanel.SetSizer(vbox)
+        
+
+        # stline = wx.StaticText(mainPanel, 11, 'Discipline ist Macht.')
+        # vbox.Add(stline, 1, wx.ALIGN_CENTER|wx.TOP, 45)
+        # sizer =  mainPanel.CreateButtonSizer(wx.NO|wx.YES|wx.HELP)
+        # vbox.Add(sizer, 0, wx.ALIGN_CENTER)
+        # self.SetSizer(vbox)
+        # mainPanel.Bind(wx.EVT_BUTTON, self.OnYes, id=wx.ID_YES)
+
+        # frame = wx.Frame(None, 100, 'Title Goes Here...', size=wx.Size(400,600))
+        # frame.SetIcon(wx.Icon('tipi.ico', wx.BITMAP_TYPE_ICO))
+        # self.SetToolTip(wx.ToolTip('Tooltip goes here...'))
+        # self.SetCursor(wx.StockCursor(wx.CURSOR_MAGNIFIER))
+
+        # Create the main panel, this allows us to set a background color
+        # mainPanel = wx.Panel(self, -1)
+        # mainPanel.SetBackgroundColour('#595959')
+        # Add the main vertical box sizer
+        # vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # Create the controls
+        # nameTxtCtrl = TextCtrlButtonPanel( self, -1, "", wx.DefaultPosition, size=(400,-1))
+        # nameTxtCtrlB = TextCtrlButtonPanel( self, -1, "", wx.DefaultPosition, size=(400,-1))
+
+        # vbox.Add(nameTxtCtrl, 1, wx.EXPAND | wx.ALL, 3)
+        # vbox.Add(nameTxtCtrlB, 1, wx.EXPAND | wx.ALL, 3)
+
+        # self.SetSizer(vbox)
+
+        # self.Center()
+        self.Center()
+
+
+    def OnYes(self, event):
+        self.EndModal(10)
+
+class TranscoderWidget(wx.Panel):
+    '''
+    Transcoder Job Widget
+    Listbox with Add, Edit, and Remove Buttons
+    '''
+    buttonLabel='Browser'
+    def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
+        wx.Panel.__init__ (self, parent, id, pos, size, style)
+
+        self.SetMinSize(size)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.listbox = wx.ListBox(self, -1) # size=(250, 110)
+        sizer.Add( self.listbox, 1, wx.EXPAND|wx.ALL, 2)
+
+        btnPanel = wx.Panel(self, -1, style=0)
+        # btnPanel.SetMinSize(wx.DefaultSize)
+        btnSizer = wx.BoxSizer(wx.VERTICAL)
+        
+        self.addButton = wx.Button(btnPanel, -1, "Add", size=(75, 24))
+        self.editButton = wx.Button(btnPanel, -1, "Edit", size=(75, 24))
+        self.removeButton = wx.Button(btnPanel, -1, "Remove", size=(75, 24))
+        self.clearButton = wx.Button(btnPanel, -1, "Clear", size=(75, 24))
+
+        self.addButton.Bind(wx.EVT_BUTTON, self.AddButtonClick)
+        self.editButton.Bind(wx.EVT_BUTTON, self.EditButtonClick)
+        self.removeButton.Bind(wx.EVT_BUTTON, self.RemoveButtonClick)
+        self.clearButton.Bind(wx.EVT_BUTTON, self.ClearButtonClick)
+        
+        btnSizer.Add(self.addButton, 1, wx.Top, 5)
+        btnSizer.Add(self.editButton, 1, wx.Top, 5)
+        btnSizer.Add(self.removeButton, 1, wx.Top, 5)
+        btnSizer.Add(self.clearButton, 1, wx.Top, 5)
+
+        # btnPanel.SetAutoLayout(True)
+        btnPanel.SetSizer(btnSizer)
+        # btnPanel.Layout()
+        # btnPanel.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
+
+        sizer.Add( btnPanel, 0, wx.RIGHT, 5)
+
+        # Cleanup the layout
+        self.SetAutoLayout(True)
+        self.SetSizer( sizer )
+        self.Layout()
+        self.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
+
+    def AddButtonClick(self, event=None):
+        jobDetailsDlg = TranscoderJobDlg(self, -1, "New Job")
+        text = str(jobDetailsDlg.ShowModal())
+        jobDetailsDlg.Destroy()
+        # text = wx.GetTextFromUser('Test: Enter an item:', 'Insert dialog')
+        if text != '':
+            self.listbox.Append(text)
+
+    def EditButtonClick(self, event=None):
+        sel = self.listbox.GetSelection()
+        jobDetailsDlg = TranscoderJobDlg(self, -1, "New Job")
+        text = jobDetailsDlg.ShowModal()
+        jobDetailsDlg.Destroy()
+        # text = self.listbox.GetString(sel)
+        # edited = wx.GetTextFromUser('Test: Edit item', 'Edit dialog', text)
+        # if edited != '':
+        #     self.listbox.Delete(sel)
+        #     self.listbox.Insert(edited, sel)
+
+    def RemoveButtonClick(self, event=None):
+        sel = self.listbox.GetSelection()
+        if sel != -1:
+            self.listbox.Delete(sel)
+
+    def ClearButtonClick(self, event=None):
+        self.listbox.Clear()
+
+    def GetValue(self):
+        # return self.textControl.GetValue()
+        return "Monkey"
+        
+    def SetValue(self, val):
+        # self.textControl.SetValue(val)
+        print "Monkies"
+
 
 def create():        
-    cmdjob = SimpleSubmit('Submit Transcoder', hasRange=False, canChunk=False, help='Cluster based transcoder using blender.', category="2D", controlChanged=controlChanged, preDialog=preDialog, postDialog=postDialog, install=install)
+    cmdjob = SimpleSubmit('Submit Transcoder', hasRange=False, canChunk=False, help='Cluster based transcoder using blender.', category="2D")
 
     # Initialize the AE Data Class
     cmdjob.ctrl = SubmitAfterEffectsClasses.Controller(logging)
 
     # Project Information
-    cmdjob.add_optionGroup('Info')
-    cmdjob.add_option( 'projectPath', 'file' , 'Project Name', label='Project File',
-                        mode='open', required=True, editable=True)
-    cmdjob.add_option( 'rqIndex', 'choice', 'RQ Item index and comp name.', label='RQ Item',
-                        required=True, editable=True)
-    cmdjob.add_option( 'outputs', 'choice', 'Output Paths.', label='Outputs',
-                        required=True, editable=False, multi=True, choices=['None'])
-    
-    # Required
-    cmdjob.add_optionGroup('Required', collapsed=False)
-    cmdjob.add_option( 'notes', 'string', 'Notes about render', label='Notes',
-                        required=True, lines=3, default=' ')
-    cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email',
-                        required=True, lines=1)
-
-    # Advanced
-    cmdjob.add_optionGroup('Advanced', collapsed=False)
-    cmdjob.add_option( 'multProcs', 'bool', 'Use Multiple Processors', label='Multiple Processors',
-                        required=False, default=False)
+    cmdjob.add_optionGroup('Transcoder')
+    cmdjob.add_option( 'Jobs', 'choice', 'Transcoder Jobs', required=True,
+                        editable=True, widget=TranscoderWidget)
 
     # Additional properties to set
     cmdjob.properties['flagsstring'] = 'disable_windows_job_object'  # Needs to be disabled for Windows
@@ -80,23 +199,6 @@ def create():
     cmdjob.package.setdefault('shell', '/bin/bash')
     
     return [cmdjob]
-
-# Custom method to update the choices for listboxes
-# The SimpleCMD framework only supports updating values directly
-def updateChoiceList(dlg, valuesPkg, optName, newChoices, selection):
-        logging.debug("Updating ChoiceList: " + str(optName) + " Selection: " + str(selection))
-        for s in dlg.propertyBoxSizers:
-            if (optName in s.optionNames):
-                s.options[optName]['choices'] = newChoices
-                s.widgets[optName]['entry'].Clear() # Clear the current choices
-                s.widgets[optName]['entry'].AppendItems(newChoices)
-                if isinstance(selection, list):
-                    if (len(selection) > 0):
-                        for sel in selection:
-                            s.widgets[optName]['entry'].Check(sel)
-                else:
-                    s.widgets[optName]['entry'].SetSelection(selection)
-
 
 # Updates dialog when controls are changed
 def controlChanged(cmdjob, values, optionName, value, dlg, container):

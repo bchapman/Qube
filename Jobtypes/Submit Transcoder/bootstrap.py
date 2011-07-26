@@ -76,6 +76,7 @@ def main():
 
         # launch execution script
         print "INFO: bootstrap script loading execute module\n"
+        # print str(qb.jobobj())
         execfile(backend, globals())
 
 def usage():

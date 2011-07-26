@@ -8,20 +8,21 @@ Version: 1.0
 Job class to store all related data
 '''
 
-import os
-import time
-import inspect
+import os, sys, time, inspect
+
+sys.path.append('/Volumes/theGrill/.qube/Modules/')
+import sequenceTools
 
 BLENDERLOCATION = "/Applications/blender.app/Contents/MacOS/blender"
 BLENDERINITSCRIPT = "Blender_InitSequence.py"
 CATMOVIELOCATION = "/usr/local/bin/catmovie"
-MODMOVIELOCATION = "/usr/local/bin/modmovie"
-
+MUXMOVIELOCATION = "/usr/local/bin/muxmovie"
+HASHCODEFILEPREFIX = '.DATA.'
 
 class Job:
     def __init__(self, logger):
         # Input Settings
-        self.sequenceFolder = ''
+        self.sequence = ''
         self.audioFile = ''
         
         # Output Settings
@@ -42,7 +43,10 @@ class Job:
     def loadOptions(self, qubejob):
         self.qubejob = qubejob
         pkg = qubejob.setdefault('package', {})
-        self.sequenceFolder = self.loadOption("sequenceFolder", pkg.get('sequenceFolder', ''), required=True, fullpath=True)
+        
+        seqFile = self.loadOption("sequence", pkg.get('sequence', ''), required=True, fullpath=True)
+        self.sequence = sequenceTools.Sequence(seqFile)
+        
         self.audioFile = self.loadOption("audioFile", pkg.get('audioFile', ''), required=False, fullpath=True)
         
         self.outputFile = self.loadOption("outputFile", pkg.get('outputFile', ''), required=True, folderpath=True)
@@ -117,8 +121,22 @@ class Job:
         result = ''
         if (work['name'] == 'Initialize'): result = self.getInitCMD()
         elif (work['name'] == 'Finalize'): result = self.getFinalizeCMD()
-        else: result = self.getSegmentCMD(work)
+        elif (work['name'] != ''):
+            result = self.getSegmentCMD(work)
+        else:
+            self.logger.error("Weird Work:" + str(work))
+            self.logger.error("Weird Work Status: " + str(work['status']))
+            result = 'ls'
 
+        return result
+
+    def getHashFile(self):
+        '''
+        Get the filepath to the hashfile.
+        This contains the md5 hash codes for the latest renders of a sequence.
+        Later this can be compared to find changes in the sequence.
+        '''
+        result = self.sequence.folder + '/' + HASHCODEFILEPREFIX + os.path.basename(self.sequence.initFile)
         return result
 
     # Setup the initialize command to setup the blender file for transcoding
@@ -138,7 +156,7 @@ class Job:
         #   3-Frame Rate(ex: 100x100)
         #   4-Where to save blender file
         cmd += ' -- ' # Separates the python arguments from blender arguments
-        cmd += ' \'' + self.sequenceFolder + '\''
+        cmd += ' \'' + self.sequence.initFile + '\''
         cmd += ' \'' + self.resolution + '\''
         cmd += ' \'' + self.frameRate + '\''
         cmd += ' \'' + self.getTempBlendSceneName() + '\''
@@ -155,7 +173,7 @@ class Job:
         cmd += ' -b \'' + self.getTempBlendSceneName() + '\''
         cmd += ' -x 1' # Use an extension on the end of the file
         # Get the start and end frames from the Work name
-        print "Work: " + str(work)
+        self.logger.info("Work: " + str(work))
         start, end = work.get('name', '').split('-')
         cmd += ' -s ' + start
         cmd += ' -e ' + end
@@ -174,25 +192,40 @@ class Job:
                   modmovie audioFile -track "Sound Track" ouputFile -track "Video Track" -save-in-place
         '''
 
-        cmd = '\'' + CATMOVIELOCATION + '\''
-        if (self.selfContained): cmd += ' -self-contained'
-        cmd += ' -o \'' + self.outputFile + '\''
+        segments = self.getAllSegments()
+
+        '''
+        If we are including audio, create a reference movie using catmovie
+        Then use modmovie to create the final
+        '''
+        catMovieOutput = self.outputFile
+        if (self.audioFile):
+            segmentFolder = segments[2].get('package',{}).get('outputPath', '')
+            catMovieOutput = os.path.dirname(segmentFolder) + '/' + os.path.basename(self.outputFile)
+            
+        cmd = '/bin/bash -c "\'' + CATMOVIELOCATION + '\''
+        cmd += ' -o \'' + catMovieOutput + '\''
+        
+        # If audio file wasn't included, apply the self-contained attribute here if required.
+        if not (self.audioFile):
+            cmd += ' -self-contained'
         
         # Add the segments
         cmd += ' -' # End argument processing
 
-        segments = self.getAllSegments()
         for segment in segments:
             if not (segment['name'].endswith(('Initialize', 'Finalize'))):
                 cmd += ' ' + segment.get('package', {}).get('outputPath', '')
 
         # muxmovie
         if (self.audioFile):
-            cmd += '; \'' + MODMOVIELOCATION + '\''
+            cmd += '; \'' + MUXMOVIELOCATION + '\''
             cmd += ' \'' + self.audioFile + '\' -track \'Sound Track\''
-            cmd += ' \'' + self.outputFile + '\' -track \'Video Track\''
-            cmd += ' -save-in-place'
+            cmd += ' \'' + catMovieOutput + '\' -track \'Video Track\''
+            if (self.selfContained): cmd += ' -self-contained'
+            cmd += ' -o \'' + self.outputFile + '\''
         
+        cmd += '"'
 
         return cmd
 

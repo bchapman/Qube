@@ -8,7 +8,7 @@ Provides methods to assist in working with image sequences
 
 '''
 
-import os, re, glob, hashlib, FileLock, DictDifferences
+import os, sys, re, glob, hashlib, FileLock, DictDifferences
 
 class Sequence:
     def __init__(self, fileName):
@@ -17,10 +17,12 @@ class Sequence:
 
         seqData = self.splitPath(fileName)
 
+        self.initFile = fileName
         self.folder = seqData.get('Folder', '')
         self.prefix = seqData.get('Prefix', '')
         self.padding = seqData.get('Padding', '')
         self.extension = seqData.get('Extension', '')
+        self.currentFrame = seqData.get('currentFrame', '')
 
     def deleteFrames(self, frames):
         '''
@@ -91,6 +93,7 @@ class Sequence:
 
         allExistingFrames = self.getFrames()
         result = {}
+        # print "All Existing Frames: " + str(allExistingFrames)
         result['start'] = self.splitPath(allExistingFrames[0])['currentFrame']
         result['end'] = self.splitPath(allExistingFrames[-1])['currentFrame']
         return result
@@ -232,41 +235,50 @@ class Sequence:
     Used to find changes in image sequences
     '''
 
-    def compareHashCodes(self, filename):
+    def compareHashCodes(self, filename, frameRange='All'):
         '''
         Compare current hash codes with the contents of the supplied file.
         Returns a dictionary of Added, Modified, Deleted, and Constant Frames.
+        Optionally supply a frame range to limit the scope of the comparison.
         '''
 
-        currentHashCodes = self.getHashCodes()
-        pastHashCodes = self.getHashCodesFromFile(filename)
+        # print "Loading past hash codes..."
+        pastHashCodes = self.getHashCodesFromFile(filename, frameRange)
+        # print "Loading current hash codes..."
+        currentHashCodes = self.getHashCodes(frameRange)
 
+        # print "Comparing hash codes..."
         diff = DictDifferences.DictDifferences(currentHashCodes, pastHashCodes)        
         result = {}
         result['Added'] = list(sorted(diff.added()))
         result['Modified'] = list(sorted(diff.changed()))
         result['Deleted'] = list(sorted(diff.removed()))
         result['Constant'] = list(sorted(diff.unchanged()))
+        
         return result
         
 
-    def getHashCodes(self):
+    def getHashCodes(self, frameRange='All'):
         '''
         Generate a dictionary of every frames hash codes.
         This is used to check for changes in an image sequence.
+        Optionally supply a frame range to limit the scope.
         '''
         
         result = {}
-        allExistingFrames = sorted(self.getFrames())
-        for frame in allExistingFrames:
+        frames = sorted(self.getFrames(frameRange))
+
+        for frame in frames:
+            # print "Getting hash code for " + str(frame) + "..."
             hashcode = hashlib.md5(open(frame, 'rb').read()).hexdigest()
             frameName = os.path.basename(frame)
             result[frameName] = hashcode
         return result
 
-    def getHashCodesFromFile(self, filename):
+    def getHashCodesFromFile(self, filename, frameRange='All'):
         '''
         Load hash codes that were saved previously into a dictionary.
+        Optionally supply a frame range to limit the scope.
         '''
         
         hashInput = []
@@ -280,17 +292,29 @@ class Sequence:
             hashInput = hashFile.readlines()
             hashFile.close()
         
-        # Load the input into a dictionary
+        '''
+        Load the input into a dictionary.
+        If a frame range was supplied, limit the dictionary to that range.
+        '''
         result = {}
         for frame in hashInput:
-            k, v = frame.split(' : ')
-            result[k] = v.replace('\n','')
+            frameFile, frameHash = frame.split(' : ')
+            currentFrameNumber = int(self.splitPath(frameFile)['currentFrame'])
+
+            addToDict = False
+            if frameRange.upper() == 'ALL':
+                addToDict = True
+            elif currentFrameNumber in self.parseFrameRange(frameRange):
+                addToDict = True
+            
+            if addToDict:
+                result[frameFile] = frameHash.replace('\n','')
 
         return result
 
-    def storeHashCodes(self, filename):
+    def saveHashCodes(self, filename):
         '''
-        Store hash codes in a file to load again later.
+        Save hash codes in a file to load again later.
         '''
         
         output = ''
