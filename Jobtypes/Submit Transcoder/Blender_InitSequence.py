@@ -12,94 +12,114 @@ Settings:
   2-Resolution
   3-Frame Rate(ex: 100x100)
   4-Where to save blender file
+  (5-Audio File)
 '''
 
 import bpy, os, sys
+import logging
+
 sys.path.append('/Volumes/theGrill/.qube/Modules/')
 import sequenceTools
 
-sys.stdout.write("\nINFO: Blender Loaded, Processing...\n")
+'''
+Set up the logging module.
+'''
+logger = logging.getLogger("main")
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+# ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(levelname)s: %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
-args = sys.argv[(sys.argv.index('--')+1):] # Only the arguments after the -- separator
-sys.stdout.write("\nArguments: \n\t" + '\n\t'.join(args) + "\n")
+def main():
+    logger.info("Blender Loaded, Processing...")
 
-try:
-    sequence = args[0]
-    res = args[1]
-    rate = args[2]
-    sceneFile = args[3]
-except:
-    sys.stdout.write("\nInvalid Input Parameters.")
+    ''' Get the arguments after the '--' separator. '''
+    args = sys.argv[(sys.argv.index('--')+1):]
+    logger.info("Arguments: \n\t" + '\n\t'.join(args))
 
-if (rate):
-    ''' Load the Image Sequence files from the folder into a dictionary. '''
-    sys.stdout.write("INFO: Loading sequence...")
-    mySequence = sequenceTools.Sequence(sequence)
-    
-    '''
-    Create an array containing dictionaries for each frame.
-    {'name':frameFileName}
-    '''
-    myFiles = []
-    for pathToFrame in mySequence.getFrames():
-        myFrame = {'name':os.path.basename(pathToFrame)}
-        myFiles.append(myFrame)
-
-    # sys.stdout.write("\n"+str(myFiles)+"\n")
-
-    if (len(myFiles) < 1):
-        sys.stdout.write("\nERROR: No sequence files in folder.")
-        sys.exit(1)
-    else:
-        ''' Check for missing frames. '''
-        missingFrames = mySequence.getMissingFrames()
-        if len(missingFrames) > 0:
-            sys.stdout.write("\nERROR: Missing Frames")
-            for frame in missingFrames:
-                sys.stdout.write("\nMissing Frames: " + frame)
-        
+    try:
+        sequence = args[0]
+        res = args[1]
+        rate = args[2]
+        sceneFile = args[3]
+        if len(args) > 4:
+            audioFile = args[4]
         else:
-            sys.stdout.write("\nINFO: Sequence loaded!")
+            logger.info('No Audio File Supplied.')
+            audioFile = None
+    except:
+        logger.error('Invalid Input Parameters.')
 
-            sys.stdout.write("\nINFO: Setting up blender scene...")
+    if (rate):
+        ''' Load the Image Sequence files from the folder into a dictionary. '''
+        logger.info("Loading sequence...")
+        mySequence = sequenceTools.Sequence(sequence)
     
-            # Add the files to an image strip
-            bpy.ops.sequencer.image_strip_add( \
-                    directory = mySequence.folder, \
-                    files = myFiles, \
-                    frame_start=0, \
-                    channel=1, \
-                    filemode=9)
+        '''
+        Create an array containing dictionaries for each frame.
+        {'name':frameFileName}
+        '''
+        myFiles = []
+        for pathToFrame in mySequence.getFrames():
+            myFrame = {'name':os.path.basename(pathToFrame)}
+            myFiles.append(myFrame)
 
-            stripName = myFiles[0].get("name")  # Locate the new image strip
+        logger.debug('Image Sequence File List: ' + str(myFiles))
+
+        if (len(myFiles) < 1):
+            logger.error('No sequence files in folder.')
+            sys.exit(1)
+        else:
+            ''' Check for missing frames. '''
+            missingFrames = mySequence.getMissingFrames()
+            if len(missingFrames) > 0:
+                logger.error('Missing Frames')
+                for frame in missingFrames:
+                    logger.error('Missing Frames: ' + frame)
+        
+            else:
+                logger.info('Sequence loaded!')
+
+                logger.info('Setting up blender scene...')
     
-            if (len(stripName) > 21): stripName = stripName[0:21]  # Image Strip names are limited to 21 characters
-            myscene = bpy.data.scenes[0]
-            mystrip = myscene.sequence_editor.sequences[stripName]
-            mystrip.use_premultiply = True
+                ''' Setup an Image Strip for the input image sequence. '''
+                bpy.ops.sequencer.image_strip_add( \
+                        directory = mySequence.folder, \
+                        files = myFiles, \
+                        frame_start = 0, \
+                        channel = 1, \
+                        filemode = 9)
 
-            # Set the length of the scene to the length of the sequence
-            myscene.frame_end = mystrip.frame_final_duration
+                '''
+                Check the premultiply checkbox so the alpha
+                from the image sequence to show up properly on the quicktime.
+                '''
+                myscene = bpy.data.scenes[0]
+                stripName = myFiles[0].get("name")
+                if (len(stripName) > 21): stripName = stripName[0:21]  # Image Strip names are limited to 21 characters
+                mystrip = myscene.sequence_editor.sequences[stripName]
+                mystrip.use_premultiply = True 
 
-            # Apply the settings from the input
-            # res = res.split('x')
-            # myscene.render.resolution_x = int(res[0])
-            # myscene.render.resolution_y = int(res[1])
+                ''' Set the length of the scene to the length of the sequence. '''
+                myscene.frame_end = mystrip.frame_final_duration
 
-            # Frame rate is a bit trickier
-            # rate = float(rate)
-            # if rate == 29.97:
-            #     myscene.render.fps = 30
-            #     myscene.render.fps_base = 1.001
-            # elif rate == 23.98:
-            #     myscene.render.fps = 24
-            #     myscene.render.fps_base = 1.001
-            # else:
-            #     myscene.render.fps = int(rate)
-            #     myscene.render.fps_base = 1
 
-            # Save the scene for rendering the segments
-            bpy.ops.wm.save_mainfile(filepath=sceneFile,compress=True)
-            sys.stdout.write("\nINFO: Blender Scene Saved to " + sceneFile + "\n")
+                ''' If an audio file was supplied, add a sound track strip. '''
+                if audioFile:
+                    if os.path.exists(audioFile):
+                        bpy.ops.sequencer.sound_strip_add( \
+                                filepath = audioFile, \
+                                filemode = 9, \
+                                channel = 0, \
+                                frame_start = 0)
+
+                # Save the scene for rendering the segments
+                bpy.ops.wm.save_mainfile(filepath=sceneFile,compress=True)
+                logger.info('Blender Scene Saved to ' + sceneFile)
     
-            sys.stdout.write("\nINFO: Blender Scene Complete!\n")
+                logger.info('Blender Scene Complete!')
+
+if __name__ == '__main__':
+    main()

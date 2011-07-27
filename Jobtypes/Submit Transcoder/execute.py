@@ -32,6 +32,7 @@ import Job
 import Render
 import signal
 import shlex, subprocess
+import time
 
 '''
 Set up the logging module.
@@ -134,21 +135,38 @@ def executeJob(job):
             else:
                 logger.error("Transcoder Initialization Faild! (Exit Code)\n")
         
-        elif agendaItem['name'] == 'Finalize':
+        elif agendaItem['name'].startswith('t'):
+            '''
+            Wait for the subjobs supplied in the Finalize subjob package
+            to complete before processing.
+            '''
+            
+            timeout = 300
+            currentWait = 0
+            
+            logger.info('Monkey')
+            
+            # while(True):
+            #     wait = False
+            #     agenda = qb.jobinfo(id=jobObject['id'], agenda=True)[0]['agenda']
+            #     for subjob in agenda:
+            #         if subjob['status'] is not 'complete':
+            #             if subjob['name'] in agendaItem.setdefault('package', {}).get('Dependencies', []):
+            #                 wait = True
+            #     if wait:
+            #         ''' Wait for 5 seconds, then try again. '''
+            #         logger.info("Subjobs not done, waiting 5 seconds...")
+            #         time.sleep(5)
+            #         currentWait += 0
+            #     
+            #     if currentWait >= timeout:
+            #         logger.error("ERROR: Waiting for segment completion timed out.")
+            #         sys.exit(1)
+                
             logger.info("Starting Transcoder Finalize Process...\n")
-        
+
             cmd = job.getCMD(agendaItem)
-            returnCode = runCMD(cmd)
-            
-            '''
-            Store the hash codes for the image sequence so we can
-            find changes that happen between now and next time.
-            '''
-            logger.info("Saving Hash Codes...")
-            mySequence = job.sequence
-            mySequence.saveHashCodes(job.getHashFile())
-            logger.info("Hash Codes Saved!")
-            
+            returnCode = runCMD(cmd)            
 
             '''
             Add the quicktime file to the subjob's outputPaths
@@ -158,7 +176,7 @@ def executeJob(job):
             logger.info("Transcoder Finalize Process Complete!\n")
         
         elif agendaItem['name'] != '':
-            logger.info("Starting Transcoder Segment Process...\n")
+            logger.info("Starting Transcoder Segment Process...")
             
             '''
             First check for missing frames that may have dissappeared.
@@ -180,15 +198,20 @@ def executeJob(job):
                 has changed since last time.
                 '''
                 render = False
+                currentHashCodes = {}
                 if job.smartUpdate and os.path.exists(agendaItem.setdefault('package', {}).get('outputPath', '')):
                     hashFile = job.getHashFile()
                     if os.path.exists(hashFile):
                         logger.info("Getting segmentFrames...")
                         segmentFrames = mySequence.getFrames(frameRange)
-                        logger.info("Comparing Hash Codes...")
+                        
+                        logger.info("Generating current hash codes...")
+                        currentHashCodes = mySequence.getHashCodes(frameRange)
+                        
+                        logger.info("Comparing hash codes...")
                         compare = mySequence.compareHashCodes(hashFile, frameRange)
                         differences = compare['Added'] + compare['Deleted'] + compare['Modified']
-                        logger.info("Differences: " + str(differences))
+                        logger.info("Differences: " + str(len(differences)))
                         
                         for frame in segmentFrames:
                             if os.path.basename(frame) in differences:
@@ -202,24 +225,19 @@ def executeJob(job):
                 if render:
                     cmd = job.getCMD(agendaItem)
                     returnCode = runCMD(cmd)
+                    
+                    '''
+                    Store the hash codes for the image sequence so we can
+                    find changes that happen between now and next time.
+                    '''
+                    if job.smartUpdate:
+                        logger.info("Saving hash codes to db...")
+                        # logger.debug("Current Hash Codes: " + str(currentHashCodes))
+                        job.sequence.saveHashCodes(job.getHashFile(), currentHashCodes)
+                    
                 else:
                     logger.info("No changes to segment " + agendaItem['name'])
                     returnCode = 0
-            
-                '''
-                Find the last segment subjob ID.
-                Then check if this was the last work subjob.
-                If so, unblock the finalize subjob.
-                '''
-                lastSegmentID = 0
-                for item in jobObject['agenda']:
-                    if item['name'] not in ('Initialize', 'Finalize'):
-                        if item['id'] > lastSegmentID:
-                            lastSegmentID = item['id']
-                if (agendaItem['id'] == lastSegmentID):
-                    workID = str(jobObject['id']) + ':' + str('Finalize')
-                    qb.unblockwork(workID)
-                    logger.info("Finalize Subjob Unblocked.")
 
                 logger.info("Transcoder Segment Process Complete!\n")
 

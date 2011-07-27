@@ -120,7 +120,7 @@ class Job:
     def getCMD(self, work):
         result = ''
         if (work['name'] == 'Initialize'): result = self.getInitCMD()
-        elif (work['name'] == 'Finalize'): result = self.getFinalizeCMD()
+        elif (str(work['name']).startswith('t')): result = self.getFinalizeCMD(work)
         elif (work['name'] != ''):
             result = self.getSegmentCMD(work)
         else:
@@ -136,7 +136,7 @@ class Job:
         This contains the md5 hash codes for the latest renders of a sequence.
         Later this can be compared to find changes in the sequence.
         '''
-        result = self.sequence.folder + '/' + HASHCODEFILEPREFIX + os.path.basename(self.sequence.initFile)
+        result = self.sequence.folder + '/' + HASHCODEFILEPREFIX + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.db'
         return result
 
     # Setup the initialize command to setup the blender file for transcoding
@@ -183,7 +183,7 @@ class Job:
         return cmd
 
 
-    def getFinalizeCMD(self):
+    def getFinalizeCMD(self, work):
         '''
         Setup the finalize command to use QTCoffee's catmovie to merge
         the segments together. Then use muxmovie to add in the audio if needed.
@@ -198,10 +198,11 @@ class Job:
         If we are including audio, create a reference movie using catmovie
         Then use modmovie to create the final
         '''
-        catMovieOutput = self.outputFile
+        finalizeOutput = os.path.dirname(self.outputFile) + '/' + work['name']
+        catMovieOutput = finalizeOutput
         if (self.audioFile):
             segmentFolder = segments[2].get('package',{}).get('outputPath', '')
-            catMovieOutput = os.path.dirname(segmentFolder) + '/' + os.path.basename(self.outputFile)
+            catMovieOutput = os.path.dirname(segmentFolder) + '/' + os.path.basename(finalizeOutput)
             
         cmd = '/bin/bash -c "\'' + CATMOVIELOCATION + '\''
         cmd += ' -o \'' + catMovieOutput + '\''
@@ -213,9 +214,12 @@ class Job:
         # Add the segments
         cmd += ' -' # End argument processing
 
+        dependants = work.get('package', {}).get('Dependencies', {})
+        self.logger.info("Dependants: " + str(dependants))
         for segment in segments:
             if not (segment['name'].endswith(('Initialize', 'Finalize'))):
-                cmd += ' ' + segment.get('package', {}).get('outputPath', '')
+                if segment['name'] in dependants:
+                    cmd += ' ' + segment.get('package', {}).get('outputPath', '')
 
         # muxmovie
         if (self.audioFile):
@@ -223,7 +227,7 @@ class Job:
             cmd += ' \'' + self.audioFile + '\' -track \'Sound Track\''
             cmd += ' \'' + catMovieOutput + '\' -track \'Video Track\''
             if (self.selfContained): cmd += ' -self-contained'
-            cmd += ' -o \'' + self.outputFile + '\''
+            cmd += ' -o \'' + finalizeOutput + '\''
         
         cmd += '"'
 

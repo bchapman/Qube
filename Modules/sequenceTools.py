@@ -9,6 +9,7 @@ Provides methods to assist in working with image sequences
 '''
 
 import os, sys, re, glob, hashlib, FileLock, DictDifferences
+import sqlite3
 
 class Sequence:
     def __init__(self, fileName):
@@ -235,19 +236,18 @@ class Sequence:
     Used to find changes in image sequences
     '''
 
-    def compareHashCodes(self, filename, frameRange='All'):
+    def compareHashCodes(self, filename, frameRange='All', currentHashCodes={}, pastHashCodes={}):
         '''
         Compare current hash codes with the contents of the supplied file.
         Returns a dictionary of Added, Modified, Deleted, and Constant Frames.
         Optionally supply a frame range to limit the scope of the comparison.
         '''
 
-        # print "Loading past hash codes..."
-        pastHashCodes = self.getHashCodesFromFile(filename, frameRange)
-        # print "Loading current hash codes..."
-        currentHashCodes = self.getHashCodes(frameRange)
+        if pastHashCodes == {}:
+            pastHashCodes = self.getHashCodesFromFile(filename, frameRange)
+        if currentHashCodes == {}:
+            currentHashCodes = self.getHashCodes(frameRange)
 
-        # print "Comparing hash codes..."
         diff = DictDifferences.DictDifferences(currentHashCodes, pastHashCodes)        
         result = {}
         result['Added'] = list(sorted(diff.added()))
@@ -275,32 +275,26 @@ class Sequence:
             result[frameName] = hashcode
         return result
 
-    def getHashCodesFromFile(self, filename, frameRange='All'):
+    def getHashCodesFromFile(self, hashFile, frameRange='All'):
         '''
-        Load hash codes that were saved previously into a dictionary.
-        Optionally supply a frame range to limit the scope.
+        Read the sqlite db of each frames hash codes to check
+        for frames that have changed since last time.
         '''
-        
-        hashInput = []
-        with FileLock.FileLock(filename, timeout=20):
-            '''
-            Acquire a lock on the hash code file so other processes
-            don't mess up our operation.
-            '''
-            
-            hashFile = open(filename, 'r')
-            hashInput = hashFile.readlines()
-            hashFile.close()
-        
+
+        conn = sqlite3.connect(hashFile)
+        curs = conn.cursor()
+        test = curs.execute('CREATE TABLE IF NOT EXISTS frameHashCodes (name, hash)')
+        curs.execute('SELECT * from frameHashCodes order by name')
+
         '''
         Load the input into a dictionary.
         If a frame range was supplied, limit the dictionary to that range.
         '''
         result = {}
-        for frame in hashInput:
-            frameFile, frameHash = frame.split(' : ')
+        for item in curs:
+            frameFile, frameHash = item
             currentFrameNumber = int(self.splitPath(frameFile)['currentFrame'])
-
+                        
             addToDict = False
             if frameRange.upper() == 'ALL':
                 addToDict = True
@@ -310,27 +304,34 @@ class Sequence:
             if addToDict:
                 result[frameFile] = frameHash.replace('\n','')
 
+        conn.close()
+
         return result
 
-    def saveHashCodes(self, filename):
+    def saveHashCodes(self, hashFile, hashDict={}):
         '''
-        Save hash codes in a file to load again later.
+        Create or update an sqlite db of each frame and
+        it's current hash code supplied as a dictionary
+        for comparison next time.
         '''
-        
-        output = ''
-        items = self.getHashCodes().items()
-        for item in sorted(items):
-            output += item[0] + ' : ' + item[1] + '\n'
-        
-        with FileLock.FileLock(filename, timeout=20):
-            '''
-            Acquire a lock on the hash code file so other processes
-            don't mess up our operation.
-            '''
-            
-            hashFile = open(filename, 'w')
-            hashFile.write(output)
-            hashFile.close()
+
+        if hashDict == {}:
+            hashDict = self.getHashCodes()
+
+        conn = sqlite3.connect(hashFile)
+        curs = conn.cursor()
+        items = hashDict.items()
+
+        # print "Writing " + str(len(items)) + " hash codes to the database..."
+        for item in items:
+            try:
+                curs.execute('INSERT INTO frameHashCodes (name, hash) VALUES (?,?)', item)
+            except:
+                pass
+                # print "ERROR: Unable to instert " + str(item)
+
+        conn.commit()    
+        conn.close()
 
     def __str__(self):
         return self.getTemplate()
