@@ -119,8 +119,8 @@ class Job:
     # Choose which command to use based on the work item
     def getCMD(self, work):
         result = ''
-        if (work['name'] == 'Initialize'): result = self.getInitCMD()
-        elif (str(work['name']).startswith('t')): result = self.getFinalizeCMD(work)
+        if (work['name'] == 'Initialize'): result = self.getInitCMD(work)
+        elif (str(work['name']).endswith('.mov')): result = self.getFinalizeCMD(work)
         elif (work['name'] != ''):
             result = self.getSegmentCMD(work)
         else:
@@ -140,7 +140,7 @@ class Job:
         return result
 
     # Setup the initialize command to setup the blender file for transcoding
-    def getInitCMD(self):
+    def getInitCMD(self, work):
         cmd = '\'' + BLENDERLOCATION + '\''
         
         # Add the preset blender file which has the base conversion settings
@@ -159,7 +159,9 @@ class Job:
         cmd += ' \'' + self.sequence.initFile + '\''
         cmd += ' \'' + self.resolution + '\''
         cmd += ' \'' + self.frameRate + '\''
-        cmd += ' \'' + self.getTempBlendSceneName() + '\''
+        cmd += ' \'' + self.getTempBlendSceneName(work) + '\''
+        if self.audioFile:
+            cmd += ' \'' + self.audioFile + '\''
         
         return cmd
 
@@ -186,26 +188,25 @@ class Job:
     def getFinalizeCMD(self, work):
         '''
         Setup the finalize command to use QTCoffee's catmovie to merge
-        the segments together. Then use muxmovie to add in the audio if needed.
+        the segments together.
         
-        Template: catmovie (-self-contained) -o outputFile (Segments)
-                  modmovie audioFile -track "Sound Track" ouputFile -track "Video Track" -save-in-place
+        Template: catmovie (-self-contained) -o outputFile - (Segments)
         '''
 
         segments = self.getAllSegments()
 
         '''
-        If we are including audio, create a reference movie using catmovie
-        Then use modmovie to create the final
+        Put all the segments together using catmovie from QTCoffee.
+        Use the names of the final agenda items for the output files.
         '''
         finalizeOutput = os.path.dirname(self.outputFile) + '/' + work['name']
-        catMovieOutput = finalizeOutput
         if (self.audioFile):
             segmentFolder = segments[2].get('package',{}).get('outputPath', '')
             catMovieOutput = os.path.dirname(segmentFolder) + '/' + os.path.basename(finalizeOutput)
             
         cmd = '/bin/bash -c "\'' + CATMOVIELOCATION + '\''
-        cmd += ' -o \'' + catMovieOutput + '\''
+        if (self.selfContained): cmd += ' -self-contained'
+        cmd += ' -o \'' + finalizeOutput + '\''
         
         # If audio file wasn't included, apply the self-contained attribute here if required.
         if not (self.audioFile):
@@ -220,15 +221,6 @@ class Job:
             if not (segment['name'].endswith(('Initialize', 'Finalize'))):
                 if segment['name'] in dependants:
                     cmd += ' ' + segment.get('package', {}).get('outputPath', '')
-
-        # muxmovie
-        if (self.audioFile):
-            cmd += '; \'' + MUXMOVIELOCATION + '\''
-            cmd += ' \'' + self.audioFile + '\' -track \'Sound Track\''
-            cmd += ' \'' + catMovieOutput + '\' -track \'Video Track\''
-            if (self.selfContained): cmd += ' -self-contained'
-            cmd += ' -o \'' + finalizeOutput + '\''
-        
         cmd += '"'
 
         return cmd
@@ -236,8 +228,8 @@ class Job:
 
     # Generate the blender initialization scene name based on the qube job number
     # and the output file name.
-    def getTempBlendSceneName(self):
-        result = os.path.dirname(self.outputFile)
+    def getTempBlendSceneName(self, work):
+        result = work.get('package', {}).get('sceneFolder', '/tmp/')
         result += '/' + str(self.qubejob.get('id', ''))
         result += '-' + os.path.splitext(os.path.basename(self.outputFile))[0] + '.blend'
         

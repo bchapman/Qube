@@ -135,7 +135,7 @@ def executeJob(job):
             else:
                 logger.error("Transcoder Initialization Faild! (Exit Code)\n")
         
-        elif agendaItem['name'].startswith('t'):
+        elif agendaItem['name'].endswith('.mov'):
             '''
             Wait for the subjobs supplied in the Finalize subjob package
             to complete before processing.

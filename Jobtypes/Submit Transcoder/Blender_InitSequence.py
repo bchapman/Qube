@@ -25,12 +25,12 @@ import sequenceTools
 Set up the logging module.
 '''
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
-# ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(levelname)s: %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+# logger.setLevel(logging.DEBUG)
+# ch.setLevel(logging.DEBUG)
 
 def main():
     logger.info("Blender Loaded, Processing...")

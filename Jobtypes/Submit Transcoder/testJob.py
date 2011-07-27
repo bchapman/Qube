@@ -24,7 +24,7 @@ import qb
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
 
-FINALQUICKTIMEFRAMECOUNT = 2000 # Multiples of 100
+FINALQUICKTIMEFRAMECOUNT = 5000 # Multiples of 100
 CHUNKSIZE = 100
 
 def main():
@@ -54,19 +54,21 @@ def main():
     job['package']['selfContained'] = True
     job['package']['smartUpdate'] = True
     job['package']['frameRange'] = bounds['start'] + '-' + bounds['end']
+    job['package']['transcoderFolder'] = os.path.dirname(outputFile) + '/Transcoder/'
     
 
     '''
     Calculate agenda from range.    
     Submit the segments as blocked, they will be unblocked once the initialize command is complete.
+    Segments will be placed in the Transcoder folder under a subfolder with the name of the sequence.
     '''
     segmentAgenda = qb.genchunks(CHUNKSIZE, job['package']['frameRange'])
     for segment in segmentAgenda:
         folder, name = os.path.split(job['package']['outputFile'])
         name, extension = os.path.splitext(name)
-        outputPath = folder + '/Segments/' + name + '_' + segment['name'].split('-')[0] + extension
+        outputName = name + '/' + name + '_' + segment['name'].split('-')[0] + extension
         segment['status'] = 'blocked'
-        segment.package({'outputPath': outputPath})
+        segment.package({'outputName': outputName})
 
     '''
     Setup the agenda
@@ -91,7 +93,10 @@ def main():
         workDict = {}
         
         filePath, fileExt = os.path.splitext(os.path.basename(outputFile))
-        finalOutputFile = filePath + '_' + chr(64 + num) + fileExt
+        letter = ''
+        if numFinalOutputs > 1:
+            letter = '_' + chr(64 + num)
+        finalOutputFile = filePath + letter + fileExt
         
         startIndex = (num-1) * subjobsPerOutput
         if num != numFinalOutputs:
