@@ -24,21 +24,22 @@ import qb
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
 
-FINALQUICKTIMEFRAMECOUNT = 5000 # Multiples of 100
-CHUNKSIZE = 100
+FINALQUICKTIMEFRAMECOUNT = 5000 # Multiples of chunk size
+CHUNKSIZE = 200
 
 def main():
     # Set basic job properties
     job = {}
-    job['cpus']         = 10
+    job['cpus']         = 50
     job['prototype']    = 'Submit Transcoder'
     job['requirements'] = ''
     job['reservations'] = 'host.processors=2'
     job['flagsstring'] = 'auto_wrangling,expand'
-    job['hosts'] = 'bchapman.local'
+    job['hosts'] = 'bchapman.local,elevaterender01.local'
     job['priority'] = 100
 
     # Set the package properties
+    # mySequence = sequenceTools.Sequence('/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Image_Sequences/Bible_Stories/L1/PU_BS_L1_00000.png')
     mySequence = sequenceTools.Sequence('/Volumes/theGrill/Staff-Directories/Brennan/testFrames/Sequence/testFrames_00000.png')
     bounds = mySequence.getBounds()
     outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/testFrames/testFrames.mov'
@@ -58,7 +59,7 @@ def main():
     
 
     '''
-    Calculate agenda from range.    
+    Calculate agenda from range.
     Submit the segments as blocked, they will be unblocked once the initialize command is complete.
     Segments will be placed in the Transcoder folder under a subfolder with the name of the sequence.
     '''

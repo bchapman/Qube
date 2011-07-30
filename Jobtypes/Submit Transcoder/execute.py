@@ -29,23 +29,23 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.curre
 print 'PATH: ' + str(sys.path) + "\n"
 import PreFlight
 import Job
-import Render
-import signal
 import shlex, subprocess
 import time
+
+import tempfile
+import cProfile
 
 '''
 Set up the logging module.
 '''
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(levelname)s: %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-
+logger.setLevel(logging.DEBUG)
+ch.setLevel(logging.DEBUG)
 
 '''
 Main
@@ -55,7 +55,8 @@ def initJob():
     # Get the job object
     jobObject = qb.jobobj()
     # Make sure the agenda is added
-    jobObject['agenda'] = qb.jobinfo(id=jobObject['id'], agenda=True)[0]['agenda']
+    if not jobObject.get('agenda', False):
+        jobObject['agenda'] = qb.jobinfo(id=jobObject['id'], agenda=True)[0]['agenda']
     # print "Qube Job Agenda: " + str(jobObject['agenda']) + "\n"
     job = Job.Job(logger) # Create our own Job Object
     job.loadOptions(jobObject) # Load the Qube Job into our job template
@@ -93,7 +94,7 @@ def executeJob(job):
         '''
 
         ''' First Handle non-running state cases '''
-        if agendaItem['status'] in ('complete', 'pending', 'blocked'):
+        if agendaItem['status'] in ('complete', 'pending', 'blocked', 'waiting'):
             '''
             complete -- no more frames
             pending -- preempted, so bail out
@@ -125,7 +126,8 @@ def executeJob(job):
                 logger.info("Unblocking Segment Subjobs:")
                 
                 for item in jobObject['agenda']:
-                    if item['name'] not in ('Initialize', 'Finalize'):
+                    itemName = str(item['name'])
+                    if itemName.endswith('Initialize') == False and itemName.endswith('.mov') == False:
                         workID = str(jobObject['id']) + ':' + str(item['name'])
                         qb.unblockwork(workID)
                         logger.info('+ ' + item['name'] + " - " + workID)
@@ -135,34 +137,7 @@ def executeJob(job):
             else:
                 logger.error("Transcoder Initialization Faild! (Exit Code)\n")
         
-        elif agendaItem['name'].endswith('.mov'):
-            '''
-            Wait for the subjobs supplied in the Finalize subjob package
-            to complete before processing.
-            '''
-            
-            timeout = 300
-            currentWait = 0
-            
-            logger.info('Monkey')
-            
-            # while(True):
-            #     wait = False
-            #     agenda = qb.jobinfo(id=jobObject['id'], agenda=True)[0]['agenda']
-            #     for subjob in agenda:
-            #         if subjob['status'] is not 'complete':
-            #             if subjob['name'] in agendaItem.setdefault('package', {}).get('Dependencies', []):
-            #                 wait = True
-            #     if wait:
-            #         ''' Wait for 5 seconds, then try again. '''
-            #         logger.info("Subjobs not done, waiting 5 seconds...")
-            #         time.sleep(5)
-            #         currentWait += 0
-            #     
-            #     if currentWait >= timeout:
-            #         logger.error("ERROR: Waiting for segment completion timed out.")
-            #         sys.exit(1)
-                
+        elif agendaItem['name'].endswith('.mov'):                
             logger.info("Starting Transcoder Finalize Process...\n")
 
             cmd = job.getCMD(agendaItem)
@@ -171,7 +146,7 @@ def executeJob(job):
             '''
             Add the quicktime file to the subjob's outputPaths
             '''
-            agendaItem['resultpackage'] = { 'outputPaths': job.outputFile }
+            agendaItem['resultpackage'] = { 'outputPaths': job.getFinalOutputFile(agendaItem) }
             
             logger.info("Transcoder Finalize Process Complete!\n")
         
@@ -198,26 +173,33 @@ def executeJob(job):
                 has changed since last time.
                 '''
                 render = False
+                hashFile = ''
                 currentHashCodes = {}
-                if job.smartUpdate and os.path.exists(agendaItem.setdefault('package', {}).get('outputPath', '')):
+                outputFileName = agendaItem.setdefault('package', {}).get('outputPath', '')
+                if job.smartUpdate and os.path.exists(job.getSegmentOutputFile(outputFileName)):
                     hashFile = job.getHashFile()
-                    if os.path.exists(hashFile):
-                        logger.info("Getting segmentFrames...")
+                    logger.debug('Hash File: ' + hashFile)
+                    exists = os.path.exists(hashFile)
+                    logger.debug('Exists: ' + str(exists))
+                    if exists:
+                        logger.debug("Hash exists.")
+                        logger.info('Loading frames...')
                         segmentFrames = mySequence.getFrames(frameRange)
                         
-                        logger.info("Generating current hash codes...")
+                        logger.info('Generating current hash codes...')
                         currentHashCodes = mySequence.getHashCodes(frameRange)
                         
-                        logger.info("Comparing hash codes...")
+                        logger.info('Comparing hash codes...')
                         compare = mySequence.compareHashCodes(hashFile, frameRange)
                         differences = compare['Added'] + compare['Deleted'] + compare['Modified']
-                        logger.info("Differences: " + str(len(differences)))
+                        logger.info('Differences: ' + str(len(differences)))
                         
                         for frame in segmentFrames:
                             if os.path.basename(frame) in differences:
                                 render = True
                                 break
                     else:
+                        logger.debug('Hash file doesn\'t exist.') 
                         render = True
                 else:
                     render = True
@@ -232,12 +214,37 @@ def executeJob(job):
                     '''
                     if job.smartUpdate:
                         logger.info("Saving hash codes to db...")
-                        # logger.debug("Current Hash Codes: " + str(currentHashCodes))
-                        job.sequence.saveHashCodes(job.getHashFile(), currentHashCodes)
+                        logger.debug("Current Hash Codes: " + str(currentHashCodes))
+                        job.sequence.saveHashCodes(hashFile, hashDict=currentHashCodes)
                     
                 else:
                     logger.info("No changes to segment " + agendaItem['name'])
                     returnCode = 0
+
+                '''
+                Check if this is the last agenda item that's complete.
+                If so, unblock the final output subjobs.
+                '''
+                currAgenda = qb.jobinfo(id=job.qubejob['id'], agenda=True)[0]['agenda']
+                lastSegment = True
+                finalOutputs = []
+                for item in currAgenda:
+                    if item['name'].endswith('.mov'):
+                        logger.debug('Found final output subjob: ' + str(item['name']))
+                        finalOutputs.append(str(job.qubejob['id']) + ':' + str(item['name']))
+                    elif not item['name'].endswith('Initialize'):
+                        logger.debug('Found segment subjob: ' + str(item['name']) + ' Status: ' + str(item['status']))
+                        if item['status'] is not 'complete':
+                            if item['name'] is not agendaItem['name']:
+                                lastSegment = False
+                if lastSegment:
+                    for output in finalOutputs:
+                        logger.info("Unblocking Output: " + output)
+                        qb.unblockwork(output)
+                else:
+                    logger.debug('Not the last segment.')
+
+                agendaItem['resultpackage'] = { 'Changed': render }
 
                 logger.info("Transcoder Segment Process Complete!\n")
 
@@ -274,4 +281,5 @@ def main():
         cleanupJob(job, state)
     
 if __name__ == "__main__":
-    main()
+    f = tempfile.NamedTemporaryFile(delete=False)
+    cProfile.run('main()', f.name)

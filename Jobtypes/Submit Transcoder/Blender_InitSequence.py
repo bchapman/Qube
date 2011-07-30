@@ -89,7 +89,7 @@ def main():
                         directory = mySequence.folder, \
                         files = myFiles, \
                         frame_start = 0, \
-                        channel = 1, \
+                        channel = 2, \
                         filemode = 9)
 
                 '''
@@ -112,7 +112,7 @@ def main():
                         bpy.ops.sequencer.sound_strip_add( \
                                 filepath = audioFile, \
                                 filemode = 9, \
-                                channel = 0, \
+                                channel = 1, \
                                 frame_start = 0)
 
                 # Save the scene for rendering the segments

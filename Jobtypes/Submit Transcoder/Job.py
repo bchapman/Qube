@@ -5,7 +5,7 @@ Author: Brennan Chapman
 Date: 7/12/2011
 Version: 1.0
 
-Job class to store all related data
+Job class to store all related data transcoding.
 '''
 
 import os, sys, time, inspect
@@ -13,54 +13,63 @@ import os, sys, time, inspect
 sys.path.append('/Volumes/theGrill/.qube/Modules/')
 import sequenceTools
 
-BLENDERLOCATION = "/Applications/blender.app/Contents/MacOS/blender"
-BLENDERINITSCRIPT = "Blender_InitSequence.py"
-CATMOVIELOCATION = "/usr/local/bin/catmovie"
-MUXMOVIELOCATION = "/usr/local/bin/muxmovie"
+''' Constants '''
+BLENDERLOCATION = '/Applications/blender.app/Contents/MacOS/blender'
+BLENDERINITSCRIPT = 'Blender_InitSequence.py'
+CATMOVIELOCATION = '/usr/local/bin/catmovie'
+MUXMOVIELOCATION = '/usr/local/bin/muxmovie'
 HASHCODEFILEPREFIX = '.DATA.'
 
 class Job:
     def __init__(self, logger):
-        # Input Settings
+        ''' Input Settings '''
         self.sequence = ''
         self.audioFile = ''
         
-        # Output Settings
+        ''' Output Settings '''
         self.outputFile = ''
         self.preset = ''
         self.resolution = ''
         self.frameRate = ''
+        self.transcoderFolder = ''
 
         self.selfContained = True
         self.smartUpdate = True
         
-        # Other Settings
+        ''' Other Settings '''
         self.qubejob = {}
         self.logger = logger
 
-
-    # Load Options from the qube package
     def loadOptions(self, qubejob):
+        '''
+        Load all the options from the qube job object into the Job class.
+        '''
+        
         self.qubejob = qubejob
         pkg = qubejob.setdefault('package', {})
         
-        seqFile = self.loadOption("sequence", pkg.get('sequence', ''), required=True, fullpath=True)
+        seqFile = self.loadOption('sequence', pkg.get('sequence', ''), required=True, fullpath=True)
         self.sequence = sequenceTools.Sequence(seqFile)
         
-        self.audioFile = self.loadOption("audioFile", pkg.get('audioFile', ''), required=False, fullpath=True)
+        self.audioFile = self.loadOption('audioFile', pkg.get('audioFile', ''), required=False, fullpath=True)
         
-        self.outputFile = self.loadOption("outputFile", pkg.get('outputFile', ''), required=True, folderpath=True)
-        self.preset = self.loadOption("preset", pkg.get('preset', ''), required=True, fullpath=True)
-        self.resolution = self.loadOption("resolution", pkg.get('resolution', ''), required=True)
-        self.frameRate = self.loadOption("frameRate", pkg.get('frameRate', ''), required=True)
+        self.outputFile = self.loadOption('outputFile', pkg.get('outputFile', ''), required=True, folderpath=True)
+        self.preset = self.loadOption('preset', pkg.get('preset', ''), required=True, fullpath=True)
+        self.resolution = self.loadOption('resolution', pkg.get('resolution', ''), required=True)
+        self.frameRate = self.loadOption('frameRate', pkg.get('frameRate', ''), required=True)
         
-        self.selfContained = self.loadOption("selfContained", pkg.get('selfContained', True))
-        self.smartUpdate = self.loadOption("smartUpdate", pkg.get('smartUpdate', True))
+        self.selfContained = self.loadOption('selfContained', pkg.get('selfContained', True))
+        self.smartUpdate = self.loadOption('smartUpdate', pkg.get('smartUpdate', True))
+
+        self.transcoderFolder = self.loadOption('transcoderFolder', pkg.get('transcoderFolder', ''), required=True)
 
 
-    # Load an option with error checking
     def loadOption(self, name, option, required=False, fullpath=False, folderpath=False):
-        if (option != ""):
+        '''
+        Load a job option with error checking and input validation.
+        '''
+        
+        if (option != ''):
             if (fullpath ==True or folderpath == True):
 
                 # Expand variables in path
@@ -75,57 +84,56 @@ class Job:
                 if (os.path.exists(tmpPath)):
                     return newPath
                 else:
-                    self.logger.error("Invalid path for " + name + " : " + option)
+                    self.logger.error('Invalid path for ' + name + ' : ' + option)
                     exit(64)
             else:
                 return option
         else:
             if (required != True):
-                return ""
+                return ''
             else:
-                self.logger.error("Missing value for " + name)
+                self.logger.error('Missing value for ' + name)
                 exit(64)
 
-
-    # Load the segments from the qube job
-    # Agenda Format (id : purpose : name):
-    #   0 : Initialize : "Initialize"
-    #   1-n : Segments : startFrame-endFrame
-    #       Segment package includes outputPath    
-    #   n+1 : Finalize : "Finalize"
     def getAllSegments(self):
-        segments = []
+        '''
+        Load the all segments from the qube job object.
+        '''
         
-        # Load the qube job agenda
         agenda = self.qubejob.get('agenda', {})
         if (agenda == {}):
             logger.error('Job missing agenda')
             sys.exit(1)
         else:
-            # Add each subjob to the segments array
+            segments = []
             for subjob in agenda:
                 segments.append(subjob)
             
             return segments
 
-
-    # Loads only the requested work segment
     def getCurrentSegment(self, work):
+        '''
+        Loads only the requested work segment.
+        '''
+        
         segments = []
         segments.append(work)
         
         return segments
 
-    # Choose which command to use based on the work item
     def getCMD(self, work):
+        '''
+        Returns the command for the subjob based on the work item.
+        '''
+        
         result = ''
         if (work['name'] == 'Initialize'): result = self.getInitCMD(work)
         elif (str(work['name']).endswith('.mov')): result = self.getFinalizeCMD(work)
         elif (work['name'] != ''):
             result = self.getSegmentCMD(work)
         else:
-            self.logger.error("Weird Work:" + str(work))
-            self.logger.error("Weird Work Status: " + str(work['status']))
+            self.logger.error('Weird Work:' + str(work))
+            self.logger.error('Weird Work Status: ' + str(work['status']))
             result = 'ls'
 
         return result
@@ -136,50 +144,66 @@ class Job:
         This contains the md5 hash codes for the latest renders of a sequence.
         Later this can be compared to find changes in the sequence.
         '''
+
         result = self.sequence.folder + '/' + HASHCODEFILEPREFIX + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.db'
         return result
 
-    # Setup the initialize command to setup the blender file for transcoding
     def getInitCMD(self, work):
+        '''
+        Returns the initialize command which sets up a blender scene
+        to transcode the sequence.
+        '''
+        
         cmd = '\'' + BLENDERLOCATION + '\''
         
-        # Add the preset blender file which has the base conversion settings
+        ''' Add the preset blender file which has the base conversion settings. '''
         cmd += ' -b \'' + self.preset + '\''
         
-        # Add the initialization script
-        cwd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # Current working directory
+        '''
+        Add the Blender_InitSequence script which runs
+        inside of blender once it's launched.
+        '''
+        cwd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         cmd += ' -P \'' + cwd + '/' + BLENDERINITSCRIPT + '\''
-        
-        # Add the rest of the conversion settings as arguments
-        #   1-Sequence Folder
-        #   2-Resolution
-        #   3-Frame Rate(ex: 100x100)
-        #   4-Where to save blender file
-        cmd += ' -- ' # Separates the python arguments from blender arguments
+
+        '''
+        Add the rest of the conversion settings as arguments after
+        the seperator '--'
+            1 - Sequence Folder
+            2 - Resolution
+            3 - Frame Rate(ex: 100x100)
+            4 - Where to save blender file
+            5 - Audio File
+        '''
+        cmd += ' -- '
         cmd += ' \'' + self.sequence.initFile + '\''
         cmd += ' \'' + self.resolution + '\''
         cmd += ' \'' + self.frameRate + '\''
-        cmd += ' \'' + self.getTempBlendSceneName(work) + '\''
+        cmd += ' \'' + self.getBlendFile() + ' \''
         if self.audioFile:
             cmd += ' \'' + self.audioFile + '\''
         
         return cmd
 
-    
-    # Generate the commands to render each segment based on start and end frames
-    # using blender.
     def getSegmentCMD(self, work):
+        '''
+        Returns the command to render the segment using blender.
+        
+        Template: blender -b blendfile -x 1 -s startFrame -e endFrame -o outputFile -a
+        '''
+        
         workPkg = work.setdefault('package', {})
-        # Template: blender -b blendfile -x 1 -s startFrame -e endFrame -o outputFile -a
+
         cmd = '\'' + BLENDERLOCATION + '\''
-        cmd += ' -b \'' + self.getTempBlendSceneName() + '\''
+        cmd += ' -b \'' + self.getBlendFile() + '\''
         cmd += ' -x 1' # Use an extension on the end of the file
-        # Get the start and end frames from the Work name
-        self.logger.info("Work: " + str(work))
-        start, end = work.get('name', '').split('-')
-        cmd += ' -s ' + start
-        cmd += ' -e ' + end
-        cmd += ' -o ' + workPkg.get('outputPath', '')
+
+        ''' Get the start and end frames from the work item name. '''
+        startFrame, endFrame = work.get('name', '').split('-')
+
+        cmd += ' -s ' + startFrame
+        cmd += ' -e ' + endFrame
+        cmd += ' -o ' + self.getSegmentOutputFile(workPkg.get('outputName', ''))
         cmd += ' -a'
         
         return cmd
@@ -187,59 +211,133 @@ class Job:
 
     def getFinalizeCMD(self, work):
         '''
-        Setup the finalize command to use QTCoffee's catmovie to merge
-        the segments together.
+        Returns the Finalize command to put together a final quicktime.
+        Steps:
+            1) Check if any of the related segments had changes.
+                If not, skip finalizing this segment.
+            1) Create a reference movie containing all the segments
+                This uses catmovie.
+            2) Create the final movie adding audio if necessary.
+                If the self-contained was checked, this is also applied.
+                If the render is split up, audio will be split as well.
+                This uses muxmovie.
         
-        Template: catmovie (-self-contained) -o outputFile - (Segments)
+        *Name of the output files is defined by the name of the agenda item.
+        *Only segments listed in the agenda item's package are used in the final quicktime.
+        
+        Command Templates:
+            catmovie -o tempOutputFile - (Segments)
+            muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile 
         '''
 
-        segments = self.getAllSegments()
-
-        '''
-        Put all the segments together using catmovie from QTCoffee.
-        Use the names of the final agenda items for the output files.
-        '''
-        finalizeOutput = os.path.dirname(self.outputFile) + '/' + work['name']
-        if (self.audioFile):
-            segmentFolder = segments[2].get('package',{}).get('outputPath', '')
-            catMovieOutput = os.path.dirname(segmentFolder) + '/' + os.path.basename(finalizeOutput)
-            
-        cmd = '/bin/bash -c "\'' + CATMOVIELOCATION + '\''
-        if (self.selfContained): cmd += ' -self-contained'
-        cmd += ' -o \'' + finalizeOutput + '\''
+        allSegments = self.getAllSegments()
+        dependantNames = work.get('package', {}).get('Dependencies', {})
+        self.logger.debug('Dependants: ' + str(dependantNames))
         
-        # If audio file wasn't included, apply the self-contained attribute here if required.
-        if not (self.audioFile):
-            cmd += ' -self-contained'
-        
-        # Add the segments
-        cmd += ' -' # End argument processing
+        ''' Only add the files that are dependants. '''
+        segments = ''
+        changes = False
+        for segment in allSegments:
+            if not (segment['name'].endswith(('Initialize', '.mov'))):
+                if segment['name'] in dependantNames:
+                    fileName = segment.get('package', {}).get('outputName', '')
+                    segments += ' ' + self.getSegmentOutputFile(fileName)
+                    changes = segment.get('resultPackage', {}).get('Changed', False)
+                    self.logger.debug('Found Dependent: ' + str(segment['name']))
+                    self.logger.debug('Changes: ' + str(changes))
 
-        dependants = work.get('package', {}).get('Dependencies', {})
-        self.logger.info("Dependants: " + str(dependants))
-        for segment in segments:
-            if not (segment['name'].endswith(('Initialize', 'Finalize'))):
-                if segment['name'] in dependants:
-                    cmd += ' ' + segment.get('package', {}).get('outputPath', '')
-        cmd += '"'
+        cmd = ''
+        if changes != '1':
+            catOutput = self.getTempOutputFile(work)
+            catCMD = '\'' + CATMOVIELOCATION + '\''
+            catCMD += ' -o \'' + catOutput + '\''
+            catCMD += ' -'
+            catCMD += segments
+
+            muxCMD = '\'' + MUXMOVIELOCATION + '\''
+            muxCMD += ' -o \'' + self.getFinalOutputFile(work) + '\''
+            if self.selfContained: muxCMD += ' -self-contained'
+            if self.audioFile:
+                ''' Calculate the offset start time for the audio. '''
+                startFrame = dependantNames[0].split('-')[0]
+                self.logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
+                frameRate = self.frameRate
+                audioStart = float(startFrame)/float(frameRate)
+                muxCMD += ' -startAt ' + str(audioStart) + ' \'' + str(self.audioFile) + '\''
+            muxCMD += ' ' + catOutput
+
+            cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
+        else:
+            cmd += 'echo "No Changes"'
 
         return cmd
 
+    def getBlendFile(self):
+        '''
+        Returns a full path for the blender file to use
+        when transcoding.
+        Names are in the form of QUBEID-INITIALFRAME.blend
+        '''
 
-    # Generate the blender initialization scene name based on the qube job number
-    # and the output file name.
-    def getTempBlendSceneName(self, work):
-        result = work.get('package', {}).get('sceneFolder', '/tmp/')
-        result += '/' + str(self.qubejob.get('id', ''))
-        result += '-' + os.path.splitext(os.path.basename(self.outputFile))[0] + '.blend'
+        fileName = str(self.qubejob.get('id', ''))
+        fileName += '-' + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.blend'        
+        blenderFolder = os.path.join(self.transcoderFolder, 'Blender/')
+        result = os.path.join(blenderFolder, fileName)
+        
+        self.makeFolders(blenderFolder)
+
+        return result
+
+    def getSegmentOutputFile(self, fileName):
+        '''
+        Returns a full path for a segment based on the name of the file.
+        '''
+        
+        segmentsFolder = os.path.join(self.transcoderFolder, 'Segments/')
+        result = os.path.join(segmentsFolder, fileName)
+        
+        self.makeFolders(segmentsFolder)
         
         return result
 
+    def getFinalOutputFile(self, work):
+        '''
+        Returns a full path for a final output file based
+        on the supplied work item's name.
+        '''
+        
+        fileName = work.get('name', '')
+        finalFolder = os.path.dirname(self.outputFile)
+        result = os.path.join(finalFolder, fileName)
+        
+        self.makeFolders(finalFolder)
+        
+        return result
+
+    def getTempOutputFile(self, work):
+        '''
+        Returns a full path for a temporary output file for catmovie
+        based on the supplied work item's name.
+        We'll just use the segments folder.
+        '''
+        
+        fileName = work.get('name', '')
+        result = self.getSegmentOutputFile(fileName)
+        
+        return result
+
+    def makeFolders(self, folderPath):
+        try:
+            self.logger.debug('Creating folder ' + str(folderPath) + '...')
+            os.makedirs(folderPath)
+        except:
+            self.logger.debug('Folder already exists ' + str(folderPath) + '.')
+
 
     def __str__(self):
-        result = "Job Details:\n"
+        result = 'Job Details:\n'
         for key, value in vars(self).items():
-            result += "\t" + str(key) + " : " + str(value) + "\n"
+            result += '\t' + str(key) + ' : ' + str(value) + '\n'
         return result
 
 

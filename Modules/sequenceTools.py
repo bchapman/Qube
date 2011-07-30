@@ -10,6 +10,18 @@ Provides methods to assist in working with image sequences
 
 import os, sys, re, glob, hashlib, FileLock, DictDifferences
 import sqlite3
+import logging
+
+'''
+Set up the logging module.
+'''
+# seqLogger = logging.getLogger("main")
+# ch = logging.StreamHandler()
+# formatter = logging.Formatter("%(levelname)s: %(message)s")
+# ch.setFormatter(formatter)
+# seqLogger.addHandler(ch)
+# seqLogger.setLevel(logging.DEBUG)
+# ch.setLevel(logging.DEBUG)
 
 class Sequence:
     def __init__(self, fileName):
@@ -173,37 +185,17 @@ class Sequence:
         '''
         Parse an input frame range into individual frame numbers
         Ex: 1,20-25,22,100 -> [1, 20, 21, 22, 23, 24, 25, 100]
+        Updated to be much faster!
         '''
         
-        numbers = str(frameRangeString)
-        pattern = re.compile('[0-9,-]')
-        possibles = ""
-
-        if (numbers == ""):
-            raise IOError("ERROR: No input range(s) given")
-
-        if (len(pattern.findall(numbers)) == len(numbers)):
-            possibles = str(numbers).split(",")
-            numbers = []
-
-            for possible in possibles:
-                if "-" in possible:
-                    values = possible.split("-")
-                    if (len(values) == 2):
-                        newRange = range(int(values[0]), int(values[1])+1)
-                        numbers.extend(newRange)
-                    else:
-                        raise IOError("ERROR: Invalid Range (" + str(possible) + ")")
-                        break
-                else:
-                    numbers.append(int(possible))
-                    
-            #  Remove Duplicates and sort the numbers
-            numbers = sorted(set(numbers))
-            return numbers
-
-        else:
+        result = []
+        try:
+            result = list(set(sum(((list(range(*[int(j) + k for k,j in enumerate(i.split('-'))]))
+                if '-' in i else [int(i)]) for i in frameRangeString.replace(' ','').split(',')), [])))
+        except:
             raise IOError("ERROR: Invalid input numbers.")
+
+        return result
 
     def splitPath(self, path):
         '''
@@ -248,6 +240,7 @@ class Sequence:
         if currentHashCodes == {}:
             currentHashCodes = self.getHashCodes(frameRange)
 
+        # seqLogger.info('Comparing hash codes...')
         diff = DictDifferences.DictDifferences(currentHashCodes, pastHashCodes)        
         result = {}
         result['Added'] = list(sorted(diff.added()))
@@ -269,7 +262,7 @@ class Sequence:
         frames = sorted(self.getFrames(frameRange))
 
         for frame in frames:
-            # print "Getting hash code for " + str(frame) + "..."
+            # seqLogger.debug('Retrieving hash code for ' + str(frame) + '.')
             hashcode = hashlib.md5(open(frame, 'rb').read()).hexdigest()
             frameName = os.path.basename(frame)
             result[frameName] = hashcode
@@ -281,10 +274,22 @@ class Sequence:
         for frames that have changed since last time.
         '''
 
+        # seqLogger.debug('Retrieving hash codes from database.')
+        sys.stdout.write('getHashCodesFromFile\n')
         conn = sqlite3.connect(hashFile)
         curs = conn.cursor()
         test = curs.execute('CREATE TABLE IF NOT EXISTS frameHashCodes (name, hash)')
-        curs.execute('SELECT * from frameHashCodes order by name')
+        if frameRange == 'All':
+            curs.execute('SELECT * from frameHashCodes order by name')
+        else:
+            inputRange = self.parseFrameRange(frameRange)
+            dbRange = []
+            for frame in inputRange:
+                dbRange.append('"' + self.prefix + str(self.padFrame(frame)) + self.extension + '"')
+            # seqLogger.debug('dbRange: ' + str(dbRange))
+            cmd = 'SELECT name,hash FROM frameHashCodes WHERE name IN(' + ','.join(dbRange) + ') order by name'
+            # seqLogger.debug('DB CMD: ' + cmd)
+            curs.execute(cmd)
 
         '''
         Load the input into a dictionary.
@@ -293,6 +298,7 @@ class Sequence:
         result = {}
         for item in curs:
             frameFile, frameHash = item
+            sys.stdout.write('Loading from db: ' + frameFile + '\n')
             currentFrameNumber = int(self.splitPath(frameFile)['currentFrame'])
                         
             addToDict = False
@@ -308,16 +314,19 @@ class Sequence:
 
         return result
 
-    def saveHashCodes(self, hashFile, hashDict={}):
+    def saveHashCodes(self, hashFile, hashDict=False, frameRange='All'):
         '''
         Create or update an sqlite db of each frame and
         it's current hash code supplied as a dictionary
         for comparison next time.
         '''
 
-        if hashDict == {}:
-            hashDict = self.getHashCodes()
+        if not hashDict:
+            hashDict = {}
+            # seqLogger.debug('Saving Hash Codes: No hash dictionary provided.')
+            hashDict = self.getHashCodes(frameRange)
 
+        # seqLogger.debug('Saving hash codes to database...')
         conn = sqlite3.connect(hashFile)
         curs = conn.cursor()
         items = hashDict.items()
@@ -330,6 +339,7 @@ class Sequence:
                 pass
                 # print "ERROR: Unable to instert " + str(item)
 
+        # seqLogger.debug('Committing changes to database...')
         conn.commit()    
         conn.close()
 

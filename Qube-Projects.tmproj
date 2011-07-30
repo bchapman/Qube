@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Jobtypes/Submit Transcoder/Job.py</string>
+	<string>Jobtypes/Submit Transcoder/testJob.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -41,19 +41,49 @@
 	<integer>200</integer>
 	<key>metaData</key>
 	<dict>
+		<key>Jobtypes/Submit Transcoder/Blender_InitSequence.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>47</integer>
+				<key>line</key>
+				<integer>102</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>63</integer>
+		</dict>
 		<key>Jobtypes/Submit Transcoder/Job.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>45</integer>
+				<integer>29</integer>
 				<key>line</key>
-				<integer>122</integer>
+				<integer>223</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>106</integer>
+			<integer>194</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>28</integer>
+				<key>line</key>
+				<integer>223</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>29</integer>
+				<key>line</key>
+				<integer>223</integer>
+			</dict>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/PreFlight.py</key>
 		<dict>
@@ -95,21 +125,21 @@
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>26</integer>
+			<integer>38</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/execute.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>45</integer>
+				<integer>35</integer>
 				<key>line</key>
-				<integer>137</integer>
+				<integer>54</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>130</integer>
+			<integer>12</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/job.conf</key>
 		<dict>
@@ -119,6 +149,20 @@
 				<integer>33</integer>
 				<key>line</key>
 				<integer>11</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Jobtypes/Submit Transcoder/job.qja</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -144,42 +188,42 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>7</integer>
+				<integer>21</integer>
 				<key>line</key>
-				<integer>70</integer>
+				<integer>26</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>63</integer>
+			<integer>1</integer>
 		</dict>
 		<key>Modules/FileLock.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>7</integer>
+				<integer>9</integer>
 				<key>line</key>
-				<integer>25</integer>
+				<integer>14</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>3</integer>
+			<integer>0</integer>
 		</dict>
 		<key>Modules/sequenceTools.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>46</integer>
+				<integer>51</integer>
 				<key>line</key>
-				<integer>330</integer>
+				<integer>310</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>279</integer>
+			<integer>278</integer>
 		</dict>
 		<key>Submission/SubmitTranscoder.py</key>
 		<dict>
@@ -188,18 +232,36 @@
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>136</integer>
+				<integer>435</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>103</integer>
+			<integer>389</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>26</integer>
+				<key>line</key>
+				<integer>435</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>435</integer>
+			</dict>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
 		<string>Jobtypes/Submit Transcoder/execute.py</string>
+		<string>Jobtypes/Submit Transcoder/Blender_InitSequence.py</string>
 		<string>Jobtypes/Submit Transcoder/testJob.py</string>
+		<string>Jobtypes/Submit Transcoder/job.qja</string>
 		<string>Jobtypes/Submit Transcoder/QTCoffee_Test.py</string>
 		<string>Submission/SubmitTranscoder.py</string>
 		<string>Modules/FileLock.py</string>
