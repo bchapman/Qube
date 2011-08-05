@@ -158,8 +158,9 @@ def executeJob(job):
             '''
             mySequence = job.sequence
             frameRange = agendaItem['name']
+            job.frameRange = mySequence.loadFrameRange(frameRange)
             logger.info("Checking for missing frames...")
-            missingFrames = mySequence.getMissingFrames(frameRange)
+            missingFrames = mySequence.getMissingFrames(job.frameRange)
             if len(missingFrames) > 0:
                 logger.error("Missing Frames!")
                 for frame in missingFrames:
@@ -171,35 +172,38 @@ def executeJob(job):
                 If the sequence has been rendered before,
                 Only render this segment if this part of the sequence
                 has changed since last time.
+                Check for differences based on modification times.
                 '''
                 render = False
-                hashFile = ''
-                currentHashCodes = {}
-                outputFileName = agendaItem.setdefault('package', {}).get('outputPath', '')
-                if job.smartUpdate and os.path.exists(job.getSegmentOutputFile(outputFileName)):
-                    hashFile = job.getHashFile()
-                    logger.debug('Hash File: ' + hashFile)
-                    exists = os.path.exists(hashFile)
-                    logger.debug('Exists: ' + str(exists))
-                    if exists:
-                        logger.debug("Hash exists.")
+                modTimeDB = job.getModTimeDBFile()
+                currentModTimes = {}
+                outputFileName = agendaItem.setdefault('package', {}).get('outputName', '')
+                outputFilePath = job.getSegmentOutputFile(outputFileName)
+                outputExists = os.path.exists(outputFilePath)
+                logger.debug('Segment Output: ' + str(outputFilePath))
+                logger.debug('Segment Exists: ' + str(outputExists))
+                if job.smartUpdate and outputExists:
+                    segmentFilePath = job.getSegmentOutputFile(agendaItem.get('outputName', ''))
+                    logger.debug('modTimeDB: ' + modTimeDB)
+                    modTimeDBExists = os.path.exists(modTimeDB)
+                    logger.debug('modTimeDB Exists: ' + str(modTimeDBExists))
+                    if modTimeDBExists:
                         logger.info('Loading frames...')
-                        segmentFrames = mySequence.getFrames(frameRange)
-                        
-                        logger.info('Generating current hash codes...')
-                        currentHashCodes = mySequence.getHashCodes(frameRange)
-                        
-                        logger.info('Comparing hash codes...')
-                        compare = mySequence.compareHashCodes(hashFile, frameRange)
+                        segmentFrames = mySequence.getFrames(job.frameRange)
+                    
+                        logger.info('Generating current modification times...')
+                        currentModTimes = mySequence.getModTimes(job.frameRange)
+                    
+                        logger.info('Comparing modification times...')
+                        compare = mySequence.compare(modTimeDB, job.frameRange)
                         differences = compare['Added'] + compare['Deleted'] + compare['Modified']
                         logger.info('Differences: ' + str(len(differences)))
-                        
+                    
                         for frame in segmentFrames:
                             if os.path.basename(frame) in differences:
                                 render = True
                                 break
                     else:
-                        logger.debug('Hash file doesn\'t exist.') 
                         render = True
                 else:
                     render = True
@@ -209,13 +213,13 @@ def executeJob(job):
                     returnCode = runCMD(cmd)
                     
                     '''
-                    Store the hash codes for the image sequence so we can
-                    find changes that happen between now and next time.
+                    Store the modification times for the image sequence so
+                    we can find changes that happen between now and next time.
                     '''
                     if job.smartUpdate:
-                        logger.info("Saving hash codes to db...")
-                        logger.debug("Current Hash Codes: " + str(currentHashCodes))
-                        job.sequence.saveHashCodes(hashFile, hashDict=currentHashCodes)
+                        logger.info("Saving modTimesDB...")
+                        logger.debug("Current ModTimes: " + str(currentModTimes))
+                        job.sequence.saveModTimes(modTimeDB, modTimeDict=currentModTimes, frameRange=job.frameRange)
                     
                 else:
                     logger.info("No changes to segment " + agendaItem['name'])
@@ -225,25 +229,6 @@ def executeJob(job):
                 Check if this is the last agenda item that's complete.
                 If so, unblock the final output subjobs.
                 '''
-                currAgenda = qb.jobinfo(id=job.qubejob['id'], agenda=True)[0]['agenda']
-                lastSegment = True
-                finalOutputs = []
-                for item in currAgenda:
-                    if item['name'].endswith('.mov'):
-                        logger.debug('Found final output subjob: ' + str(item['name']))
-                        finalOutputs.append(str(job.qubejob['id']) + ':' + str(item['name']))
-                    elif not item['name'].endswith('Initialize'):
-                        logger.debug('Found segment subjob: ' + str(item['name']) + ' Status: ' + str(item['status']))
-                        if item['status'] is not 'complete':
-                            if item['name'] is not agendaItem['name']:
-                                lastSegment = False
-                if lastSegment:
-                    for output in finalOutputs:
-                        logger.info("Unblocking Output: " + output)
-                        qb.unblockwork(output)
-                else:
-                    logger.debug('Not the last segment.')
-
                 agendaItem['resultpackage'] = { 'Changed': render }
 
                 logger.info("Transcoder Segment Process Complete!\n")

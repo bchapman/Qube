@@ -45,10 +45,10 @@ class Sequence:
         
         framesToDelete = []
         
-        if frames.upper() == "ALL":
+        if str(frames).upper() == 'ALL':
             framesToDelete = self.getFrames()
         else:
-            for frameNumber in self.parseFrameRange(frames):
+            for frameNumber in self.loadFrameRange(frames):
                 framesToDelete.append(self.getFrame(frameNumber))
         
         deleteCount = 0
@@ -71,13 +71,13 @@ class Sequence:
         result = dHours + ";" + dMinutes + ";" + dSeconds + ";" + dFrames
         return result
 
-    def getFrames(self, frameRange='All'):
+    def getFrames(self, frameRange='ALL'):
         '''
         Get a list of frames for the sequence returned in a list
         If a frame range is supplied, only those frames are returned
         '''
         
-        if frameRange == 'All':
+        if str(frameRange).upper() == 'ALL':
             # Generate a sequence path with wildcards to use with glob
             # Ex /path/to/sequence.*.png
             globPath = self.folder + '/' + self.prefix + '*' + self.extension
@@ -87,7 +87,7 @@ class Sequence:
         
         else:
             result = []
-            for frameNum in self.parseFrameRange(frameRange):
+            for frameNum in self.loadFrameRange(frameRange):
                 result.append(self.getFrame(frameNum))
             return result
 
@@ -106,12 +106,11 @@ class Sequence:
 
         allExistingFrames = self.getFrames()
         result = {}
-        # print "All Existing Frames: " + str(allExistingFrames)
         result['start'] = self.splitPath(allExistingFrames[0])['currentFrame']
         result['end'] = self.splitPath(allExistingFrames[-1])['currentFrame']
         return result
 
-    def getMissingFrames(self, frameRange='All'):
+    def getMissingFrames(self, frameRange='ALL'):
         '''
         Get a list of missing frames for the entire sequence
         or just a frameRange.
@@ -121,12 +120,12 @@ class Sequence:
         start = end = 0 # Initialize
         
         # Get the start and end frames based on the input frameRange
-        if frameRange == 'All':
+        if str(frameRange).upper() == 'ALL':
             bounds = self.getBounds()
             start = bounds.get('start')
             end = bounds.get('end')
         else:
-            frameRange = self.parseFrameRange(frameRange)
+            frameRange = self.loadFrameRange(frameRange)
             start = frameRange[0]
             end = frameRange[-1]
 
@@ -181,21 +180,23 @@ class Sequence:
         return '0' * (pad - len(str(frame))) + str(frame)
 
 
-    def parseFrameRange(self, frameRangeString):
+    def loadFrameRange(self, frameRange):
         '''
         Parse an input frame range into individual frame numbers
         Ex: 1,20-25,22,100 -> [1, 20, 21, 22, 23, 24, 25, 100]
+        Input can also be a list of frames, to save time.
         Updated to be much faster!
         '''
         
         result = []
-        try:
+        if type(frameRange) is str:
+            sys.stdout.write('Type: ' + str(type(frameRange)) + '\n')
+            sys.stdout.write('Content: ' + str(frameRange) + '\n')
             result = list(set(sum(((list(range(*[int(j) + k for k,j in enumerate(i.split('-'))]))
-                if '-' in i else [int(i)]) for i in frameRangeString.replace(' ','').split(',')), [])))
-        except:
-            raise IOError("ERROR: Invalid input numbers.")
-
-        return result
+                if '-' in i else [int(i)]) for i in frameRange.replace(' ','').split(',')), [])))
+            return result
+        else:
+            return frameRange
 
     def splitPath(self, path):
         '''
@@ -224,24 +225,54 @@ class Sequence:
         return result
 
     '''
-    Hash Code Methods
-    Used to find changes in image sequences
+    Modification Time Methods
+    Used to find changes in image sequences.
     '''
 
-    def compareHashCodes(self, filename, frameRange='All', currentHashCodes={}, pastHashCodes={}):
+    def saveModTimes(self, filename, modTimeDict={}, frameRange='ALL'):
         '''
-        Compare current hash codes with the contents of the supplied file.
-        Returns a dictionary of Added, Modified, Deleted, and Constant Frames.
-        Optionally supply a frame range to limit the scope of the comparison.
+        Create or update an sqlite db of each frame and
+        it's current modification time supplied as a dictionary
+        for comparison next time.
+        '''
+        
+        sys.stdout.write('Incoming modTimeDict: ' + str(modTimeDict) + '\n')
+        sys.stdout.write('frameRange: ' + str(frameRange) + '\n')
+        if modTimeDict == {}:
+            modTimeDict = {}
+            sys.stdout.write('Loading modification times: No hash dictionary provided.\n')
+            modTimeDict = self.getModTimes(frameRange)
+
+        sys.stdout.write('Saving modification times to database...\n')
+        conn = sqlite3.connect(filename)
+        curs = conn.cursor()
+        test = curs.execute('CREATE TABLE IF NOT EXISTS frames (name, modtime)')
+        items = modTimeDict.items()
+
+        sys.stdout.write("Writing " + str(len(items)) + " modification times to the database...\n")
+        for item in items:
+            curs.execute('INSERT OR REPLACE INTO frames (name, modtime) VALUES (?,?)', item)
+            
+        sys.stdout.write('Committing changes to database...\n')
+        conn.commit()    
+        conn.close()
+        
+    def compare(self, databaseFile, frameRange='ALL', pastModTimes={}, currentModTimes={}):
+        '''
+        Compare the current sequence to a information
+        about a previous version stored in the supplied database.
+        Lists added, deleted, modified, and constant items.
+        Changes are determined by:
+            1) Find added and deleted frames.
+            2) Find items with modification time differences.
         '''
 
-        if pastHashCodes == {}:
-            pastHashCodes = self.getHashCodesFromFile(filename, frameRange)
-        if currentHashCodes == {}:
-            currentHashCodes = self.getHashCodes(frameRange)
+        if pastModTimes == {}:
+            pastModTimes = self.loadModTimesFromDB(databaseFile, frameRange)
+        if currentModTimes == {}:
+            currentModTimes = self.getModTimes(frameRange)
 
-        # seqLogger.info('Comparing hash codes...')
-        diff = DictDifferences.DictDifferences(currentHashCodes, pastHashCodes)        
+        diff = DictDifferences.DictDifferences(currentModTimes, pastModTimes)        
         result = {}
         result['Added'] = list(sorted(diff.added()))
         result['Modified'] = list(sorted(diff.changed()))
@@ -250,45 +281,42 @@ class Sequence:
         
         return result
         
-
-    def getHashCodes(self, frameRange='All'):
+    def getModTimes(self, frameRange='ALL'):
         '''
-        Generate a dictionary of every frames hash codes.
+        Generate a dictionary of every frames modification time.
         This is used to check for changes in an image sequence.
         Optionally supply a frame range to limit the scope.
         '''
-        
+
         result = {}
         frames = sorted(self.getFrames(frameRange))
 
         for frame in frames:
-            # seqLogger.debug('Retrieving hash code for ' + str(frame) + '.')
-            hashcode = hashlib.md5(open(frame, 'rb').read()).hexdigest()
+            # sys.stdout.write('Retrieving modTime for ' + str(frame) + '.\n')
+            modTime = os.stat(frame).st_mtime
             frameName = os.path.basename(frame)
-            result[frameName] = hashcode
+            result[frameName] = modTime
         return result
 
-    def getHashCodesFromFile(self, hashFile, frameRange='All'):
+    def loadModTimesFromDB(self, filename, frameRange='ALL'):
         '''
         Read the sqlite db of each frames hash codes to check
         for frames that have changed since last time.
         '''
 
         # seqLogger.debug('Retrieving hash codes from database.')
-        sys.stdout.write('getHashCodesFromFile\n')
-        conn = sqlite3.connect(hashFile)
+        sys.stdout.write('getModTimesFromFile...\n')
+        conn = sqlite3.connect(filename)
         curs = conn.cursor()
-        test = curs.execute('CREATE TABLE IF NOT EXISTS frameHashCodes (name, hash)')
-        if frameRange == 'All':
-            curs.execute('SELECT * from frameHashCodes order by name')
+        test = curs.execute('CREATE TABLE IF NOT EXISTS frames (name, modtime)')
+        if str(frameRange).upper() == 'ALL':
+            curs.execute('SELECT * from frames order by name')
         else:
-            inputRange = self.parseFrameRange(frameRange)
             dbRange = []
-            for frame in inputRange:
+            frameRange = self.loadFrameRange(frameRange)
+            for frame in frameRange:
                 dbRange.append('"' + self.prefix + str(self.padFrame(frame)) + self.extension + '"')
-            # seqLogger.debug('dbRange: ' + str(dbRange))
-            cmd = 'SELECT name,hash FROM frameHashCodes WHERE name IN(' + ','.join(dbRange) + ') order by name'
-            # seqLogger.debug('DB CMD: ' + cmd)
+            cmd = 'SELECT name,modtime FROM frames WHERE name IN(' + ','.join(dbRange) + ') order by name'
             curs.execute(cmd)
 
         '''
@@ -297,51 +325,22 @@ class Sequence:
         '''
         result = {}
         for item in curs:
-            frameFile, frameHash = item
-            sys.stdout.write('Loading from db: ' + frameFile + '\n')
-            currentFrameNumber = int(self.splitPath(frameFile)['currentFrame'])
-                        
+            frameName, modTime = item
+            # sys.stdout.write('Loading from db: ' + frameName + '\n')
+            currentFrameNumber = int(self.splitPath(frameName)['currentFrame'])
+
             addToDict = False
-            if frameRange.upper() == 'ALL':
+            if str(frameRange).upper() == 'ALL':
                 addToDict = True
-            elif currentFrameNumber in self.parseFrameRange(frameRange):
-                addToDict = True
-            
+            elif currentFrameNumber in frameRange:
+                    addToDict = True
+
             if addToDict:
-                result[frameFile] = frameHash.replace('\n','')
+                result[frameName] = modTime
 
         conn.close()
 
         return result
-
-    def saveHashCodes(self, hashFile, hashDict=False, frameRange='All'):
-        '''
-        Create or update an sqlite db of each frame and
-        it's current hash code supplied as a dictionary
-        for comparison next time.
-        '''
-
-        if not hashDict:
-            hashDict = {}
-            # seqLogger.debug('Saving Hash Codes: No hash dictionary provided.')
-            hashDict = self.getHashCodes(frameRange)
-
-        # seqLogger.debug('Saving hash codes to database...')
-        conn = sqlite3.connect(hashFile)
-        curs = conn.cursor()
-        items = hashDict.items()
-
-        # print "Writing " + str(len(items)) + " hash codes to the database..."
-        for item in items:
-            try:
-                curs.execute('INSERT INTO frameHashCodes (name, hash) VALUES (?,?)', item)
-            except:
-                pass
-                # print "ERROR: Unable to instert " + str(item)
-
-        # seqLogger.debug('Committing changes to database...')
-        conn.commit()    
-        conn.close()
 
     def __str__(self):
         return self.getTemplate()

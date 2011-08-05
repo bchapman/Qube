@@ -71,6 +71,7 @@ class Job:
         self.projectPath = self.loadOption("renderProjectPath", pkg.get('renderProjectPath', ''), required=True, fullpath=True)
         self.rqIndex = self.loadOption('rqIndex', pkg.get('rqIndex', '').split('.')[0], required=False)
         self.multProcs = self.loadOption('multProcs', pkg.get('multProcs', ''), required=False)
+        self.multProcs = False # Doesn't work right currently, lots of bugs so we'll disable it.
         self.aerenderwin = self.loadOption('aerenderwin', pkg.get('aerenderwin', ''), required=True)
         self.aerendermac = self.loadOption('aerendermac', pkg.get('aerendermac', ''), required=True)
 

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Jobtypes/Submit Transcoder/testJob.py</string>
+	<string>Jobtypes/Submit After Effects/Job.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -41,49 +41,77 @@
 	<integer>200</integer>
 	<key>metaData</key>
 	<dict>
+		<key>Jobtypes/Submit After Effects/Job.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>96</integer>
+				<key>line</key>
+				<integer>73</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>43</integer>
+		</dict>
+		<key>Jobtypes/Submit After Effects/execute.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
 		<key>Jobtypes/Submit Transcoder/Blender_InitSequence.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>47</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>102</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>63</integer>
-		</dict>
-		<key>Jobtypes/Submit Transcoder/Job.py</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>29</integer>
-				<key>line</key>
-				<integer>223</integer>
+				<integer>23</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>194</integer>
+			<integer>0</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
 				<integer>28</integer>
 				<key>line</key>
-				<integer>223</integer>
+				<integer>32</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>29</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>223</integer>
+				<integer>23</integer>
 			</dict>
+		</dict>
+		<key>Jobtypes/Submit Transcoder/Job.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>83</integer>
+				<key>line</key>
+				<integer>267</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>228</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/PreFlight.py</key>
 		<dict>
@@ -132,14 +160,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>35</integer>
+				<integer>19</integer>
 				<key>line</key>
-				<integer>54</integer>
+				<integer>230</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>12</integer>
+			<integer>213</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/job.conf</key>
 		<dict>
@@ -188,14 +216,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>21</integer>
+				<integer>28</integer>
 				<key>line</key>
-				<integer>26</integer>
+				<integer>122</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>1</integer>
+			<integer>90</integer>
 		</dict>
 		<key>Modules/FileLock.py</key>
 		<dict>
@@ -216,14 +244,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>51</integer>
+				<integer>19</integer>
 				<key>line</key>
-				<integer>310</integer>
+				<integer>175</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>278</integer>
+			<integer>147</integer>
 		</dict>
 		<key>Submission/SubmitTranscoder.py</key>
 		<dict>
@@ -271,10 +299,12 @@
 		<string>Jobtypes/Submit Transcoder/job2.qja</string>
 		<string>Jobtypes/Submit Transcoder/bootstrap.py</string>
 		<string>Jobtypes/Submit Transcoder/Job.py</string>
+		<string>Jobtypes/Submit After Effects/execute.py</string>
+		<string>Jobtypes/Submit After Effects/Job.py</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{340, 41}, {1325, 1078}}</string>
+	<string>{{340, 120}, {1325, 1058}}</string>
 </dict>
 </plist>

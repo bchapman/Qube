@@ -30,24 +30,25 @@ CHUNKSIZE = 200
 def main():
     # Set basic job properties
     job = {}
-    job['cpus']         = 50
+    job['cpus']         = 100
     job['prototype']    = 'Submit Transcoder'
     job['requirements'] = ''
-    job['reservations'] = 'host.processors=2'
+    job['reservations'] = 'host.processors=1'
     job['flagsstring'] = 'auto_wrangling,expand'
-    job['hosts'] = 'bchapman.local,elevaterender01.local'
+    # job['hosts'] = 'bchapman.local'
     job['priority'] = 100
+    job['hostorder'] = '+host.processors.avail'
 
     # Set the package properties
-    # mySequence = sequenceTools.Sequence('/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Image_Sequences/Bible_Stories/L1/PU_BS_L1_00000.png')
-    mySequence = sequenceTools.Sequence('/Volumes/theGrill/Staff-Directories/Brennan/testFrames/Sequence/testFrames_00000.png')
+    mySequence = sequenceTools.Sequence('/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Image_Sequences/Bible_Stories/L1/PU_BS_L1_00000.png')
+    # mySequence = sequenceTools.Sequence('/Volumes/theGrill/Staff-Directories/Brennan/testFrames/Sequence/testFrames_00000.png')
     bounds = mySequence.getBounds()
     outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/testFrames/testFrames.mov'
     print bounds
     job['name'] = mySequence.prefix
     job['package'] = {}
     job['package']['sequence'] = mySequence.initFile
-    job['package']['audioFile'] = '/Volumes/theGrill/Staff-Directories/Brennan/testFrames/testAudio.wav'
+    job['package']['audioFile'] = '/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Preliminary_Renders/Audio/Bible_Stories/L1/PU_BibleStory_Timeline_L1.wav'
     job['package']['outputFile'] = outputFile
     job['package']['preset'] = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
     job['package']['resolution'] = '1280x720'
@@ -55,8 +56,7 @@ def main():
     job['package']['selfContained'] = True
     job['package']['smartUpdate'] = True
     job['package']['frameRange'] = bounds['start'] + '-' + bounds['end']
-    job['package']['transcoderFolder'] = os.path.dirname(outputFile) + '/Transcoder/'
-    
+    job['package']['transcoderFolder'] = os.path.dirname(outputFile) + '/Transcoder/'    
 
     '''
     Calculate agenda from range.
@@ -90,6 +90,7 @@ def main():
     numFinalOutputs = int(math.ceil(int(bounds['end']) / FINALQUICKTIMEFRAMECOUNT)) + 1
     print "numFinalOutputs: " + str(numFinalOutputs)
     
+    job['callbacks'] = []
     for num in range (1, numFinalOutputs + 1):
         workDict = {}
         
@@ -109,21 +110,33 @@ def main():
         for segIndex in range(startIndex, endIndex + 1):
             dependencies.append(segmentAgenda[segIndex]['name'])
         
-        # workDict['package'] = {'Dependencies':','.join(dependencies)}
-        
-        # print workDict
         myWork = qb.Work({'name':finalOutputFile, 'status':'blocked', 'package':{'Dependencies':','.join(dependencies)}})
+        
+        # Setup the callback to unblock the output work item
+        callback = {}
+        triggers = []
+        for dependant in dependencies:
+            triggers.append('complete-work-self-' + dependant)
+        callback['triggers'] = ' and '.join(triggers)
+        callback['language'] = 'python'
+        
+        code = 'import qb\n'
+        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', finalOutputFile, '\' % qb.jobid())')
+        code += '\nqb.unblock(qb.jobid())'
+        callback['code'] = code
+        
+        job['callbacks'].append(callback)
+
+            
         # print "myWork: " + str(myWork)
-        agenda.append(myWork)
+        agenda.insert(endIndex+1+num, myWork)
 
     # agenda.append(qb.Work({'name':'Finalize', 'status':'blocked'}))
-    
-
 
     # Set the job agenda
     job['agenda'] = agenda
-
-    print agenda
+    
+    print job
 
     # Submit
     listOfSubmittedJobs = qb.submit([job])

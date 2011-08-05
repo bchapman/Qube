@@ -18,13 +18,14 @@ BLENDERLOCATION = '/Applications/blender.app/Contents/MacOS/blender'
 BLENDERINITSCRIPT = 'Blender_InitSequence.py'
 CATMOVIELOCATION = '/usr/local/bin/catmovie'
 MUXMOVIELOCATION = '/usr/local/bin/muxmovie'
-HASHCODEFILEPREFIX = '.DATA.'
+MODTIMEDBFILEPREFIX = '.DATA.'
 
 class Job:
     def __init__(self, logger):
         ''' Input Settings '''
         self.sequence = ''
         self.audioFile = ''
+        self.frameRange = []
         
         ''' Output Settings '''
         self.outputFile = ''
@@ -138,14 +139,14 @@ class Job:
 
         return result
 
-    def getHashFile(self):
+    def getModTimeDBFile(self):
         '''
-        Get the filepath to the hashfile.
-        This contains the md5 hash codes for the latest renders of a sequence.
+        Get the filepath to the modification database file.
+        This contains the modification times for the latest renders of a sequence.
         Later this can be compared to find changes in the sequence.
         '''
 
-        result = self.sequence.folder + '/' + HASHCODEFILEPREFIX + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.db'
+        result = self.sequence.folder + '/' + MODTIMEDBFILEPREFIX + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.db'
         return result
 
     def getInitCMD(self, work):
@@ -231,7 +232,7 @@ class Job:
         '''
 
         allSegments = self.getAllSegments()
-        dependantNames = work.get('package', {}).get('Dependencies', {})
+        dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
         self.logger.debug('Dependants: ' + str(dependantNames))
         
         ''' Only add the files that are dependants. '''
@@ -241,13 +242,21 @@ class Job:
             if not (segment['name'].endswith(('Initialize', '.mov'))):
                 if segment['name'] in dependantNames:
                     fileName = segment.get('package', {}).get('outputName', '')
-                    segments += ' ' + self.getSegmentOutputFile(fileName)
-                    changes = segment.get('resultPackage', {}).get('Changed', False)
+                    segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
+                    segChanges = segment.get('resultpackage', {}).get('Changed', '0')
+                    if segChanges != '0': changes = True
                     self.logger.debug('Found Dependent: ' + str(segment['name']))
                     self.logger.debug('Changes: ' + str(changes))
 
         cmd = ''
-        if changes != '1':
+        self.logger.debug('Anything changed? ' + str(changes))
+        finalOutputFile = self.getFinalOutputFile(work)
+        self.logger.debug('Final Output File: ' + str(finalOutputFile))
+        finalOutputFileExists = os.path.exists(finalOutputFile)
+        self.logger.debug('Final Output File Exists: ' + str(finalOutputFileExists))
+        if not changes and finalOutputFileExists:
+            cmd += 'echo "No Changes"'
+        else:
             catOutput = self.getTempOutputFile(work)
             catCMD = '\'' + CATMOVIELOCATION + '\''
             catCMD += ' -o \'' + catOutput + '\''
@@ -255,20 +264,19 @@ class Job:
             catCMD += segments
 
             muxCMD = '\'' + MUXMOVIELOCATION + '\''
-            muxCMD += ' -o \'' + self.getFinalOutputFile(work) + '\''
-            if self.selfContained: muxCMD += ' -self-contained'
+            muxCMD += ' -o \'' + finalOutputFile + '\''
+            if self.selfContained: muxCMD += ' -self-contained -trimToShortestTrack'
             if self.audioFile:
                 ''' Calculate the offset start time for the audio. '''
-                startFrame = dependantNames[0].split('-')[0]
+                startFrame, endFrame = dependantNames[0].split('-')
                 self.logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
                 frameRate = self.frameRate
                 audioStart = float(startFrame)/float(frameRate)
-                muxCMD += ' -startAt ' + str(audioStart) + ' \'' + str(self.audioFile) + '\''
+                audioEnd = float(endFrame)/float(frameRate)
+                muxCMD += ' \'' + str(self.audioFile) + '\' -startAt ' + str(audioStart)
             muxCMD += ' ' + catOutput
 
             cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
-        else:
-            cmd += 'echo "No Changes"'
 
         return cmd
 
