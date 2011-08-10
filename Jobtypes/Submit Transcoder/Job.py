@@ -12,6 +12,8 @@ import os, sys, time, inspect
 
 sys.path.append('/Volumes/theGrill/.qube/Modules/')
 import sequenceTools
+import inputValidation
+import logging
 
 ''' Constants '''
 BLENDERLOCATION = '/Applications/blender.app/Contents/MacOS/blender'
@@ -20,8 +22,13 @@ CATMOVIELOCATION = '/usr/local/bin/catmovie'
 MUXMOVIELOCATION = '/usr/local/bin/muxmovie'
 MODTIMEDBFILEPREFIX = '.DATA.'
 
+''' Setup the logger. '''
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 class Job:
-    def __init__(self, logger):
+    def __init__(self):
         ''' Input Settings '''
         self.sequence = ''
         self.audioFile = ''
@@ -39,7 +46,6 @@ class Job:
         
         ''' Other Settings '''
         self.qubejob = {}
-        self.logger = logger
 
     def loadOptions(self, qubejob):
         '''
@@ -64,7 +70,6 @@ class Job:
 
         self.transcoderFolder = self.loadOption('transcoderFolder', pkg.get('transcoderFolder', ''), required=True)
 
-
     def loadOption(self, name, option, required=False, fullpath=False, folderpath=False):
         '''
         Load a job option with error checking and input validation.
@@ -85,7 +90,7 @@ class Job:
                 if (os.path.exists(tmpPath)):
                     return newPath
                 else:
-                    self.logger.error('Invalid path for ' + name + ' : ' + option)
+                    logger.error('Invalid path for ' + name + ' : ' + option)
                     exit(64)
             else:
                 return option
@@ -93,7 +98,7 @@ class Job:
             if (required != True):
                 return ''
             else:
-                self.logger.error('Missing value for ' + name)
+                logger.error('Missing value for ' + name)
                 exit(64)
 
     def getAllSegments(self):
@@ -133,8 +138,8 @@ class Job:
         elif (work['name'] != ''):
             result = self.getSegmentCMD(work)
         else:
-            self.logger.error('Weird Work:' + str(work))
-            self.logger.error('Weird Work Status: ' + str(work['status']))
+            logger.error('Weird Work:' + str(work))
+            logger.error('Weird Work Status: ' + str(work['status']))
             result = 'ls'
 
         return result
@@ -233,7 +238,7 @@ class Job:
 
         allSegments = self.getAllSegments()
         dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
-        self.logger.debug('Dependants: ' + str(dependantNames))
+        logger.debug('Dependants: ' + str(dependantNames))
         
         ''' Only add the files that are dependants. '''
         segments = ''
@@ -245,15 +250,15 @@ class Job:
                     segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
                     segChanges = segment.get('resultpackage', {}).get('Changed', '0')
                     if segChanges != '0': changes = True
-                    self.logger.debug('Found Dependent: ' + str(segment['name']))
-                    self.logger.debug('Changes: ' + str(changes))
+                    logger.debug('Found Dependent: ' + str(segment['name']))
+                    logger.debug('Changes: ' + str(changes))
 
         cmd = ''
-        self.logger.debug('Anything changed? ' + str(changes))
+        logger.debug('Anything changed? ' + str(changes))
         finalOutputFile = self.getFinalOutputFile(work)
-        self.logger.debug('Final Output File: ' + str(finalOutputFile))
+        logger.debug('Final Output File: ' + str(finalOutputFile))
         finalOutputFileExists = os.path.exists(finalOutputFile)
-        self.logger.debug('Final Output File Exists: ' + str(finalOutputFileExists))
+        logger.debug('Final Output File Exists: ' + str(finalOutputFileExists))
         if not changes and finalOutputFileExists:
             cmd += 'echo "No Changes"'
         else:
@@ -269,7 +274,7 @@ class Job:
             if self.audioFile:
                 ''' Calculate the offset start time for the audio. '''
                 startFrame, endFrame = dependantNames[0].split('-')
-                self.logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
+                logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
                 frameRate = self.frameRate
                 audioStart = float(startFrame)/float(frameRate)
                 audioEnd = float(endFrame)/float(frameRate)
@@ -336,10 +341,10 @@ class Job:
 
     def makeFolders(self, folderPath):
         try:
-            self.logger.debug('Creating folder ' + str(folderPath) + '...')
+            logger.debug('Creating folder ' + str(folderPath) + '...')
             os.makedirs(folderPath)
         except:
-            self.logger.debug('Folder already exists ' + str(folderPath) + '.')
+            logger.debug('Folder already exists ' + str(folderPath) + '.')
 
 
     def __str__(self):

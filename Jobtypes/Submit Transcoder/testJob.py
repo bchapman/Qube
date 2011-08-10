@@ -27,6 +27,12 @@ import sequenceTools
 FINALQUICKTIMEFRAMECOUNT = 5000 # Multiples of chunk size
 CHUNKSIZE = 200
 
+def setupSequenceJob(sequenceInitFile, outputFile, preset, selfContained, smartUpdate, transcoderFolder='', frameRange, audioFile=''):
+    '''
+    Setup a qube job dictionary based on the input.
+    '''
+
+
 def main():
     # Set basic job properties
     job = {}
