@@ -9,9 +9,9 @@
 # ======================================================
 
 import os, sys
+import logging
 import math
 
-# Make sure that qb module is in the python path
 if 'QBDIR' in os.environ:
     sys.path.append('%s/api/python' % os.environ['QBDIR']);
 elif os.uname()[0] == 'Darwin':
@@ -21,136 +21,350 @@ else:
 
 import qb
 
-sys.path.append('/Volumes/theGrill/.qube/Modules')
+sys.path.append('../../Modules')
 import sequenceTools
 
-FINALQUICKTIMEFRAMECOUNT = 5000 # Multiples of chunk size
-CHUNKSIZE = 200
+''' Logger Setup '''
+logger = logging.getLogger(__name__)
+ch = logging.StreamHandler(sys.__stdout__)
+logger.addHandler(ch)
+logger.setLevel(logging.DEBUG)
+ch.setLevel(logging.DEBUG)
 
-def setupSequenceJob(sequenceInitFile, outputFile, preset, selfContained, smartUpdate, transcoderFolder='', frameRange, audioFile=''):
+
+def splitPath(inputPath):
+    '''
+    Split an input path into:
+        Folder
+        File Name
+        File Extension
+    '''
+    logger.debug('Splitting Path: ' + str(locals()))
+    folder, fullName = os.path.split(inputPath)
+    name, extension = os.path.splitext(fullName)
+    
+    return folder + '/', name, extension
+
+
+def chunkWithTolerance(inputList, chunkSize, tolerance):
+    '''
+    Generate chunks of a list. If the tolerance
+    value isn't met, the remaining values are
+    added to the last chunk.
+    '''
+
+    logger.debug('Chunk With Tolerance: ' + str(locals()))
+    if tolerance > chunkSize:
+        tolerance = 0
+
+    resultLists = []
+    itemNum = 1
+    listLength = len(inputList)
+    while(itemNum < listLength):
+        resultList = []
+        for item in inputList:
+            while(itemNum % chunkSize != 0 and itemNum < listLength):
+                resultList.append(inputList[itemNum-1])
+                itemNum += 1
+
+        if listLength - itemNum in range(1,tolerance+1):
+            resultList.extend(inputList[itemNum:])
+            itemNum = listLength
+        else:
+            resultList.append(inputList[itemNum-1])
+        itemNum += 1
+
+        resultLists.append(resultList)
+
+    return resultLists
+
+
+def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
+                        selfContained=True, frameRange='ALL', audioFile='', smartUpdate=True, fillMissingFrames=True, transcoderFolder='', \
+                        segmentDuration=200, maxSegmentsPerOutput=20, maxSegmentTolerance=5):
     '''
     Setup a qube job dictionary based on the input.
+    Required Inputs:
+        qubeJobTemplate (dictionary)
+            Template qube job dictionary to build from.
+        sequenceInitFile (string)
+            One image from the input image sequence.
+            Can be any image from the sequence.
+        outputFile (string)
+            The destination file for the output
+            of the transcoder.
+        preset (string)
+            The blender file that serves as the template
+            for the transcoding process.
+    Optional:
+        selfContained (boolean)
+            Determines if the outputFile should be a
+            reference quicktime movie or self-contained.
+            Self-contained movies are much larger and take
+            more time to create.  Referenced quicktimes
+            are much smaller, and much faster to create.
+            However, referenced quicktimes must maintain
+            their connectiong their associated inputs.
+        frameRange (string)
+            The output frame range to render from the input
+            image sequence. Ex: 1-10
+        audioFile (string)
+            The audio file to be added to the output file.
+            This audio should match the exact timeline of
+            the input image sequence.
+        smartUpdate (boolean)
+            Automatically update only the segments and outputs
+            that have been changed since the last transcode.
+        transcoderFolder (string)
+            The folder in which to store all files related
+            to the transcoding process.  This includes the
+            segmented movies and the blender projects. If
+            creating a referenced output file, these are
+            the segments that movie will reference.
+        fillMissingFrames (boolean)
+            Automatically fill in missing frames with the
+            last frame that exists.  This is useful for
+            creating quicktimes from sequences rendered on
+            every nth frame.
+    Advanced:
+        segmentDuration (integer)
+            Frame count for each segment.
+        maxSegmentsPerOutput (integer)
+            Maximum number of segments that can be in each
+            output file.  If the number of segments needed
+            for the sequence exceeds this amount, the output
+            file is split into multiple segments of this
+            length.
+        maxSegmentTolerance (integer)
+            If the maxSegmentsPerOutput limit is reached,
+            check that the input sequence exceeds this tolerance
+            value as well. If not, keep the outputFile as one file.
+
+    Agenda
+        The agenda is setup in 3 main sections:
+            Initialization:
+                Purpose
+                    This single subjobs loads the input sequence
+                    into the provided blender scene preset.
+                    This is done once, then all subsequent
+                    jobs reference the resulting scene file.
+                Package
+                    None
+                resultPackage
+                    None
+                Naming
+                    Initialize
+            Segments:
+                Purpose
+                    These subjobs each create their assigned
+                    segment of the image sequence.
+                Package
+                    frameRange (string)
+                        Range of frames to render for this segment.
+                    segmentFile (string)
+                        Destination path for the segment file.
+                resultPackage
+                    changes (boolean)
+                        Returns if any changes were made for
+                        this segment.
+                    segmentFile (string)
+                        Destination path for the segment file
+                        that actually rendered.  Sometimes file
+                        issues occur where the output file can't
+                        be overwritten, so we automatically
+                        compensate for this.
+                Naming
+                    Segment: (frameRange)
+            Final Outputs:
+                Purpose
+                    These subjobs render the output files.
+                    They are split up based on the number of segments
+                    and the max segments per output.  They are placed
+                    in the agenda right after their dependent segments
+                    have been processed.
+                Package
+                    segmentSubjobs (list of strings)
+                        List of the names of the dependant
+                        segment subjobs.
+                    outputFile (string)
+                        destination for the output
+                resultPackage
+                    outputPaths (string)
+                        Path to the final output file.
+                Naming
+                    Output: (outputFile)
+        
+    Callbacks
+        Callbacks are added to unblock subjobs when they are
+        ready to be processed.
+            Initialization subjob completion
+                Once the initialization is complete, all
+                segment subjobs are unblocked.
+            Segment subjobs complete.
+                Once all segments that pertain to a final
+                output are complete, that output subjob
+                is unblocked.
+            Job retried
+                If the job is retried 
+                
+                    
+                    
+                
+
     '''
 
+    ''' ---- Pre-Processing For Agenda ---- '''
 
-def main():
+    logger.debug('Setup Sequence: ' + str(locals()))
+    
+    ''' General '''
+    mySequence = sequenceTools.Sequence(sequenceInitFile, frameRange)
+    sequenceName = mySequence.getName()
+    
+    
+    ''' Initialize '''
+    init = qb.Work()
+    init['name'] = 'Initialize'
+
+
+    ''' Segments
+    
+    Use the qube chunk method to split up the frame range.
+    Then prep each segment:
+        Add the frameRange to the package.
+        Add the segmentFile to the package.
+        Change the subjob name to Segment: (frameRange)
+        Submit as blocked, because they will be unblocked
+            once the initialize command is completed.
+    '''
+    segments = qb.genchunks(segmentDuration, '1-' + str(mySequence.getDuration()))
+    for segment in segments:
+        segment['package']= {}
+        segment['package']['frameRange'] = segment['name']
+                
+        outputFolder, outputName, outputExtension = splitPath(outputFile)
+        segmentFile = os.path.join(transcoderFolder, 'Segments/')
+        segmentFile += outputName + '/'
+        segmentFile += outputName + '_' + segment['name'].split('-')[0] + outputExtension
+        segment['package']['segmentFile'] = segmentFile
+
+        # segment.package({'frameRange':segment['name'], 'segmentFile':segmentFile})
+
+        segment['status'] = 'blocked'
+        segment['name'] = 'Segment: ' + segment['name']
+
+
+    ''' Final Outputs '''
+    finalOutputSegments = chunkWithTolerance(segments, maxSegmentsPerOutput, maxSegmentTolerance)
+    
+    finalOutputs = []
+    count = 1
+    for outputSegment in finalOutputSegments:
+        output = qb.Work()
+        output['package'] = {}
+        
+        segmentSubjobs = []
+        for segment in outputSegment:
+            segmentSubjobs.append(segment['name'])
+        output['package']['segmentSubjobs'] = segmentSubjobs
+        
+        outputFolder, outputName, outputExtension = splitPath(outputFile)
+        finalOutputFile = outputFolder + outputName
+        if len(finalOutputSegments) > 1: finalOutputFile += '_' + chr(64+count)
+        finalOutputFile += outputExtension
+        output['package']['outputFile'] = finalOutputFile
+        
+        output['status'] = 'blocked'
+        output['name'] = 'Output: ' + os.path.basename(finalOutputFile)
+        
+        count += 1
+        
+        finalOutputs.append(output)
+
+
+    ''' Callbacks '''
+    
+    callbacks = []
+    for finalOutput in finalOutputs:
+        callback = {}
+        triggers = []
+        
+        for segment in finalOutput['package']['segmentSubjobs']:
+            triggers.append('complete-work-self-' + segment)
+        callback['triggers'] = ' and '.join(triggers)
+        callback['language'] = 'python'
+    
+        code = 'import qb\n'
+        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', finalOutput['name'], '\' % qb.jobid())')
+        code += '\nqb.unblock(qb.jobid())'
+        callback['code'] = code
+        
+        callbacks.append(callback)
+
+
+    ''' ---- Now put the job together ---- '''
+
+    job = qubeJobTemplate
+    
+    ''' General '''
+    job['name'] = 'Quicktime: ' + sequenceName
+    job['prototype']    = 'Submit Transcoder'
+    
+    
+    ''' Package '''
+    job['package'] = {}
+    job['package']['sequence'] = sequenceInitFile
+    job['package']['audioFile'] = audioFile
+    job['package']['outputFile'] = outputFile
+    job['package']['preset'] = preset
+    job['package']['selfContained'] = selfContained
+    job['package']['smartUpdate'] = smartUpdate
+    job['package']['fillMissingFrames'] = fillMissingFrames
+    job['package']['frameRange'] = '1-' + str(mySequence.getDuration())
+    job['package']['transcoderFolder'] = transcoderFolder
+
+    
+    ''' Agenda '''
+    job['agenda'] = []
+    job['agenda'].append(init)
+    job['agenda'].extend(segments)
+    
+    ''' Place the final outputs after their last segment. '''
+    for outputNum, output in enumerate(finalOutputs):
+        lastSegmentName = output['package']['segmentSubjobs'][-1]
+        lastSegmentIndex = None
+        for index, segment in enumerate(segments):
+            if segment['name'] == lastSegmentName:
+                lastSegmentIndex = index
+                break
+        if lastSegmentIndex:
+            job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
+        else:
+            print "ERROR: Unable to find last segment for output " + output['name']
+    
+    ''' Callbacks '''
+    if not job.get('callbacks', None):
+        job['callbacks'] = []
+    job['callbacks'].extend(callbacks)
+    
+    return job
+
+def testJob():
     # Set basic job properties
     job = {}
     job['cpus']         = 100
-    job['prototype']    = 'Submit Transcoder'
     job['requirements'] = ''
     job['reservations'] = 'host.processors=1'
     job['flagsstring'] = 'auto_wrangling,expand'
     # job['hosts'] = 'bchapman.local'
     job['priority'] = 100
     job['hostorder'] = '+host.processors.avail'
+    sequenceFile = '/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/blindness_00000.png'
+    outputFile = '/tmp/testing.mov'
+    preset = '/tmp/test.blend'
+    audioFile = '/tmp/audioFile.wav'
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4)
+    logger.error(job)
+    qb.submit([job])
 
-    # Set the package properties
-    mySequence = sequenceTools.Sequence('/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Image_Sequences/Bible_Stories/L1/PU_BS_L1_00000.png')
-    # mySequence = sequenceTools.Sequence('/Volumes/theGrill/Staff-Directories/Brennan/testFrames/Sequence/testFrames_00000.png')
-    bounds = mySequence.getBounds()
-    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/testFrames/testFrames.mov'
-    print bounds
-    job['name'] = mySequence.prefix
-    job['package'] = {}
-    job['package']['sequence'] = mySequence.initFile
-    job['package']['audioFile'] = '/Volumes/theGrill/Elevate_Series/Power_Up/Kids/Art_Anim/_Renders_and_Exports/Preliminary_Renders/Audio/Bible_Stories/L1/PU_BibleStory_Timeline_L1.wav'
-    job['package']['outputFile'] = outputFile
-    job['package']['preset'] = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
-    job['package']['resolution'] = '1280x720'
-    job['package']['frameRate'] = '29.97'
-    job['package']['selfContained'] = True
-    job['package']['smartUpdate'] = True
-    job['package']['frameRange'] = bounds['start'] + '-' + bounds['end']
-    job['package']['transcoderFolder'] = os.path.dirname(outputFile) + '/Transcoder/'    
-
-    '''
-    Calculate agenda from range.
-    Submit the segments as blocked, they will be unblocked once the initialize command is complete.
-    Segments will be placed in the Transcoder folder under a subfolder with the name of the sequence.
-    '''
-    segmentAgenda = qb.genchunks(CHUNKSIZE, job['package']['frameRange'])
-    for segment in segmentAgenda:
-        folder, name = os.path.split(job['package']['outputFile'])
-        name, extension = os.path.splitext(name)
-        outputName = name + '/' + name + '_' + segment['name'].split('-')[0] + extension
-        segment['status'] = 'blocked'
-        segment.package({'outputName': outputName})
-
-    '''
-    Setup the agenda
-        1 - First subjob is the initialization to setup the blender scene
-        2-n - Subsequent subjobs are for the sections of the sequence
-        n+1 - Last subjob is for the finalizing to merge the segments together
-    '''
-    agenda = []
-    agenda.append(qb.Work({'name':'Initialize'}))
-    agenda.extend(segmentAgenda)
-    
-    '''
-    Submit the finalize command as blocked.
-    It will be unblocked once the segments are completed.
-    '''
-    
-    subjobsPerOutput = FINALQUICKTIMEFRAMECOUNT / CHUNKSIZE
-    numFinalOutputs = int(math.ceil(int(bounds['end']) / FINALQUICKTIMEFRAMECOUNT)) + 1
-    print "numFinalOutputs: " + str(numFinalOutputs)
-    
-    job['callbacks'] = []
-    for num in range (1, numFinalOutputs + 1):
-        workDict = {}
-        
-        filePath, fileExt = os.path.splitext(os.path.basename(outputFile))
-        letter = ''
-        if numFinalOutputs > 1:
-            letter = '_' + chr(64 + num)
-        finalOutputFile = filePath + letter + fileExt
-        
-        startIndex = (num-1) * subjobsPerOutput
-        if num != numFinalOutputs:
-            endIndex = ((num) * subjobsPerOutput) - 1
-        else:
-            endIndex = startIndex + (len(segmentAgenda) - startIndex) - 1
-        
-        dependencies = []
-        for segIndex in range(startIndex, endIndex + 1):
-            dependencies.append(segmentAgenda[segIndex]['name'])
-        
-        myWork = qb.Work({'name':finalOutputFile, 'status':'blocked', 'package':{'Dependencies':','.join(dependencies)}})
-        
-        # Setup the callback to unblock the output work item
-        callback = {}
-        triggers = []
-        for dependant in dependencies:
-            triggers.append('complete-work-self-' + dependant)
-        callback['triggers'] = ' and '.join(triggers)
-        callback['language'] = 'python'
-        
-        code = 'import qb\n'
-        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', finalOutputFile, '\' % qb.jobid())')
-        code += '\nqb.unblock(qb.jobid())'
-        callback['code'] = code
-        
-        job['callbacks'].append(callback)
-
-            
-        # print "myWork: " + str(myWork)
-        agenda.insert(endIndex+1+num, myWork)
-
-    # agenda.append(qb.Work({'name':'Finalize', 'status':'blocked'}))
-
-    # Set the job agenda
-    job['agenda'] = agenda
-    
-    print job
-
-    # Submit
-    listOfSubmittedJobs = qb.submit([job])
-    
-    # Report on submit results
-    for job in listOfSubmittedJobs:
-        print job['id']
-
-if __name__ == "__main__":
-    main()
-    sys.exit(0)
+testJob()

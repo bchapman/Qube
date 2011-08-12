@@ -8,11 +8,9 @@ Setup the project to render the sequence with the requested settings.
 Parse the command line arguments for the conversion settings.
 NOTE: The actual output settings(ProRes, etc.) will be the command line argument for the scene file
 Settings:
-  1-Sequence
-  2-Resolution
-  3-Frame Rate(ex: 100x100)
-  4-Where to save blender file
-  (5-Audio File)
+  1-(string) Sequence
+  2-(string) Where to save blender file
+  3-(boolean) Fill Missing Frames
 '''
 
 import bpy, os, sys
@@ -24,45 +22,39 @@ import sequenceTools
 '''
 Set up the logging module.
 '''
-logger = logging.getLogger("main")
+logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s: %(message)s")
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-# logger.setLevel(logging.DEBUG)
-# ch.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+ch.setLevel(logging.DEBUG)
 
 def main():
     logger.info("Blender Loaded, Processing...")
 
     ''' Get the arguments after the '--' separator. '''
     args = sys.argv[(sys.argv.index('--')+1):]
-    logger.info("Arguments: \n\t" + '\n\t'.join(args))
+    logger.debug("Arguments: \n\t" + '\n\t'.join(args))
 
     try:
-        sequence = args[0]
-        res = args[1]
-        rate = args[2]
-        sceneFile = args[3]
-        if len(args) > 4:
-            audioFile = args[4]
-        else:
-            logger.info('No Audio File Supplied.')
-            audioFile = None
+        sequence = str(args[0])
+        sceneFile = str(args[1])
+        fillMissingFrames = bool(args[2])
     except:
         logger.error('Invalid Input Parameters.')
 
-    if (rate):
+    if sequence:
         ''' Load the Image Sequence files from the folder into a dictionary. '''
         logger.info("Loading sequence...")
         mySequence = sequenceTools.Sequence(sequence)
-    
+
         '''
         Create an array containing dictionaries for each frame.
         {'name':frameFileName}
         '''
         myFiles = []
-        for pathToFrame in mySequence.getFrames():
+        for pathToFrame in mySequence.getFrames(fillMissing=fillMissingFrames):
             myFrame = {'name':os.path.basename(pathToFrame)}
             myFiles.append(myFrame)
 
@@ -104,16 +96,6 @@ def main():
 
                 ''' Set the length of the scene to the length of the sequence. '''
                 myscene.frame_end = mystrip.frame_final_duration
-
-
-                ''' If an audio file was supplied, add a sound track strip. '''
-                if audioFile:
-                    if os.path.exists(audioFile):
-                        bpy.ops.sequencer.sound_strip_add( \
-                                filepath = audioFile, \
-                                filemode = 9, \
-                                channel = 1, \
-                                frame_start = 0)
 
                 # Save the scene for rendering the segments
                 bpy.ops.wm.save_mainfile(filepath=sceneFile,compress=True)
