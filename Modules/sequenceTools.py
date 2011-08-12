@@ -2,7 +2,7 @@
 
 Sequence Python Module
 Author: Brennan Chapman
-Date: 7/23/2011
+Date: 8/11/2011
 
 Provides methods to assist in working with image sequences
 
@@ -15,18 +15,35 @@ import logging
 '''
 Set up the logging module.
 '''
-# seqLogger = logging.getLogger("main")
-# ch = logging.StreamHandler()
-# formatter = logging.Formatter("%(levelname)s: %(message)s")
-# ch.setFormatter(formatter)
-# seqLogger.addHandler(ch)
-# seqLogger.setLevel(logging.DEBUG)
-# ch.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+formatter = logging.Formatter("%(levelname)s: %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.setLevel(logging.DEBUG)
+ch.setLevel(logging.DEBUG)
+
+def loadFrameRange(frameRange):
+    '''
+    Parse an input frame range into individual frame numbers
+    Ex: 1,20-25,22,100 -> [1, 20, 21, 22, 23, 24, 25, 100]
+    Input can also be a list of frames, to save time.
+    Updated to be much faster!
+    '''
+    
+    result = []
+    if type(frameRange) is str:
+        result = list(set(sum(((list(range(*[int(j) + k for k,j in enumerate(i.split('-'))]))
+            if '-' in i else [int(i)]) for i in frameRange.replace(' ','').split(',')), [])))
+        return result
+    else:
+        return frameRange
 
 class Sequence:
-    def __init__(self, fileName):
+    def __init__(self, fileName, frameRange='ALL'):
         # Convert all wildcards in the fileName
         fileName = os.path.expanduser(fileName)
+        fileName = os.path.expandvars(fileName)
 
         seqData = self.splitPath(fileName)
 
@@ -36,6 +53,28 @@ class Sequence:
         self.padding = seqData.get('Padding', '')
         self.extension = seqData.get('Extension', '')
         self.currentFrame = seqData.get('currentFrame', '')
+        self.frameRange = frameRange
+
+    def getName(self):
+        '''
+        Return the name of the input sequence
+        without extension or numbering.
+        '''
+        result = self.prefix
+        if result[-1:] in ('_','.',' ','('):
+            result = result[:-1]
+        return result
+
+    def loadFrameRange(self, frameRange):
+        '''
+        Load a frame range with the option of
+        all existing frames from the current
+        sequence object.
+        '''
+        if frameRange.upper() == 'ALL':
+            bounds = self.getBounds()
+            frameRange = str(bounds['start']) + '-' + str(bounds['end'])
+        return loadFrameRange(frameRange)
 
     def deleteFrames(self, frames):
         '''
@@ -59,55 +98,124 @@ class Sequence:
         
         return deleteCount
             
-
-    def getDuration(self, frameRate=29.97):
-        '''Get the time duration for the sequence in timecode'''
+    def getDuration(self, frameRate=29.97, timecode=False):
+        '''
+        Get the time in either frames or timecode
+        for the sequence.
+        '''
+        
         bounds = self.getBounds()
         frames = (int(bounds['end']) - int(bounds['start']))
-        dHours = padFrame(frames // (60*60*frameRate), 2)
-        dMinutes = padFrame((frames // (60*frameRate)) % 60, 2)
-        dSeconds = padFrame(((frames // (frameRate)) % 60) % 60, 2)
-        dFrames = padFrame(frames % frameRate % 60 % 60, 2)
-        result = dHours + ";" + dMinutes + ";" + dSeconds + ";" + dFrames
-        return result
+        if not timecode:
+            return frames
+        else:
+            dHours = self.padFrame(frames // (60*60*frameRate), 2)
+            dMinutes = self.padFrame((frames // (60*frameRate)) % 60, 2)
+            dSeconds = self.padFrame(((frames // (frameRate)) % 60) % 60, 2)
+            dFrames = self.padFrame(frames % frameRate % 60 % 60, 2)
+            result = dHours + ";" + dMinutes + ";" + dSeconds + ";" + dFrames
+            return result
 
-    def getFrames(self, frameRange='ALL'):
+    def getExistingFrames(self, frameRange='ALL'):
         '''
-        Get a list of frames for the sequence returned in a list
-        If a frame range is supplied, only those frames are returned
+        Get a list of all frame numbers that currently exist.
         '''
         
         if str(frameRange).upper() == 'ALL':
-            # Generate a sequence path with wildcards to use with glob
-            # Ex /path/to/sequence.*.png
+            '''
+            Generate a sequence path with wildcards to use with glob
+            Ex /path/to/sequence.*.png
+            '''
+            
             globPath = self.folder + '/' + self.prefix + '*' + self.extension
-            result = glob.glob(globPath)
-            result.sort() # Make sure they are sorted
+            fileList = glob.glob(globPath)
+            fileList.sort()
+            
+            result = []
+            for item in fileList:
+                result.append(int(self.splitPath(item)['currentFrame']))
             return result
         
         else:
             result = []
             for frameNum in self.loadFrameRange(frameRange):
-                result.append(self.getFrame(frameNum))
+                if os.path.exists(self.getFrameFilename(frameNum)):
+                    result.append(frameNum)
             return result
 
-    def getFrame(self, frame, includeFolder=True):
-        '''Get the filename associated with a specific frame number'''
+    def getFrames(self, frameRange='ALL', excludeMissing=False, onlyMissing=False, fillMissing=False):
+        '''
+        Generate a list of all possible frame numbers in the sequence.
+        This is returned either as frame filenames or frame numbers.
+        Get a list of frames for the sequence returned in a list.
+        If a frame range is supplied, only those frames are returned.
+        Check missing will check for missing frames.
+        Fill missing frames will repeat the latest frame if a frame is missing.
+        '''
         
-        result = ''
+        myFrameRange = self.loadFrameRange(frameRange)
+        result = range(myFrameRange[0], myFrameRange[-1]+1)
+        
+        if not excludeMissing and not fillMissing and not onlyMissing:
+            return result
+        else:
+            existingFrames = self.getExistingFrames(frameRange)
+            if excludeMissing or fillMissing:
+                result = list(set(result).intersection(set(existingFrames)))
+                if excludeMissing:
+                    return result
+                else:
+                    newList = []
+                    bounds = self.getBounds()
+                    count = 0
+                    for index, frameNum in enumerate(result):
+                        while index+1 < len(result) and count != result[index+1]:
+                            newList.append(frameNum)
+                            count += 1
+                    newList.append(result[-1])
+                    print 'Length: ' + str(len(newList))
+                    return newList
+            elif onlyMissing:
+                result = list(set(result) - set(existingFrames))
+                return result
+
+    def getFrameFilename(self, frame, includeFolder=True):
+        '''
+        Generate the filename associated with the supplied frame.
+        '''
+        
+        currFrame = ''
         if includeFolder:
-            result += self.folder + '/'
-        result += self.prefix + self.padFrame(frame) + self.extension
+            currFrame += self.folder + '/'
+        currFrame += self.prefix + self.padFrame(frame) + self.extension
+        return currFrame
+    
+    def getFrameFilenames(self, frames, includeFolder=True):
+        '''
+        Generate the filename associated with the supplied frames.
+        '''
+        
+        result = []
+        for frame in frames:
+            result.append(self.getFrameFilename(frame, includeFolder))
         return result
 
+    def getBounds(self, update=False, frameRange='ALL'):
+        '''
+        Get the start and end frames for the sequence.
+        Uses the frameRange when the sequence was initialized
+        unless Update is true.
+        '''
 
-    def getBounds(self):
-        '''Get the start and end frames for the sequence'''
-
-        allExistingFrames = self.getFrames()
+        if frameRange.upper() == 'ALL':
+            frames = self.getExistingFrames() # All existing frames
+        else:
+            frames = loadFrameRange(self.frameRange)
+    
         result = {}
-        result['start'] = self.splitPath(allExistingFrames[0])['currentFrame']
-        result['end'] = self.splitPath(allExistingFrames[-1])['currentFrame']
+        result['start'] = str(frames[0])
+        result['end'] = str(frames[-1])
+            
         return result
 
     def getMissingFrames(self, frameRange='ALL'):
@@ -115,27 +223,10 @@ class Sequence:
         Get a list of missing frames for the entire sequence
         or just a frameRange.
         Returned as a list.
+        * Uses getFrames, this is just for convience
         '''
 
-        start = end = 0 # Initialize
-        
-        # Get the start and end frames based on the input frameRange
-        if str(frameRange).upper() == 'ALL':
-            bounds = self.getBounds()
-            start = bounds.get('start')
-            end = bounds.get('end')
-        else:
-            frameRange = self.loadFrameRange(frameRange)
-            start = frameRange[0]
-            end = frameRange[-1]
-
-        missingFrames = []
-        for f in range(int(start), int(end)+1):
-            path = self.getFrame(f)
-            if not os.path.exists(path):
-                missingFrames.append(path)        
-
-        return missingFrames
+        return self.getFrames(frameRange, onlyMissing=True)
 
     def getTemplate(self):
         '''
@@ -178,25 +269,6 @@ class Sequence:
 
         frame = int(round(float(frame)))
         return '0' * (pad - len(str(frame))) + str(frame)
-
-
-    def loadFrameRange(self, frameRange):
-        '''
-        Parse an input frame range into individual frame numbers
-        Ex: 1,20-25,22,100 -> [1, 20, 21, 22, 23, 24, 25, 100]
-        Input can also be a list of frames, to save time.
-        Updated to be much faster!
-        '''
-        
-        result = []
-        if type(frameRange) is str:
-            sys.stdout.write('Type: ' + str(type(frameRange)) + '\n')
-            sys.stdout.write('Content: ' + str(frameRange) + '\n')
-            result = list(set(sum(((list(range(*[int(j) + k for k,j in enumerate(i.split('-'))]))
-                if '-' in i else [int(i)]) for i in frameRange.replace(' ','').split(',')), [])))
-            return result
-        else:
-            return frameRange
 
     def splitPath(self, path):
         '''
@@ -272,7 +344,7 @@ class Sequence:
         if currentModTimes == {}:
             currentModTimes = self.getModTimes(frameRange)
 
-        diff = DictDifferences.DictDifferences(currentModTimes, pastModTimes)        
+        diff = DictDifferences.DictDifferences(currentModTimes, pastModTimes)
         result = {}
         result['Added'] = list(sorted(diff.added()))
         result['Modified'] = list(sorted(diff.changed()))
@@ -304,7 +376,7 @@ class Sequence:
         for frames that have changed since last time.
         '''
 
-        # seqLogger.debug('Retrieving hash codes from database.')
+        logger.debug('Retrieving hash codes from database.')
         sys.stdout.write('getModTimesFromFile...\n')
         conn = sqlite3.connect(filename)
         curs = conn.cursor()
@@ -344,3 +416,8 @@ class Sequence:
 
     def __str__(self):
         return self.getTemplate()
+
+
+# mySequence = Sequence('/Users/bchapman/Projects/Scripts+Apps/Qube/_testingGrounds/Image_Sequence_nth/blindness_00000.png')
+# print "Final: " + str(mySequence.getFrames(fillMissing=True))
+# print mySequence.getMissingFrames()
