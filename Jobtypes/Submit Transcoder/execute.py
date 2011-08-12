@@ -6,16 +6,16 @@ Author: Brennan Chapman
 Date: 7/12/2011
 
 Purpose:
-    Run the transcoder jobs using blender
-    to cluster transcode image sequences
-    to separate quicktime movies.
-    Then use qttools to merge them together.
-    *Only works on Mac render nodes
+    Use a combination of Blender and QTCoffee to render
+    image sequences to separate quicktime files using
+    multiple computers and compile them back together
+    using QTCoffee's catmovie.
+    *Only works on Mac render nodes.
 
 Features:
-    Uses blender which is free!
+    Uses blender which is Free!
     Can use an unlimited # of computers
-    Low memory usage...around 200MB per instance
+    Low memory usage...around 200MB per instance :)
 """
 
 import os, sys
@@ -26,8 +26,8 @@ import qb
 
 # Gotta be a better way to do this.  Suggestions?
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
-print 'PATH: ' + str(sys.path) + "\n"
-import PreFlight
+# print 'PATH: ' + str(sys.path) + "\n"
+import TranscoderPreFlight
 import Job
 import shlex, subprocess
 import time
@@ -47,25 +47,22 @@ logger.addHandler(ch)
 logger.setLevel(logging.DEBUG)
 ch.setLevel(logging.DEBUG)
 
-'''
-Main
-'''
 
 def initJob():
-    # Get the job object
-    jobObject = qb.jobobj()
-    # Make sure the agenda is added
-    if not jobObject.get('agenda', False):
-        jobObject['agenda'] = qb.jobinfo(id=jobObject['id'], agenda=True)[0]['agenda']
-    # print "Qube Job Agenda: " + str(jobObject['agenda']) + "\n"
-    job = Job.Job(logger) # Create our own Job Object
-    job.loadOptions(jobObject) # Load the Qube Job into our job template
+    '''
+    Create our own job object that can serve as the
+    central storage for all execution based variables.
+    '''
+
+    job = Job.Job()
+    job.loadOptions(qb.jobobj())
 
     return job
 
 def runCMD(cmd):
     '''
-    Run the specified command, and return the exit code.
+    Run the specified command using subprocess and
+    return the exit code.
     '''
     
     logger.info("Command: " + cmd)
@@ -75,7 +72,7 @@ def runCMD(cmd):
 
 def executeJob(job):
     '''
-    Execute the job.
+    Main Execution of the job.
     '''
     
     global render
@@ -258,7 +255,7 @@ def cleanupJob(job, state):
 
 def main():
     ''' First run the preflight to determine if worker is ready. '''
-    preflight = PreFlight.PreFlight(logger)
+    preflight = TranscoderPreFlight.PreFlight(logger)
     
     if (preflight.check()):
         job      = initJob()

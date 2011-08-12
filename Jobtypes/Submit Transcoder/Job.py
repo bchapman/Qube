@@ -10,7 +10,7 @@ Job class to store all related data transcoding.
 
 import os, sys, time, inspect
 
-sys.path.append('/Volumes/theGrill/.qube/Modules/')
+sys.path.append('../../Modules/')
 import sequenceTools
 import inputValidation
 import logging
