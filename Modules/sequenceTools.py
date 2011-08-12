@@ -15,13 +15,10 @@ import logging
 '''
 Set up the logging module.
 '''
+''' Setup the logger. '''
+logging.basicConfig()
 logger = logging.getLogger(__name__)
-ch = logging.StreamHandler()
-formatter = logging.Formatter("%(levelname)s: %(message)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 logger.setLevel(logging.DEBUG)
-ch.setLevel(logging.DEBUG)
 
 def loadFrameRange(frameRange):
     '''
