@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Modules/sequenceTools.py</string>
+	<string>Jobtypes/Submit Transcoder/execute.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -60,23 +60,23 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>50</integer>
+				<integer>20</integer>
 				<key>line</key>
-				<integer>56</integer>
+				<integer>0</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>1</integer>
+			<integer>0</integer>
 		</dict>
-		<key>Jobtypes/Submit Transcoder/PreFlight.py</key>
+		<key>Jobtypes/Submit Transcoder/Job.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>8</integer>
+				<integer>46</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>7</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -88,9 +88,23 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>26</integer>
+				<integer>116</integer>
 				<key>line</key>
-				<integer>44</integer>
+				<integer>237</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>189</integer>
+		</dict>
+		<key>Jobtypes/Submit Transcoder/job.conf</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>33</integer>
+				<key>line</key>
+				<integer>11</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -102,44 +116,42 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>32</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>23</integer>
+				<integer>64</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>-1</integer>
-			<key>selectFrom</key>
+			<integer>124</integer>
+		</dict>
+		<key>Modules/inputValidation.py</key>
+		<dict>
+			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>38</integer>
 				<key>line</key>
-				<integer>23</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
 				<integer>32</integer>
-				<key>line</key>
-				<integer>23</integer>
 			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>Modules/sequenceTools.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>37</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>86</integer>
+				<integer>21</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>47</integer>
+			<integer>307</integer>
 		</dict>
 		<key>Submission/SubmitTranscoder.py</key>
 		<dict>
@@ -160,15 +172,17 @@
 	<array>
 		<string>Jobtypes/Submit Transcoder/Blender_InitSequence.py</string>
 		<string>Modules/sequenceTools.py</string>
+		<string>Modules/inputValidation.py</string>
 		<string>Jobtypes/Submit Transcoder/testJob.py</string>
-		<string>Jobtypes/Submit Transcoder/PreFlight.py</string>
 		<string>Jobtypes/Submit Transcoder/execute.py</string>
+		<string>Jobtypes/Submit Transcoder/Job.py</string>
+		<string>Jobtypes/Submit Transcoder/job.conf</string>
 		<string>Jobtypes/Submit After Effects v2/renderTalk.py</string>
 		<string>Submission/SubmitTranscoder.py</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
-	<true/>
+	<false/>
 	<key>windowFrame</key>
-	<string>{{0, 4}, {960, 1174}}</string>
+	<string>{{0, 4}, {960, 1054}}</string>
 </dict>
 </plist>
