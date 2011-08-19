@@ -13,13 +13,11 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def validateFile(filepath, required=True, expand=True, checkExist=True):
+def validateFile(filepath, expand=True, checkExist=True):
     '''
     Input is a files path.
     Returns either the original or an expanded path as a string.
 
-    required
-        Throws an error if input doesn't have a value.
     expand
         Converts the path to an absolute location.
         Turns path variables into their absolutes.
@@ -32,10 +30,6 @@ def validateFile(filepath, required=True, expand=True, checkExist=True):
     logger.debug("validateFile")
     logger.debug("Input: " + filepath)
     logger.debug("Parameters: " + str(locals().items()))
-    
-    result = ''
-    if required and filepath == '':
-        raise ValueError('No file path supplied.')
     
     if expand:
         result = os.path.expandvars(filepath)
@@ -53,13 +47,11 @@ def validateFile(filepath, required=True, expand=True, checkExist=True):
     return result
         
 
-def validateFolder(folderpath, required=True, expand=True, checkExist=True, createDirectories=True):
+def validateFolder(folderpath, expand=True, checkExist=True, createDirectories=True):
     '''
     Input is a folder path.
     Returns either the original or an expanded path as a string.
     
-    required
-        Throws an error if input doesn't have a value.
     checkExist
         Checks if the folder exists
     createDirectories
@@ -74,10 +66,6 @@ def validateFolder(folderpath, required=True, expand=True, checkExist=True, crea
     logger.debug("validateFolder")
     logger.debug("Input: " + folderpath)
     logger.debug("Parameters: " + str(locals().items()))
-    
-    result = ''
-    if required and folderpath == '':
-        raise ValueError('No folder path supplied.')
         
     if expand:
         result = os.path.expandvars(folderpath)
@@ -97,12 +85,10 @@ def validateFolder(folderpath, required=True, expand=True, checkExist=True, crea
         
     return result
     
-def validateString(inputString, required=True):
+def validateString(inputString):
     '''
     Input is a string.
     Returns the input cast as a string.
-    required
-        Throws an error if input doesn't have a value.
     '''
     
     inputString = str(inputString)
@@ -110,8 +96,5 @@ def validateString(inputString, required=True):
     logger.debug("validateFolder")
     logger.debug("Input: " + folderpath)
     logger.debug("Parameters: " + str(locals().items()))
-    
-    if required and inputString == '':
-        raise ValueError('No input string supplied.')
 
     return inputString

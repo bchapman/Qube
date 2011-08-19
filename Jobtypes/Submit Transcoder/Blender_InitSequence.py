@@ -16,13 +16,18 @@ Settings:
 import bpy, os, sys
 import logging
 
-sys.path.append('/Volumes/theGrill/.qube/Modules/')
-import sequenceTools
-
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+try:
+    sys.path.append('../../Modules/')
+    import sequenceTools
+except:
+    logger.error('Unable to import sequenceTools')
+    sys.exit(7)
+
 
 def main():
     logger.info("Blender Loaded, Processing...")

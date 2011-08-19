@@ -1,11 +1,11 @@
 '''
-Transcoder Job Class (Data)
+Transcoder Controller Class
 
 Author: Brennan Chapman
 Date: 7/12/2011
 Version: 1.0
 
-Job class to store all related data transcoding.
+Controls the transcoding job process.
 '''
 
 import os, sys, time, inspect
@@ -34,61 +34,99 @@ class Control:
     '''
 
     def __init__(self, qubeJobObject):
-        self.job = self.loadOptions(qubJobObject())
+        logger.debug('Initialize Controller')
+        logger.debug('Incoming Qube Job Object: ' + str(qubeJobObject))
+        self.job = Job.Job()
+        self.errors = []
+        self.job.qubejob = qubeJobObject
+        self.loadOptions()
 
-    def loadOptions(self, qubejob):
+    def checkForErrors(self):
+        if len(self.errors) > 0:
+            return True
+        else:
+            return False
+
+    def loadOptions(self):
         '''
-        Load all the options from the qube job object into the Job class.
+        Load all the options from the qube job object into the Job model.
         '''
-        
-        self.qubejob = qubejob
-        pkg = qubejob.setdefault('package', {})
-        
-        seqFile = self.loadOption('sequence', pkg.get('sequence', ''), required=True, fullpath=True)
-        self.sequence = sequenceTools.Sequence(seqFile)
-        
-        self.audioFile = self.loadOption('audioFile', pkg.get('audioFile', ''), required=False, fullpath=True)
-        
-        self.outputFile = self.loadOption('outputFile', pkg.get('outputFile', ''), required=True, folderpath=True)
-        self.preset = self.loadOption('preset', pkg.get('preset', ''), required=True, fullpath=True)
-        self.resolution = self.loadOption('resolution', pkg.get('resolution', ''), required=True)
-        self.frameRate = self.loadOption('frameRate', pkg.get('frameRate', ''), required=True)
-        
-        self.selfContained = self.loadOption('selfContained', pkg.get('selfContained', True))
-        self.smartUpdate = self.loadOption('smartUpdate', pkg.get('smartUpdate', True))
 
-        self.transcoderFolder = self.loadOption('transcoderFolder', pkg.get('transcoderFolder', ''), required=True)
+        seqFile = self.loadOption('sequence', required=True, isFullPath=True)
+        self.job.audioFile = self.loadOption('audioFile', required=False, isFullPath=True)
+        self.job.outputFile = self.loadOption('outputFile', required=True, isFolderPath=True)
+        self.job.preset = self.loadOption('preset', required=True, isFullPath=True)
+        self.job.resolution = self.loadOption('resolution', required=True)
+        self.job.frameRate = self.loadOption('frameRate', isFloat=True, required=True)
+        self.job.selfContained = self.loadOption('selfContained', isBool=True)
+        self.job.smartUpdate = self.loadOption('smartUpdate', isBool=True)
+        self.job.transcoderFolder = self.loadOption('transcoderFolder', required=True)
+        
+        if self.errors:
+            logger.error('Unabled to load Options:' + '\n'.join(self.errors))
+        else:
+            self.job.sequence = sequenceTools.Sequence(seqFile)
 
-    def loadOption(self, name, option, required=False, fullpath=False, folderpath=False):
+    def loadOption(self, name, required=False, isFullPath=False, isFolderPath=False, isFloat=False, isBool=False):
         '''
         Load a job option with error checking and input validation.
+
+        Process:
+            > Load the value from the qube job package with the supplied name.
+            > Validate the returned value.
         '''
+
+        logger.debug('Loading Option:\n' + \
+                        '\tName: ' + str(name) + '\n' + \
+                        '\tRequired: ' + str(required) + '\n' + \
+                        '\tisFullPath: ' + str(isFullPath) + '\n' + \
+                        '\tisFolderPath: ' + str(isFolderPath) + '\n' + \
+                        '\tisFloat: ' + str(isFloat) + '\n' + \
+                        '\tisBool: ' + str(isBool) + '\n')
+
+        pkg = self.job.qubejob.setdefault('package', {})
         
-        if (option != ''):
-            if (fullpath ==True or folderpath == True):
-
-                # Expand variables in path
-                newPath = os.path.expandvars(option)
-                newPath = os.path.expanduser(newPath)
-
-                if (fullpath == True):
-                    tmpPath = newPath
-                else:
-                    tmpPath = os.path.dirname(newPath)
-
-                if (os.path.exists(tmpPath)):
-                    return newPath
-                else:
-                    logger.error('Invalid path for ' + name + ' : ' + option)
-                    exit(64)
+        result = ''
+        errors = []
+        try:
+            result = str(pkg.get(name, ''))
+            logger.debug('Package contents for ' + str(name) + ': ' + result)
+        except:
+            logger.debug('Unable to retrieve ' + name + ' from the qube job package.')
+            errors.append('Unable to retrieve ' + name + ' from the qube job package.')
+        
+        if errors:
+            if result == '':
+                if required:
+                    errors.append('Required option ' + name + ' is empty.')
+                    
+                if isFloat:
+                    try:
+                        result = float(result)
+                    except:
+                        errors.append('Invalid Float Value of ' + str(result) + ' for ' + name)
+                if isBool:
+                    try:
+                        result = bool(result)
+                    except:
+                        errors.append('Invalid Boolean Value of ' + str(result) + ' for ' + name)
             else:
-                return option
+                if isFullPath:
+                    result = inputValidation.validateFile(result)
+                    if not result:
+                        errors.append('Invalid File Path\n' + name + ': ' + result)
+                elif isFolderPath:
+                    result = inputValidation.validateFolder(result)
+                    if not result:
+                        errors.append('Invalid Folder Path\n' + name + ': ' + result)
+
+        if errors:
+            logger.debug('Error loading Option ' + str(name) + ': ' + str(result))
+            self.errors.extend(errors)
         else:
-            if (required != True):
-                return ''
-            else:
-                logger.error('Missing value for ' + name)
-                exit(64)
+            logger.debug('Returning Option ' + str(name) + ': ' + str(result))
+
+        return result
 
     def getAllSegments(self):
         '''
@@ -116,22 +154,23 @@ class Control:
         
         return segments
 
-    def getCMD(self, work):
-        '''
-        Returns the command for the subjob based on the work item.
-        '''
-        
-        result = ''
-        if (work['name'] == 'Initialize'): result = self.getInitCMD(work)
-        elif (str(work['name']).endswith('.mov')): result = self.getFinalizeCMD(work)
-        elif (work['name'] != ''):
-            result = self.getSegmentCMD(work)
-        else:
-            logger.error('Weird Work:' + str(work))
-            logger.error('Weird Work Status: ' + str(work['status']))
-            result = 'ls'
-
-        return result
+    #  Old
+    # def getCMD(self, work):
+    #     '''
+    #     Returns the command for the subjob based on the work item.
+    #     '''
+    #     
+    #     result = ''
+    #     if (work['name'] == 'Initialize'): result = self.getInitCMD(work)
+    #     elif (str(work['name']).endswith('.mov')): result = self.getFinalizeCMD(work)
+    #     elif (work['name'] != ''):
+    #         result = self.getSegmentCMD(work)
+    #     else:
+    #         logger.error('Weird Work:' + str(work))
+    #         logger.error('Weird Work Status: ' + str(work['status']))
+    #         result = 'ls'
+    # 
+    #     return result
 
     def getModTimeDBFile(self):
         '''
@@ -152,7 +191,7 @@ class Control:
         cmd = '\'' + BLENDERLOCATION + '\''
         
         ''' Add the preset blender file which has the base conversion settings. '''
-        cmd += ' -b \'' + self.preset + '\''
+        cmd += ' -b \'' + self.job.preset + '\''
         
         '''
         Add the Blender_InitSequence script which runs
@@ -171,12 +210,12 @@ class Control:
             5 - Audio File
         '''
         cmd += ' -- '
-        cmd += ' \'' + self.sequence.initFile + '\''
-        cmd += ' \'' + self.resolution + '\''
-        cmd += ' \'' + self.frameRate + '\''
+        cmd += ' \'' + self.job.sequence.initFile + '\''
+        cmd += ' \'' + self.job.resolution + '\''
+        cmd += ' \'' + self.job.frameRate + '\''
         cmd += ' \'' + self.getBlendFile() + ' \''
-        if self.audioFile:
-            cmd += ' \'' + self.audioFile + '\''
+        if self.job.audioFile:
+            cmd += ' \'' + self.job.audioFile + '\''
         
         return cmd
 
@@ -203,6 +242,11 @@ class Control:
         
         return cmd
 
+    def getSmartUpdate(self):
+        return self.job.smartUpdate
+    
+    def getQubeJobObject(self):
+        return self.job.qubejob
 
     def getFinalizeCMD(self, work):
         '''
@@ -281,9 +325,9 @@ class Control:
         Names are in the form of QUBEID-INITIALFRAME.blend
         '''
 
-        fileName = str(self.qubejob.get('id', ''))
-        fileName += '-' + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.blend'        
-        blenderFolder = os.path.join(self.transcoderFolder, 'Blender/')
+        fileName = str(self.getQubeJobObject().get('id', ''))
+        fileName += '-' + os.path.splitext(os.path.basename(self.job.sequence.initFile))[0] + '.blend'        
+        blenderFolder = os.path.join(self.job.transcoderFolder, 'Blender/')
         result = os.path.join(blenderFolder, fileName)
         
         self.makeFolders(blenderFolder)

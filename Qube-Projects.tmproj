@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Jobtypes/Submit Transcoder/execute.py</string>
+	<string>Jobtypes/Submit Transcoder/Control.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -35,6 +35,12 @@
 			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
 			<key>sourceDirectory</key>
 			<string>Submission</string>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>Jobtypes/Submit Transcoder/Control.py</string>
+			<key>lastUsed</key>
+			<date>2011-08-18T18:04:55Z</date>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
@@ -69,33 +75,61 @@
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
+		<key>Jobtypes/Submit Transcoder/Control.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>49</integer>
+				<key>line</key>
+				<integer>101</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>37</integer>
+		</dict>
 		<key>Jobtypes/Submit Transcoder/Job.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>46</integer>
+				<integer>3</integer>
 				<key>line</key>
-				<integer>7</integer>
+				<integer>8</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
+		<key>Jobtypes/Submit Transcoder/TranscoderPreFlight.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>18</integer>
+				<key>line</key>
+				<integer>58</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>5</integer>
+		</dict>
 		<key>Jobtypes/Submit Transcoder/execute.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>116</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>237</integer>
+				<integer>83</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>189</integer>
+			<integer>31</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/job.conf</key>
 		<dict>
@@ -130,14 +164,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>38</integer>
+				<integer>6</integer>
 				<key>line</key>
-				<integer>32</integer>
+				<integer>43</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>5</integer>
 		</dict>
 		<key>Modules/sequenceTools.py</key>
 		<dict>
@@ -175,7 +209,9 @@
 		<string>Modules/inputValidation.py</string>
 		<string>Jobtypes/Submit Transcoder/testJob.py</string>
 		<string>Jobtypes/Submit Transcoder/execute.py</string>
+		<string>Jobtypes/Submit Transcoder/Control.py</string>
 		<string>Jobtypes/Submit Transcoder/Job.py</string>
+		<string>Jobtypes/Submit Transcoder/TranscoderPreFlight.py</string>
 		<string>Jobtypes/Submit Transcoder/job.conf</string>
 		<string>Jobtypes/Submit After Effects v2/renderTalk.py</string>
 		<string>Submission/SubmitTranscoder.py</string>
@@ -183,6 +219,6 @@
 	<key>showFileHierarchyDrawer</key>
 	<false/>
 	<key>windowFrame</key>
-	<string>{{0, 4}, {960, 1054}}</string>
+	<string>{{1, 4}, {958, 1174}}</string>
 </dict>
 </plist>

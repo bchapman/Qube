@@ -280,7 +280,7 @@ class Sequence:
         match = pattern.match(path)
 
         if not match:
-            raise IOError("ERROR: Invalid Sequence")
+            raise IOError("ERROR: Invalid Sequence " + str(path))
 
         name, number, ext  = match.groups()
         splitPath = os.path.split(name)
