@@ -26,12 +26,13 @@ Features:
         can't be overwritten.
 """
 
-import os, sys
+import os
+import sys
 import inspect
 import logging
-import shlex, subprocess
-import time
-import tempfile, cProfile
+import shlex
+import subprocess
+
 sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
 
@@ -43,15 +44,9 @@ import sequenceTools
 '''
 Set up the logging module.
 '''
-
-logger = logging.getLogger("main")
-ch = logging.StreamHandler()
-formatter = logging.Formatter("%(levelname)s: %(message)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-logger.setLevel(logging.DEBUG)
-ch.setLevel(logging.DEBUG)
-
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 def initControl():
     '''
@@ -62,21 +57,23 @@ def initControl():
 
     return control
 
+
 def runCMD(cmd):
     '''
     Run the specified command using subprocess
     and return the exit code.
     '''
-    
+
     logger.debug("Command: " + cmd)
     proc = subprocess.Popen(shlex.split(cmd), bufsize=-1)
     proc.wait()
     return proc.returncode
 
+
 def executeJob(control):
     '''
     Execute the transcoding process.
-    
+
     '''
 
     jobstate = 'pending'
@@ -97,7 +94,7 @@ def executeJob(control):
                 blocked -- perhaps item is part of a dependency
                 '''
                 jobstate = agendaItem['status']
-                print 'job %s state is now %s' % (jobObject['id'], jobstate)
+                print 'job %s state is now %s' % (qbJob['id'], jobstate)
                 break
 
             '''
@@ -114,15 +111,16 @@ def executeJob(control):
 
                 returnCode = runCMD(control.getInitCMD(agendaItem))
                 logger.debug('Initialize Exit Code: ' + str(returnCode))
-            
+
                 if returnCode == 0:
                     logger.info("Transcoder Initialize Process Complete!\n")
                 else:
-                    logger.error("Transcoder Initialization Faild! (Exit Code)\n")
-        
+                    logger.error("Transcoder Initialization Failed! (Exit Code)\n")
+
             elif agendaItem['name'].startswith('Segment'):
                 '''
                 Segment Process:
+                    > Make sure the blender project was created
                     > Load the segment frame range from the work package.
                     > Check for missing frames in the segments frame range.
                         True
@@ -153,51 +151,56 @@ def executeJob(control):
                             > Continue
                     > Update the resultPackage with whether changes were made and the segment output file.
                 '''
-            
+
                 logger.info("Starting Transcoder Segment Process...")
+                render = False
+                error = False
 
-                ''' Load the frame range from the work package '''
-                logger.debug("Loading frame range from the work package...")
-                frameRangeString = agendaItem['package']['frameRange']
-                frameRange = sequenceTools.loadFrameRange(frameRangeString)
-        
-                ''' Check for Missing Frames '''
-                logger.info("Checking for missing frames...")
-                mySequence = control.getSequence()
-                missingFrames = mySequence.getMissingFrames(frameRange)
-
-                if len(missingFrames) > 0:
-                    logger.error('Missing frames!\n' + ','.join(missingFrames))
-
+                ''' Check for the blender project '''
+                if not os.path.exists(control.getBlendFile()):
+                    logger.error('Blender Project doesn\'t exist.')
+                    error = True
                 else:
-                
+
+                    ''' Load the frame range from the work package '''
+                    logger.debug("Loading frame range from the work package...")
+                    frameRangeString = agendaItem['package']['frameRange']
+                    frameRange = sequenceTools.loadFrameRange(frameRangeString)
+
+                    ''' Check for Missing Frames '''
+                    logger.info("Checking for missing frames...")
+                    mySequence = control.getSequence()
+                    missingFrames = mySequence.getMissingFrames(frameRange)
+
+                    if len(missingFrames) > 0:
+                        logger.error('Missing frames!\n' + ','.join(missingFrames))
+                        error = True
+
+                if not error:
+
                     ''' Variables used multiple times '''
-                    render = False
-                    error = False
                     segmentFilePath = agendaItem.setdefault('package', {}).get('outputName', '')
                     segmentFileExists = os.path.exists(segmentFilePath)
                     currentModTimes = {}
                     modTimeDBFile = control.getModTimeDBFile()
 
                     if control.getSmartUpdate():
-                    
+
                         modTimeDBFileExists = os.path.exists(modTimeDBFile)
-                    
+
                         logger.debug('Segment Output: ' + str(segmentFilePath))
                         logger.debug('Segment Exists: ' + str(segmentFileExists))
                         logger.debug('ModTimeDBFile: ' + str(modTimeDBFile))
                         logger.debug('ModTimeDBFile Exists: ' + str(modTimeDBFileExists))
-                    
+
                         if segmentFileExists and modTimeDBFileExists:
                             logger.info('Loading frames...')
-                            segmentFrames = mySequence.getFrames(frameRange)
-                            segmentFrameFilenames = mySequence.getFrameFilenames(segmentFrames)
-                
+
                             logger.info('Retrieving current modification times...')
                             currentModTimes = mySequence.getModTimes(frameRange)
-                
+
                             logger.info('Comparing modification times...')
-                            compare = mySequence.compare(modTimeDB, frameRange, currentModTimes=currentModTimes)
+                            compare = mySequence.compare(modTimeDBFile, frameRange, currentModTimes=currentModTimes)
                             logger.debug('Sequence Differences: ' + str(compare))
 
                             differences = compare['Added'] + compare['Deleted'] + compare['Modified']
@@ -212,32 +215,23 @@ def executeJob(control):
                     else:
                         render = True
 
-                    if render and segmentFileExists:
-                        for tryCount in range(0, 3+1):
-                            try:
-                                os.remove(segmentFilePath)
-                                render = True
-                            except:
-                                logger.warning('Unable delete existing segment file.')
-                                ''' Rename the outputFile '''
-                                if tryCount < 3:
-                                    path, extension = os.path.splitext(segmentFilePath)
-                                    segmentFilePath = path + '_' + extension
-                                    logger.debug('segmentFilePath Updated: ' + segmentFilePath)
-                                else:
-                                    logger.error('Unable to find suitable output path for segment.')
-                                    error = True
-                    
+                    if render:
+                        segmentFilePath = control.getValidOutputPath(segmentFilePath)
+                        if segmentFilePath:
+                            render = True
+                        else:
+                            error = True
+
                     if render:
                         cmd = control.getSegmentCMD(agendaItem)
                         returnCode = runCMD(cmd)
                         logger.debug('Initialize Exit Code: ' + str(returnCode))
-                
-                        if job.smartUpdate:
+
+                        if control.getSmartUpdate():
                             logger.info("Saving modification times...")
                             logger.debug("Saved ModTimes: " + str(currentModTimes))
-                            control.sequence.saveModTimes(modTimeDBFile, modTimeDict=currentModTimes, frameRange=control.frameRange)
-                
+                            control.job.sequence.saveModTimes(modTimeDBFile, modTimeDict=currentModTimes, frameRange=frameRange)
+
                     else:
                         if not error:
                             logger.info("No changes to segment " + agendaItem['name'])
@@ -247,7 +241,7 @@ def executeJob(control):
                     Check if this is the last agenda item that's complete.
                     If so, unblock the final output subjobs.
                     '''
-                    agendaItem['resultpackage'] = { 'Changed': render, 'segmentFile':segmentFile }
+                    agendaItem['resultpackage'] = {'Changed': render, 'segmentFile': segmentFilePath}
 
                     logger.info("Transcoder Segment Process Complete!\n")
 
@@ -281,10 +275,10 @@ def executeJob(control):
                 '''
 
                 logger.info("Starting Final Output Process...\n")
-            
+
                 transcode = False
                 errors = False
-            
+
                 if control.checkSegmentsForChanges(): # Add
                     transcode = True
 
@@ -310,12 +304,12 @@ def executeJob(control):
                         errors = True
                 else:
                     logger.info('No changes to Final ' + agendaItem['name'])
-                
+
                 if not errors:
-                    agendaItem['resultpackage'] = { 'outputPaths': control.getFinalOutputFile(agendaItem) }
+                    agendaItem['resultpackage'] = {'outputPaths': control.getFinalOutputFile(agendaItem)}
                     logger.info("Transcoder Finalize Process Completed Succesfully!\n")
                 else:
-                    logger.info("Transcoder Finalize Process Failed!\n")        
+                    logger.info("Transcoder Finalize Process Failed!\n")
 
 
             else:
@@ -340,16 +334,17 @@ def executeJob(control):
 def cleanupJob(job, state):
     qb.reportjob(state)
 
+
 def main():
     '''
     Run preflight checks to make sure the worker is ready and able to transcode.
     '''
-    
+
     if TranscoderPreFlight.run():
-        control  = initControl()
-        state    = executeJob(control)
+        control = initControl()
+        state = executeJob(control)
         cleanupJob(control, state)
-    
+
 if __name__ == "__main__":
     # f = tempfile.NamedTemporaryFile(delete=False)
     # cProfile.run('main()', f.name)

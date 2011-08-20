@@ -18,7 +18,7 @@ Set up the logging module.
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 def loadFrameRange(frameRange):
     '''
@@ -68,6 +68,8 @@ class Sequence:
         all existing frames from the current
         sequence object.
         '''
+        if type(frameRange) is list:
+            return frameRange
         if frameRange.upper() == 'ALL':
             bounds = self.getBounds()
             frameRange = str(bounds['start']) + '-' + str(bounds['end'])
@@ -170,11 +172,39 @@ class Sequence:
                             newList.append(frameNum)
                             count += 1
                     newList.append(result[-1])
-                    print 'Length: ' + str(len(newList))
                     return newList
             elif onlyMissing:
                 result = list(set(result) - set(existingFrames))
                 return result
+
+    def convertListToRanges(self, frames):
+        '''
+        Convert an array of frame numbers into a string of frame ranges.
+        Ex: 1,2,3,4,5,10 -> 1-5,10
+        '''
+        
+        i = 0
+        frameRanges = []
+        frames.sort()
+        if (len(frames) > 0):
+            while(i+1 <= len(frames)):
+                rangeStart = frames[i]
+
+                while(i+2 <= len(frames)):
+                    if (int(frames[i]) + 1 != int(frames[i+1])):
+                        break
+                    else:
+                        i = i+1
+
+                if (rangeStart != frames[i]):
+                    rng = str(rangeStart) + "-" + str(frames[i])
+                    frameRanges.append(rng)
+                else:
+                    rng = str(rangeStart)
+                    frameRanges.append(rng)
+                i = i+1
+
+        return ','.join(frameRanges)
 
     def getFrameFilename(self, frame, includeFolder=True):
         '''
@@ -361,10 +391,10 @@ class Sequence:
         frames = sorted(self.getFrames(frameRange))
 
         for frame in frames:
-            # sys.stdout.write('Retrieving modTime for ' + str(frame) + '.\n')
-            modTime = os.stat(frame).st_mtime
-            frameName = os.path.basename(frame)
-            result[frameName] = modTime
+            frameFilename = self.getFrameFilename(frame)
+            modTime = os.stat(frameFilename).st_mtime
+            frameName = os.path.basename(frameFilename)
+            result[frameFilename] = modTime
         return result
 
     def loadModTimesFromDB(self, filename, frameRange='ALL'):
@@ -395,7 +425,6 @@ class Sequence:
         result = {}
         for item in curs:
             frameName, modTime = item
-            # sys.stdout.write('Loading from db: ' + frameName + '\n')
             currentFrameNumber = int(self.splitPath(frameName)['currentFrame'])
 
             addToDict = False

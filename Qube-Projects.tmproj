@@ -40,7 +40,9 @@
 			<key>filename</key>
 			<string>Jobtypes/Submit Transcoder/Control.py</string>
 			<key>lastUsed</key>
-			<date>2011-08-18T18:04:55Z</date>
+			<date>2011-08-19T05:20:38Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
@@ -66,9 +68,9 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>20</integer>
+				<integer>46</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>35</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -80,14 +82,14 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>49</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>101</integer>
+				<integer>157</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>37</integer>
+			<integer>122</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/Job.py</key>
 		<dict>
@@ -124,12 +126,28 @@
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>83</integer>
+				<integer>229</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>31</integer>
+			<integer>177</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>214</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>229</integer>
+			</dict>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/job.conf</key>
 		<dict>
@@ -164,28 +182,28 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>6</integer>
+				<integer>56</integer>
 				<key>line</key>
-				<integer>43</integer>
+				<integer>31</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>5</integer>
+			<integer>-1</integer>
 		</dict>
 		<key>Modules/sequenceTools.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>43</integer>
 				<key>line</key>
-				<integer>21</integer>
+				<integer>284</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>307</integer>
+			<integer>250</integer>
 		</dict>
 		<key>Submission/SubmitTranscoder.py</key>
 		<dict>

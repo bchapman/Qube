@@ -8,16 +8,16 @@
 #
 # ======================================================
 
-import os, sys
+import os
+import sys
 import logging
-import math
 
 if 'QBDIR' in os.environ:
-    sys.path.append('%s/api/python' % os.environ['QBDIR']);
+    sys.path.append('%s/api/python' % os.environ['QBDIR'])
 elif os.uname()[0] == 'Darwin':
-    sys.path.append('/Applications/pfx/qube/api/python');
+    sys.path.append('/Applications/pfx/qube/api/python')
 else:
-    sys.path.append('/usr/local/pfx/qube/api/python');
+    sys.path.append('/usr/local/pfx/qube/api/python')
 
 import qb
 
@@ -42,7 +42,7 @@ def splitPath(inputPath):
     logger.debug('Splitting Path: ' + str(locals()))
     folder, fullName = os.path.split(inputPath)
     name, extension = os.path.splitext(fullName)
-    
+
     return folder + '/', name, extension
 
 
@@ -67,7 +67,7 @@ def chunkWithTolerance(inputList, chunkSize, tolerance):
                 resultList.append(inputList[itemNum-1])
                 itemNum += 1
 
-        if listLength - itemNum in range(1,tolerance+1):
+        if listLength - itemNum in range(1, tolerance+1):
             resultList.extend(inputList[itemNum:])
             itemNum = listLength
         else:
@@ -79,8 +79,9 @@ def chunkWithTolerance(inputList, chunkSize, tolerance):
     return resultLists
 
 
-def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
-                        selfContained=True, frameRange='ALL', audioFile='', smartUpdate=True, fillMissingFrames=True, transcoderFolder='', \
+def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
+                        selfContained=True, frameRange='ALL', audioFile='',
+                        smartUpdate=True, fillMissingFrames=True, transcoderFolder='',
                         segmentDuration=200, maxSegmentsPerOutput=20, maxSegmentTolerance=5):
     '''
     Setup a qube job dictionary based on the input.
@@ -193,7 +194,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
                         Path to the final output file.
                 Naming
                     Output: (outputFile)
-        
+
     Callbacks
         Callbacks are added to unblock subjobs when they are
         ready to be processed.
@@ -205,30 +206,31 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
                 output are complete, that output subjob
                 is unblocked.
             Job retried
-                If the job is retried 
-                
-                    
-                    
-                
+                If the job is retried
+
+
+
+
 
     '''
 
     ''' ---- Pre-Processing For Agenda ---- '''
 
     logger.debug('Setup Sequence: ' + str(locals()))
-    
+
     ''' General '''
     mySequence = sequenceTools.Sequence(sequenceInitFile, frameRange)
     sequenceName = mySequence.getName()
-    
-    
+    if not transcoderFolder:
+        transcoderFolder = os.path.join(os.path.dirname(outputFile), '_Transcoder/')
+
     ''' Initialize '''
     init = qb.Work()
     init['name'] = 'Initialize'
 
 
     ''' Segments
-    
+
     Use the qube chunk method to split up the frame range.
     Then prep each segment:
         Add the frameRange to the package.
@@ -241,7 +243,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
     for segment in segments:
         segment['package']= {}
         segment['package']['frameRange'] = segment['name']
-                
+
         outputFolder, outputName, outputExtension = splitPath(outputFile)
         segmentFile = os.path.join(transcoderFolder, 'Segments/')
         segmentFile += outputName + '/'
@@ -256,61 +258,62 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
 
     ''' Final Outputs '''
     finalOutputSegments = chunkWithTolerance(segments, maxSegmentsPerOutput, maxSegmentTolerance)
-    
+
     finalOutputs = []
     count = 1
     for outputSegment in finalOutputSegments:
         output = qb.Work()
         output['package'] = {}
-        
+
         segmentSubjobs = []
         for segment in outputSegment:
             segmentSubjobs.append(segment['name'])
         output['package']['segmentSubjobs'] = segmentSubjobs
-        
+
         outputFolder, outputName, outputExtension = splitPath(outputFile)
         finalOutputFile = outputFolder + outputName
-        if len(finalOutputSegments) > 1: finalOutputFile += '_' + chr(64+count)
+        if len(finalOutputSegments) > 1:
+            finalOutputFile += '_' + chr(64+count)
         finalOutputFile += outputExtension
         output['package']['outputFile'] = finalOutputFile
-        
+
         output['status'] = 'blocked'
         output['name'] = 'Output: ' + os.path.basename(finalOutputFile)
-        
+
         count += 1
-        
+
         finalOutputs.append(output)
 
 
     ''' Callbacks '''
-    
+
     callbacks = []
     for finalOutput in finalOutputs:
         callback = {}
         triggers = []
-        
+
         for segment in finalOutput['package']['segmentSubjobs']:
             triggers.append('complete-work-self-' + segment)
         callback['triggers'] = ' and '.join(triggers)
         callback['language'] = 'python'
-    
+
         code = 'import qb\n'
         code += '%s%s%s' % ('\nqb.workunblock(\'%s:', finalOutput['name'], '\' % qb.jobid())')
         code += '\nqb.unblock(qb.jobid())'
         callback['code'] = code
-        
+
         callbacks.append(callback)
 
 
     ''' ---- Now put the job together ---- '''
 
     job = qubeJobTemplate
-    
+
     ''' General '''
     job['name'] = 'Quicktime: ' + sequenceName
-    job['prototype']    = 'Submit Transcoder'
-    
-    
+    job['prototype'] = 'Submit Transcoder'
+
+
     ''' Package '''
     job['package'] = {}
     job['package']['sequence'] = sequenceInitFile
@@ -323,12 +326,12 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
     job['package']['frameRange'] = '1-' + str(mySequence.getDuration())
     job['package']['transcoderFolder'] = transcoderFolder
 
-    
+
     ''' Agenda '''
     job['agenda'] = []
     job['agenda'].append(init)
     job['agenda'].extend(segments)
-    
+
     ''' Place the final outputs after their last segment. '''
     for outputNum, output in enumerate(finalOutputs):
         lastSegmentName = output['package']['segmentSubjobs'][-1]
@@ -341,18 +344,19 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset, \
             job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
         else:
             print "ERROR: Unable to find last segment for output " + output['name']
-    
+
     ''' Callbacks '''
     if not job.get('callbacks', None):
         job['callbacks'] = []
     job['callbacks'].extend(callbacks)
-    
+
     return job
+
 
 def testJob():
     # Set basic job properties
     job = {}
-    job['cpus']         = 100
+    job['cpus'] = 100
     job['requirements'] = ''
     job['reservations'] = 'host.processors=1'
     job['flagsstring'] = 'auto_wrangling,expand'
@@ -361,10 +365,10 @@ def testJob():
     job['hostorder'] = '+host.processors.avail'
     sequenceFile = '/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/blindness_00000.png'
     outputFile = '/tmp/testing.mov'
-    preset = '/tmp/test.blend'
-    audioFile = '/tmp/audioFile.wav'
-    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4)
-    logger.error(job)
-    qb.submit([job])
+    preset = '/Users/bchapman/Projects/Scripts+Apps/Qube/_localRepo/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
+    audioFile = '/Users/bchapman/Projects/Scripts+Apps/Qube/_testingGrounds/blindness.wav'
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4, fillMissingFrames=True)
+    logger.info(job)
+    qb.archivejob('job.qja', job)
 
 testJob()

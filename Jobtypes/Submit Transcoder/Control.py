@@ -8,12 +8,14 @@ Version: 1.0
 Controls the transcoding job process.
 '''
 
-import os, sys, time, inspect
+import os
+import sys
+import inspect
+import logging
 
 sys.path.append('../../Modules/')
 import sequenceTools
 import inputValidation
-import logging
 import Job
 
 ''' Constants '''
@@ -26,7 +28,8 @@ MODTIMEDBFILEPREFIX = '.DATA.'
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
+
 
 class Control:
     '''
@@ -52,22 +55,27 @@ class Control:
         Load all the options from the qube job object into the Job model.
         '''
 
+        job = self.job
         seqFile = self.loadOption('sequence', required=True, isFullPath=True)
-        self.job.audioFile = self.loadOption('audioFile', required=False, isFullPath=True)
-        self.job.outputFile = self.loadOption('outputFile', required=True, isFolderPath=True)
-        self.job.preset = self.loadOption('preset', required=True, isFullPath=True)
-        self.job.resolution = self.loadOption('resolution', required=True)
-        self.job.frameRate = self.loadOption('frameRate', isFloat=True, required=True)
-        self.job.selfContained = self.loadOption('selfContained', isBool=True)
-        self.job.smartUpdate = self.loadOption('smartUpdate', isBool=True)
-        self.job.transcoderFolder = self.loadOption('transcoderFolder', required=True)
-        
+        job.audioFile = self.loadOption('audioFile', required=False, isFullPath=True)
+        job.outputFile = self.loadOption('outputFile', required=True, isFolderPath=True)
+        job.preset = self.loadOption('preset', required=True, isFullPath=True)
+        job.selfContained = self.loadOption('selfContained', isBool=True)
+        job.smartUpdate = self.loadOption('smartUpdate', isBool=True)
+        job.fillMissingFrames = self.loadOption('fillMissingFrames', isBool=True)
+        job.transcoderFolder = self.loadOption('transcoderFolder', required=True)
+        job.frameRange = self.loadOption('frameRange', required=True)
+
         if self.errors:
-            logger.error('Unabled to load Options:' + '\n'.join(self.errors))
+            logger.error('Unable to load job options:\n\t' + '\n\t'.join(self.errors))
         else:
             self.job.sequence = sequenceTools.Sequence(seqFile)
+            logger.info('Job Options Loaded Successfully')
+            
+        logger.debug('Job after loading all options: \n' + str(job)) 
 
-    def loadOption(self, name, required=False, isFullPath=False, isFolderPath=False, isFloat=False, isBool=False):
+    def loadOption(self, name, required=False, isFullPath=False,
+                    isFolderPath=False, isFloat=False, isBool=False):
         '''
         Load a job option with error checking and input validation.
 
@@ -85,39 +93,45 @@ class Control:
                         '\tisBool: ' + str(isBool) + '\n')
 
         pkg = self.job.qubejob.setdefault('package', {})
-        
+
         result = ''
         errors = []
         try:
             result = str(pkg.get(name, ''))
             logger.debug('Package contents for ' + str(name) + ': ' + result)
         except:
-            logger.debug('Unable to retrieve ' + name + ' from the qube job package.')
-            errors.append('Unable to retrieve ' + name + ' from the qube job package.')
-        
-        if errors:
+            logger.debug('Unable to retrieve ' + name +
+                        ' from the qube job package.')
+            errors.append('Unable to retrieve ' + name +
+                        ' from the qube job package.')
+
+        if not errors:
             if result == '':
                 if required:
                     errors.append('Required option ' + name + ' is empty.')
-                    
+            else:
                 if isFloat:
                     try:
                         result = float(result)
                     except:
                         errors.append('Invalid Float Value of ' + str(result) + ' for ' + name)
+
                 if isBool:
                     try:
                         result = bool(result)
                     except:
                         errors.append('Invalid Boolean Value of ' + str(result) + ' for ' + name)
-            else:
+
                 if isFullPath:
-                    result = inputValidation.validateFile(result)
-                    if not result:
-                        errors.append('Invalid File Path\n' + name + ': ' + result)
+                    try:
+                        result = inputValidation.validateFile(result)
+                    except:
+                        errors.append('Invalid File Path for ' + name + ': ' + result)
+
                 elif isFolderPath:
-                    result = inputValidation.validateFolder(result)
-                    if not result:
+                    try:
+                        result = inputValidation.validateFolder(result)
+                    except:
                         errors.append('Invalid Folder Path\n' + name + ': ' + result)
 
         if errors:
@@ -128,11 +142,43 @@ class Control:
 
         return result
 
+    def getValidOutputPath(self, outputPath):
+        '''
+        Checks that an the outputPath is valid.
+        If the file already exists, it is removed.
+        If we can't remove it, choose another file name
+        with an _# suffix.
+        Returns the valid output path.
+        '''
+
+        inName, inExt = os.path.splitext(outputPath)
+        resultPath = outputPath
+        if os.path.exists(resultPath):
+            count = 0
+            while(True):
+                count += 1
+                try:
+                    os.remove(resultPath)
+                    break
+                except:
+                    logger.warning('Unable to delete existing file. ' + str(outputPath))
+                    resultPath = inName + '_' + str(count) + inExt
+                    logger.debug('Trying update output path. ' + resultPath)
+                if count > 5:
+                    logger.error('Unable to find valid output path.')
+                    resultPath = None
+                    break
+
+        return resultPath
+
+    def getSequence(self):
+        return self.job.sequence
+
     def getAllSegments(self):
         '''
         Load the all segments from the qube job object.
         '''
-        
+
         agenda = self.qubejob.get('agenda', {})
         if (agenda == {}):
             logger.error('Job missing agenda')
@@ -141,36 +187,18 @@ class Control:
             segments = []
             for subjob in agenda:
                 segments.append(subjob)
-            
+
             return segments
 
     def getCurrentSegment(self, work):
         '''
         Loads only the requested work segment.
         '''
-        
+
         segments = []
         segments.append(work)
-        
-        return segments
 
-    #  Old
-    # def getCMD(self, work):
-    #     '''
-    #     Returns the command for the subjob based on the work item.
-    #     '''
-    #     
-    #     result = ''
-    #     if (work['name'] == 'Initialize'): result = self.getInitCMD(work)
-    #     elif (str(work['name']).endswith('.mov')): result = self.getFinalizeCMD(work)
-    #     elif (work['name'] != ''):
-    #         result = self.getSegmentCMD(work)
-    #     else:
-    #         logger.error('Weird Work:' + str(work))
-    #         logger.error('Weird Work Status: ' + str(work['status']))
-    #         result = 'ls'
-    # 
-    #     return result
+        return segments
 
     def getModTimeDBFile(self):
         '''
@@ -179,74 +207,79 @@ class Control:
         Later this can be compared to find changes in the sequence.
         '''
 
-        result = self.sequence.folder + '/' + MODTIMEDBFILEPREFIX + os.path.splitext(os.path.basename(self.sequence.initFile))[0] + '.db'
+        result = self.job.sequence.folder + '/' + MODTIMEDBFILEPREFIX
+        result += os.path.splitext(os.path.basename(self.job.sequence.initFile))[0]
+        result += '.db'
         return result
+
+    def getSmartUpdate(self):
+        return self.job.smartUpdate
+
+    def getQubeJobObject(self):
+        return self.job.qubejob
 
     def getInitCMD(self, work):
         '''
         Returns the initialize command which sets up a blender scene
         to transcode the sequence.
+        Input:
+            agenda work item from Qube
+
+        Output Command Structure:
+            BLENDERLOCATION Preset Script -- Sequence Destination Autofill
+            
+            Blender Preset File
+                Blender project file that contains the preset settings
+            Blender Initialization Script
+                The script that runs inside of blender to generate the template.
+
+            Separate the script arguments with '--'
+
+            Sequence File
+                Single file from the image sequence
+            Destination for blender file
+            Autofill missing frames
+                Whether the autofill the missing frames with surrounding frames.
         '''
-        
+
         cmd = '\'' + BLENDERLOCATION + '\''
-        
-        ''' Add the preset blender file which has the base conversion settings. '''
         cmd += ' -b \'' + self.job.preset + '\''
-        
-        '''
-        Add the Blender_InitSequence script which runs
-        inside of blender once it's launched.
-        '''
         cwd = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         cmd += ' -P \'' + cwd + '/' + BLENDERINITSCRIPT + '\''
 
-        '''
-        Add the rest of the conversion settings as arguments after
-        the seperator '--'
-            1 - Sequence Folder
-            2 - Resolution
-            3 - Frame Rate(ex: 100x100)
-            4 - Where to save blender file
-            5 - Audio File
-        '''
         cmd += ' -- '
         cmd += ' \'' + self.job.sequence.initFile + '\''
-        cmd += ' \'' + self.job.resolution + '\''
-        cmd += ' \'' + self.job.frameRate + '\''
-        cmd += ' \'' + self.getBlendFile() + ' \''
-        if self.job.audioFile:
-            cmd += ' \'' + self.job.audioFile + '\''
-        
+        cmd += ' \'' + self.getBlendFile() + '\''
+        cmd += ' \'' + str(self.job.fillMissingFrames) + '\''
+
         return cmd
 
     def getSegmentCMD(self, work):
         '''
         Returns the command to render the segment using blender.
-        
+
         Template: blender -b blendfile -x 1 -s startFrame -e endFrame -o outputFile -a
         '''
-        
+
         workPkg = work.setdefault('package', {})
 
-        cmd = '\'' + BLENDERLOCATION + '\''
-        cmd += ' -b \'' + self.getBlendFile() + '\''
-        cmd += ' -x 1' # Use an extension on the end of the file
-
-        ''' Get the start and end frames from the work item name. '''
-        startFrame, endFrame = work.get('name', '').split('-')
-
-        cmd += ' -s ' + startFrame
-        cmd += ' -e ' + endFrame
-        cmd += ' -o ' + self.getSegmentOutputFile(workPkg.get('outputName', ''))
-        cmd += ' -a'
+        segmentFile = workPkg.get('segmentFile', '')
+        segmentFile = self.getValidOutputPath(segmentFile)
         
-        return cmd
+        if segmentFile:
+            cmd = '\'' + BLENDERLOCATION + '\''
+            cmd += ' -b \'' + self.getBlendFile() + '\''
+            cmd += ' -x 1' # Use an extension on the end of the file
 
-    def getSmartUpdate(self):
-        return self.job.smartUpdate
-    
-    def getQubeJobObject(self):
-        return self.job.qubejob
+            ''' Get the start and end frames from the work item name. '''
+            startFrame, endFrame = workPkg.get('frameRange', '').split('-')
+
+            cmd += ' -s ' + startFrame
+            cmd += ' -e ' + endFrame
+            cmd += ' -o ' + segmentFile
+            cmd += ' -a'
+
+        return cmd
 
     def getFinalizeCMD(self, work):
         '''
@@ -260,19 +293,19 @@ class Control:
                 If the self-contained was checked, this is also applied.
                 If the render is split up, audio will be split as well.
                 This uses muxmovie.
-        
+
         *Name of the output files is defined by the name of the agenda item.
         *Only segments listed in the agenda item's package are used in the final quicktime.
-        
+
         Command Templates:
             catmovie -o tempOutputFile - (Segments)
-            muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile 
+            muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile
         '''
 
         allSegments = self.getAllSegments()
         dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
         logger.debug('Dependants: ' + str(dependantNames))
-        
+
         ''' Only add the files that are dependants. '''
         segments = ''
         changes = False
@@ -282,7 +315,8 @@ class Control:
                     fileName = segment.get('package', {}).get('outputName', '')
                     segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
                     segChanges = segment.get('resultpackage', {}).get('Changed', '0')
-                    if segChanges != '0': changes = True
+                    if segChanges != '0':
+                        changes = True
                     logger.debug('Found Dependent: ' + str(segment['name']))
                     logger.debug('Changes: ' + str(changes))
 
@@ -290,9 +324,8 @@ class Control:
         logger.debug('Anything changed? ' + str(changes))
         finalOutputFile = self.getFinalOutputFile(work)
         logger.debug('Final Output File: ' + str(finalOutputFile))
-        finalOutputFileExists = os.path.exists(finalOutputFile)
-        logger.debug('Final Output File Exists: ' + str(finalOutputFileExists))
-        if not changes and finalOutputFileExists:
+
+        if not changes:
             cmd += 'echo "No Changes"'
         else:
             catOutput = self.getTempOutputFile(work)
@@ -303,20 +336,27 @@ class Control:
 
             muxCMD = '\'' + MUXMOVIELOCATION + '\''
             muxCMD += ' -o \'' + finalOutputFile + '\''
-            if self.selfContained: muxCMD += ' -self-contained -trimToShortestTrack'
+            if self.selfContained:
+                muxCMD += ' -self-contained -trimToShortestTrack'
             if self.audioFile:
                 ''' Calculate the offset start time for the audio. '''
                 startFrame, endFrame = dependantNames[0].split('-')
                 logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
                 frameRate = self.frameRate
                 audioStart = float(startFrame)/float(frameRate)
-                audioEnd = float(endFrame)/float(frameRate)
                 muxCMD += ' \'' + str(self.audioFile) + '\' -startAt ' + str(audioStart)
             muxCMD += ' ' + catOutput
 
             cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
 
         return cmd
+
+    def checkSegmentsForChanges(self):
+        '''
+        Retrieve the jobs agenda and check for the work items that changed.
+        '''
+        
+        pass
 
     def getBlendFile(self):
         '''
@@ -326,11 +366,13 @@ class Control:
         '''
 
         fileName = str(self.getQubeJobObject().get('id', ''))
-        fileName += '-' + os.path.splitext(os.path.basename(self.job.sequence.initFile))[0] + '.blend'        
+        fileName += '-' + os.path.splitext(os.path.basename(self.job.sequence.initFile))[0] + '.blend'
         blenderFolder = os.path.join(self.job.transcoderFolder, 'Blender/')
         result = os.path.join(blenderFolder, fileName)
-        
+
         self.makeFolders(blenderFolder)
+
+        logger.debug('getBlendFile result: ' + str(result))
 
         return result
 
@@ -338,12 +380,12 @@ class Control:
         '''
         Returns a full path for a segment based on the name of the file.
         '''
-        
-        segmentsFolder = os.path.join(self.transcoderFolder, 'Segments/')
+
+        segmentsFolder = os.path.join(self.job.transcoderFolder, 'Segments/')
         result = os.path.join(segmentsFolder, fileName)
-        
+
         self.makeFolders(segmentsFolder)
-        
+
         return result
 
     def getFinalOutputFile(self, work):
@@ -351,13 +393,13 @@ class Control:
         Returns a full path for a final output file based
         on the supplied work item's name.
         '''
-        
+
         fileName = work.get('name', '')
         finalFolder = os.path.dirname(self.outputFile)
         result = os.path.join(finalFolder, fileName)
-        
+
         self.makeFolders(finalFolder)
-        
+
         return result
 
     def getTempOutputFile(self, work):
@@ -366,10 +408,10 @@ class Control:
         based on the supplied work item's name.
         We'll just use the segments folder.
         '''
-        
+
         fileName = work.get('name', '')
         result = self.getSegmentOutputFile(fileName)
-        
+
         return result
 
     def makeFolders(self, folderPath):
@@ -379,13 +421,11 @@ class Control:
         except:
             logger.debug('Folder already exists ' + str(folderPath) + '.')
 
-
     def __str__(self):
         result = 'Job Details:\n'
         for key, value in vars(self).items():
             result += '\t' + str(key) + ' : ' + str(value) + '\n'
         return result
-
 
     def __repr__(self):
         return self.__str__()

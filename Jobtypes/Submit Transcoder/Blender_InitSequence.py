@@ -12,25 +12,23 @@ Settings:
   2-(string) Where to save blender file
   3-(boolean) Fill Missing Frames
 '''
-
-import bpy, os, sys
+import os
+import sys
 import logging
+
+import bpy
+
+sys.path.append('/Users/bchapman/Projects/Scripts+Apps/Qube/_localRepo/Modules/')
+import sequenceTools
 
 ''' Setup the logger. '''
 logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-try:
-    sys.path.append('../../Modules/')
-    import sequenceTools
-except:
-    logger.error('Unable to import sequenceTools')
-    sys.exit(7)
-
+logger = logging.getLogger('InitSequence Script')
+# logger.setLevel(logging.DEBUG)
 
 def main():
     logger.info("Blender Loaded, Processing...")
+    exitCode = 7
 
     ''' Get the arguments after the '--' separator. '''
     args = sys.argv[(sys.argv.index('--')+1):]
@@ -53,7 +51,8 @@ def main():
         {'name':frameFileName}
         '''
         myFiles = []
-        for pathToFrame in mySequence.getFrames(fillMissing=fillMissingFrames):
+        frameNumbers = mySequence.getFrames(fillMissing=fillMissingFrames)
+        for pathToFrame in mySequence.getFrameFilenames(frameNumbers):
             myFrame = {'name':os.path.basename(pathToFrame)}
             myFiles.append(myFrame)
 
@@ -63,14 +62,16 @@ def main():
             logger.error('No sequence files in folder.')
             sys.exit(1)
         else:
-            ''' Check for missing frames. '''
+            '''
+            Check for missing frames. If fillMissingFrames is on, then we
+            continue with missing frames.
+            '''
             missingFrames = mySequence.getMissingFrames()
-            if len(missingFrames) > 0:
-                logger.error('Missing Frames')
-                for frame in missingFrames:
-                    logger.error('Missing Frames: ' + frame)
-        
-            else:
+            logger.warning('Missing Frames: ' + mySequence.convertListToRanges(missingFrames))
+            if fillMissingFrames:
+                logger.warning('Fill missing frames enabled, ignoring missing frames.')
+
+            if len(missingFrames) < 0 or fillMissingFrames:
                 logger.info('Sequence loaded!')
 
                 logger.info('Setting up blender scene...')
@@ -101,6 +102,9 @@ def main():
                 logger.info('Blender Scene Saved to ' + sceneFile)
     
                 logger.info('Blender Scene Complete!')
+        
+        return exitCode
 
 if __name__ == '__main__':
-    main()
+    exitCode = main()
+    sys.exit(exitCode)
