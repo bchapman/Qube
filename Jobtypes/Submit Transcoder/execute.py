@@ -45,7 +45,8 @@ import sequenceTools
 Set up the logging module.
 '''
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Execute')
+logger.setLevel(logging.INFO)
 # logger.setLevel(logging.DEBUG)
 
 def initControl():
@@ -179,7 +180,7 @@ def executeJob(control):
                 if not error:
 
                     ''' Variables used multiple times '''
-                    segmentFilePath = agendaItem.setdefault('package', {}).get('outputName', '')
+                    segmentFilePath = agendaItem.setdefault('package', {}).get('segmentFile', '')
                     segmentFileExists = os.path.exists(segmentFilePath)
                     currentModTimes = {}
                     modTimeDBFile = control.getModTimeDBFile()
@@ -230,7 +231,8 @@ def executeJob(control):
                         if control.getSmartUpdate():
                             logger.info("Saving modification times...")
                             logger.debug("Saved ModTimes: " + str(currentModTimes))
-                            control.job.sequence.saveModTimes(modTimeDBFile, modTimeDict=currentModTimes, frameRange=frameRange)
+                            control.job.sequence.saveModTimes(modTimeDBFile,
+                                modTimeDict=currentModTimes, frameRange=frameRange)
 
                     else:
                         if not error:

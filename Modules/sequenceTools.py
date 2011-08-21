@@ -18,7 +18,7 @@ Set up the logging module.
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def loadFrameRange(frameRange):
     '''
@@ -335,14 +335,12 @@ class Sequence:
         for comparison next time.
         '''
         
-        sys.stdout.write('Incoming modTimeDict: ' + str(modTimeDict) + '\n')
-        sys.stdout.write('frameRange: ' + str(frameRange) + '\n')
         if modTimeDict == {}:
             modTimeDict = {}
-            sys.stdout.write('Loading modification times: No hash dictionary provided.\n')
+            logger.debug('Loading modification times: No hash dictionary provided.\n')
             modTimeDict = self.getModTimes(frameRange)
 
-        sys.stdout.write('Saving modification times to database...\n')
+        logger.info('Saving modification times to database...\n')
         conn = sqlite3.connect(filename)
         curs = conn.cursor()
         test = curs.execute('CREATE TABLE IF NOT EXISTS frames (name, modtime)')
@@ -352,7 +350,7 @@ class Sequence:
         for item in items:
             curs.execute('INSERT OR REPLACE INTO frames (name, modtime) VALUES (?,?)', item)
             
-        sys.stdout.write('Committing changes to database...\n')
+        logger.info('Committing changes to database...\n')
         conn.commit()    
         conn.close()
         
@@ -394,7 +392,7 @@ class Sequence:
             frameFilename = self.getFrameFilename(frame)
             modTime = os.stat(frameFilename).st_mtime
             frameName = os.path.basename(frameFilename)
-            result[frameFilename] = modTime
+            result[frameName] = modTime
         return result
 
     def loadModTimesFromDB(self, filename, frameRange='ALL'):
@@ -403,18 +401,18 @@ class Sequence:
         for frames that have changed since last time.
         '''
 
-        logger.debug('Retrieving hash codes from database.')
-        sys.stdout.write('getModTimesFromFile...\n')
+        logger.debug('Retrieving hash codes from database...')
         conn = sqlite3.connect(filename)
         curs = conn.cursor()
         test = curs.execute('CREATE TABLE IF NOT EXISTS frames (name, modtime)')
+
         if str(frameRange).upper() == 'ALL':
             curs.execute('SELECT * from frames order by name')
         else:
             dbRange = []
             frameRange = self.loadFrameRange(frameRange)
             for frame in frameRange:
-                dbRange.append('"' + self.prefix + str(self.padFrame(frame)) + self.extension + '"')
+                dbRange.append('"' + self.getFrameFilename(frame, includeFolder=False) + '"')
             cmd = 'SELECT name,modtime FROM frames WHERE name IN(' + ','.join(dbRange) + ') order by name'
             curs.execute(cmd)
 

@@ -24,7 +24,7 @@ import sequenceTools
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger('InitSequence Script')
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def main():
     logger.info("Blender Loaded, Processing...")
@@ -67,7 +67,7 @@ def main():
             continue with missing frames.
             '''
             missingFrames = mySequence.getMissingFrames()
-            logger.warning('Missing Frames: ' + mySequence.convertListToRanges(missingFrames))
+            logger.warning('Sequence Missing Frames: ' + mySequence.convertListToRanges(missingFrames))
             if fillMissingFrames:
                 logger.warning('Fill missing frames enabled, ignoring missing frames.')
 
@@ -102,6 +102,7 @@ def main():
                 logger.info('Blender Scene Saved to ' + sceneFile)
     
                 logger.info('Blender Scene Complete!')
+                exitCode = 0
         
         return exitCode
 
