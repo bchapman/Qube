@@ -235,17 +235,16 @@ def executeJob(control):
                             compare = mySequence.compare(modTimeDBFile, frameRange, currentModTimes=currentModTimes)
                             logger.debug('Sequence Differences: ' + str(compare))
 
-                            differences = 'Sequence Differences:'
+                            differences = ''
                             if len(compare['Added']) > 0:
                                 differences += '\n\tAdded: ' + sequenceTools.convertListToRanges(compare['Added'])
                             if len(compare['Deleted']) > 0:
                                 differences += '\n\tDeleted: ' + sequenceTools.convertListToRanges(compare['Deleted'])
                             if len(compare['Modified']) > 0:
-                                differences += '\n\tModified: ' + sequenceTools.convertListToRanges(compare['Modified'])
+                                differences += '\n\tModified: ' + sequenceTools.convertListToRanges(compare['Modified'])    
                             
-                            logger.info(differences)
-
-                            if len(differences) > 0:
+                            if differences:
+                                logger.info('Sequence Differences:' + differences)
                                 render = True
 
                         else:

@@ -339,19 +339,20 @@ class Sequence:
             logger.debug('Loading modification times: No hash dictionary provided.\n')
             modTimeDict = self.getModTimes(frameRange)
 
-        logger.info('Saving modification times to database...\n')
+        logger.info('Saving modification times...\n')
         conn = sqlite3.connect(filename)
         curs = conn.cursor()
         test = curs.execute('CREATE TABLE IF NOT EXISTS frames (name, modtime)')
         items = modTimeDict.items()
 
-        sys.stdout.write("Writing " + str(len(items)) + " modification times to the database...\n")
+        logger.info("Writing " + str(len(items)) + " modification times\n")
         for item in items:
             curs.execute('INSERT OR REPLACE INTO frames (name, modtime) VALUES (?,?)', item)
             
         logger.info('Committing changes to database...\n')
         conn.commit()    
         conn.close()
+        logger.info('Modification times saved.')
         
     def compare(self, databaseFile, frameRange='ALL', pastModTimes={}, currentModTimes={}):
         '''
