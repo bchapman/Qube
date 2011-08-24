@@ -9,7 +9,7 @@ import os
 import logging
 
 ''' Setup the logger. '''
-logging.basicConfig()
+# logging.basicConfig()
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
@@ -73,7 +73,7 @@ def validateFolder(folderpath, expand=True, checkExist=True, createDirectories=T
         if result != folderpath:
             logger.debug("Expanded Path: " + result)
     else:
-        result = filepath
+        result = folderpath
 
     if checkExist and not os.path.exists(result):
         if createDirectories:
@@ -94,7 +94,7 @@ def validateString(inputString):
     inputString = str(inputString)
     
     logger.debug("validateFolder")
-    logger.debug("Input: " + folderpath)
+    logger.debug("Input: " + inputString)
     logger.debug("Parameters: " + str(locals().items()))
 
     return inputString

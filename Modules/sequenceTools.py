@@ -16,7 +16,7 @@ import logging
 Set up the logging module.
 '''
 ''' Setup the logger. '''
-logging.basicConfig()
+# logging.basicConfig()
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO)
 logger.setLevel(logging.DEBUG)
