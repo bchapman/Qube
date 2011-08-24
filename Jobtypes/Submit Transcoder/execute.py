@@ -56,7 +56,7 @@ class SingleLevelFilter(logging.Filter):
         else:
             return (record.levelno == self.passlevel)
 
-logging.basicConfig()
+# logging.basicConfig()
 rootLogger = logging.getLogger()            
 h1 = logging.StreamHandler(sys.stdout)
 h1_formatter = logging.Formatter(
