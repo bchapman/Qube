@@ -315,7 +315,7 @@ class Control:
         catOutput = self.getTempOutputFile(work)
         catCMD = '\'' + CATMOVIELOCATION + '\''
         catCMD += ' -o \'' + catOutput + '\''
-        catCMD += ' -'
+        catCMD += ' - '
         catCMD += ' '.join(segmentOutputPaths)
 
         muxCMD = '\'' + MUXMOVIELOCATION + '\''
