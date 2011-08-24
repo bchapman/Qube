@@ -59,6 +59,9 @@ class SingleLevelFilter(logging.Filter):
 logging.basicConfig()
 rootLogger = logging.getLogger()            
 h1 = logging.StreamHandler(sys.stdout)
+log_formatter = logging.Formatter(
+        "%(name)s: %(asctime)s - %(levelname)s: %(message)s")
+h1.setFormatter(log_formatter)
 f1 = SingleLevelFilter(logging.INFO, False)
 h1.addFilter(f1)
 rootLogger.addHandler(h1)
