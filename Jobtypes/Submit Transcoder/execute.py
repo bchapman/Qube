@@ -46,8 +46,8 @@ Set up the logging module.
 '''
 logging.basicConfig()
 logger = logging.getLogger('Execute')
-logger.setLevel(logging.INFO)
-# logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 def initControl():
     '''
@@ -281,11 +281,21 @@ def executeJob(control):
                 transcode = False
                 errors = False
 
-                if control.checkSegmentsForChanges(): # Add
-                    transcode = True
+                dependantNames = agendaItem.get('package', {}).get('segmentSubjobs', '')
+                logger.debug('Dependants Names: ' + str(dependantNames))
 
-                segmentOutputPaths = control.loadSegmentOutputPaths(agendaItem)
-                if control.checkSegmentOutputPathsExist():
+                dependantSegments = control.getSegments(dependantNames)
+                logger.debug('Dependants Segments: ' + str(dependantSegments))
+
+                changes = control.checkSegmentsForChanges(dependantSegments)
+                logger.debug('Changes: ' + str(changes))
+                if changes:
+                    transcode = True
+                else:
+                    logger.info('No changes for final output.')
+
+                segmentOutputPaths = control.loadSegmentOutputPaths(dependantSegments)
+                if segmentOutputPaths:
                     transcode = True
                 else:
                     errors = True
@@ -297,8 +307,11 @@ def executeJob(control):
                 else:
                     errors = True
 
+                startFrame = control.getOutputStartFrame(dependantSegments)
+                logger.debug('Output Start Frame: ' + startFrame)
+
                 if transcode:
-                    cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath, agendaItem)
+                    cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath, startFrame, 29.97, agendaItem)
                     returnCode = runCMD(cmd)
                     logger.debug('Final Output CMD Exit Code: ' + str(returnCode))
                     if returnCode != 0:
@@ -308,7 +321,7 @@ def executeJob(control):
                     logger.info('No changes to Final ' + agendaItem['name'])
 
                 if not errors:
-                    agendaItem['resultpackage'] = {'outputPaths': control.getFinalOutputFile(agendaItem)}
+                    agendaItem['resultpackage'] = {'outputPaths': finalOutputPath}
                     logger.info("Transcoder Finalize Process Completed Succesfully!\n")
                 else:
                     logger.info("Transcoder Finalize Process Failed!\n")

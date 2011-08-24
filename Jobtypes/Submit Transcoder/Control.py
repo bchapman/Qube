@@ -13,7 +13,7 @@ import sys
 import inspect
 import logging
 
-sys.path.append('../../Modules/')
+sys.path.append('/Volumes/theGrill/.qube/Modules/')
 import sequenceTools
 import inputValidation
 import Job
@@ -288,7 +288,8 @@ class Control:
 
         return cmd
 
-    def getFinalizeCMD(self, segmentOutputPaths, finalOutputPath, work):
+    def getFinalizeCMD(self, segmentOutputPaths, finalOutputPath, startFrame,
+                        frameRate, work):
         '''
         Returns the Finalize command to put together a final quicktime.
         Steps:
@@ -309,47 +310,27 @@ class Control:
             muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile
         '''
 
-
-        dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
-        logger.debug('Dependants Names: ' + str(dependantNames))
-
-        dependantSegments = self.getSegments(dependantNames)
-        logger.debug('Dependants Segments: ' + str(dependantNames))
-        
-        changes = self.checkSegmentsForChanges(dependantSegments)
-        logger.debug('Changes: ' + str(changes))
-
-        finalOutputFile = self.getFinalOutputFile(work)
-        logger.debug('Final Output File: ' + str(finalOutputFile))
-
         cmd = ''
-        if changes:
-            segmentPaths = self.getSegmentOutputPaths(dependantSegments)
-            
-            catOutput = self.getTempOutputFile(work)
-            catCMD = '\'' + CATMOVIELOCATION + '\''
-            catCMD += ' -o \'' + catOutput + '\''
-            catCMD += ' -'
-            catCMD += ' '.join(segmentPaths)
+        
+        catOutput = self.getTempOutputFile(work)
+        catCMD = '\'' + CATMOVIELOCATION + '\''
+        catCMD += ' -o \'' + catOutput + '\''
+        catCMD += ' -'
+        catCMD += ' '.join(segmentOutputPaths)
 
-            muxCMD = '\'' + MUXMOVIELOCATION + '\''
-            muxCMD += ' -o \'' + finalOutputFile + '\''
-            if self.selfContained:
-                muxCMD += ' -self-contained -trimToShortestTrack'
-            if self.audioFile:
-                ''' Calculate the offset start time for the audio. '''
-                startFrame, endFrame = dependantNames[0].split('-')
-                logger.debug(work.get('name', '') + ' start frame is ' + str(startFrame))
-                frameRate = self.frameRate
-                audioStart = float(startFrame)/float(frameRate)
-                muxCMD += ' \'' + str(self.audioFile) + '\' -startAt ' + str(audioStart)
-            muxCMD += ' ' + catOutput
+        muxCMD = '\'' + MUXMOVIELOCATION + '\''
+        muxCMD += ' -o \'' + finalOutputPath + '\''
+        if self.selfContained:
+            muxCMD += ' -self-contained -trimToShortestTrack'
+        if self.audioFile:
+            ''' Calculate the offset start time for the audio. '''
+            audioStart = float(startFrame)/float(frameRate)
+            muxCMD += ' \'' + str(self.audioFile) + '\' -startAt ' + str(audioStart)
+        muxCMD += ' ' + catOutput
 
-            cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
-            
-            return cmd
-        else:
-            return None
+        cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
+        
+        return cmd
 
     def checkSegmentsForChanges(self, segments):
         '''
@@ -361,7 +342,7 @@ class Control:
         changes = False
         for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                segmentChanges = bool(segment.get('package', {}).get('changes', ''))
+                segmentChanges = bool(segment.get('resultPackage', {}).get('changes', ''))
                 logger.debug(segment['name'] + ' - Changes: ' + str(segmentChanges))
                 if segmentChanges:
                     changes = True
@@ -377,11 +358,34 @@ class Control:
         outputPaths = []
         for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                segmentFile = segment.get('package', {}).get('segmentFile', '')
+                segmentFile = segment.get('resultPackage', {}).get('segmentFile', '')
                 outputPaths.append(segmentFile)
                 logger.debug(segment['name'] + ' - segmentFile: ' + segmentFile)
         
-        return outputPaths
+        error = False
+        for path in outputPaths:
+            if not os.path.exists(path):
+                logger.error('Segment Output doesn\'t exist: ' + path)
+                error = True
+        
+        if error:
+            return None
+        else:
+            return outputPaths
+        
+    def getOutputStartFrame(self, segments):
+        '''
+        Takes a list of segment subjobs and checks the package of each for the
+        frameRange property.  All of the frame ranges are then returned
+        as a list.
+        '''
+        
+        startFrame = None
+        frameRangeString = segments[0].get('package', {}).get('frameRange', '')
+        startFrame = frameRangeString.split('-')[0]
+        logger.debug('Start Frame: ' + str(startFrame))
+
+        return startFrame
 
     def getBlendFile(self):
         '''

@@ -369,6 +369,7 @@ def testJob():
     audioFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/test.wav'
     job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4, fillMissingFrames=True)
     logger.info(job)
-    qb.archivejob('job.qja', job)
+    qb.submit([job])
+    # qb.archivejob('job.qja', job)
 
 testJob()
