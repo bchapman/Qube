@@ -342,7 +342,7 @@ class Control:
         changes = False
         for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                segmentChanges = bool(segment.get('resultPackage', {}).get('changes', ''))
+                segmentChanges = bool(segment.get('resultpackage', {}).get('Changed', ''))
                 logger.debug(segment['name'] + ' - Changes: ' + str(segmentChanges))
                 if segmentChanges:
                     changes = True
@@ -355,10 +355,11 @@ class Control:
         for the segmentFile property.  These are added to an array and returned.
         '''
         
+        logger.debug('outputPaths|segments: ' + str(segments))
         outputPaths = []
         for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                segmentFile = segment.get('resultPackage', {}).get('segmentFile', '')
+                segmentFile = segment.get('resultpackage', {}).get('segmentFile', '')
                 outputPaths.append(segmentFile)
                 logger.debug(segment['name'] + ' - segmentFile: ' + segmentFile)
         
