@@ -287,22 +287,22 @@ def executeJob(control):
                 dependantSegments = control.getSegments(dependantNames)
                 logger.debug('Dependants Segments: ' + str(dependantSegments))
 
+                finalOutputPath = agendaItem['package']['outputFile']
+                finalOutputPath = control.getValidOutputPath(finalOutputPath)
+                if finalOutputPath:
+                    transcode = True
+                else:
+                    errors = True
+
                 changes = control.checkSegmentsForChanges(dependantSegments)
                 logger.debug('Changes: ' + str(changes))
-                if changes:
+                if changes or not os.path.exists(finalOutputPath):
                     transcode = True
                 else:
                     logger.info('No changes for final output.')
 
                 segmentOutputPaths = control.getSegmentOutputPaths(dependantSegments)
                 if segmentOutputPaths:
-                    transcode = True
-                else:
-                    errors = True
-
-                finalOutputPath = agendaItem['package']['outputFile']
-                finalOutputPath = control.validateOutputFile(finalOutputPath)
-                if finalOutputPath:
                     transcode = True
                 else:
                     errors = True
