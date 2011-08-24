@@ -60,7 +60,7 @@ class Control:
         job = self.job
         seqFile = self.loadOption('sequence', required=True, isFullPath=True)
         job.audioFile = self.loadOption('audioFile', required=False, isFullPath=True)
-        job.outputFile = self.loadOption('outputFile', required=True, isFolderPath=True)
+        job.outputFile = self.loadOption('outputFile', required=True, isFullPath=True)
         job.preset = self.loadOption('preset', required=True, isFullPath=True)
         job.selfContained = self.loadOption('selfContained', isBool=True)
         job.smartUpdate = self.loadOption('smartUpdate', isBool=True)
