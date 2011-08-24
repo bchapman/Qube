@@ -60,7 +60,7 @@ class Control:
         job = self.job
         seqFile = self.loadOption('sequence', required=True, isFullPath=True)
         job.audioFile = self.loadOption('audioFile', required=False, isFullPath=True)
-        job.outputFile = self.loadOption('outputFile', required=True, isFullPath=True)
+        job.outputFile = self.loadOption('outputFile', required=True, isFolderPath=True)
         job.preset = self.loadOption('preset', required=True, isFullPath=True)
         job.selfContained = self.loadOption('selfContained', isBool=True)
         job.smartUpdate = self.loadOption('smartUpdate', isBool=True)
@@ -132,6 +132,8 @@ class Control:
 
                 elif isFolderPath:
                     try:
+                        if os.path.isFile(result):
+                            result = os.path.dirname(result)
                         result = inputValidation.validateFolder(result)
                     except:
                         errors.append('Invalid Folder Path\n' + name + ': ' + result)
