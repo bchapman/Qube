@@ -158,10 +158,11 @@ class Control:
             while(True):
                 count += 1
                 try:
-                    os.remove(resultPath)
+                    if os.path.exists(resultPath):
+                        os.remove(resultPath)
                     break
                 except:
-                    logger.warning('Unable to delete existing file. ' + str(outputPath))
+                    logger.warning('Unable to delete existing file. ' + str(resultPath))
                     resultPath = inName + '_' + str(count) + inExt
                     logger.debug('Trying update output path. ' + resultPath)
                 if count > 5:
@@ -281,7 +282,7 @@ class Control:
 
         return cmd
 
-    def getFinalizeCMD(self, work):
+    def getFinalizeCMD(self, segmentOutputPaths, finalOutputPath, work):
         '''
         Returns the Finalize command to put together a final quicktime.
         Steps:
@@ -308,25 +309,13 @@ class Control:
 
         ''' Only add the files that are dependants. '''
         segments = ''
-        changes = False
-        for segment in allSegments:
-            if not (segment['name'].endswith(('Initialize', '.mov'))):
-                if segment['name'] in dependantNames:
-                    fileName = segment.get('package', {}).get('outputName', '')
-                    segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
-                    segChanges = segment.get('resultpackage', {}).get('Changed', '0')
-                    if segChanges != '0':
-                        changes = True
-                    logger.debug('Found Dependent: ' + str(segment['name']))
-                    logger.debug('Changes: ' + str(changes))
-
         cmd = ''
         logger.debug('Anything changed? ' + str(changes))
         finalOutputFile = self.getFinalOutputFile(work)
         logger.debug('Final Output File: ' + str(finalOutputFile))
 
-        if not changes:
-            cmd += 'echo "No Changes"'
+        if not self.checkSegmentsForChanges():
+            cmd = None
         else:
             catOutput = self.getTempOutputFile(work)
             catCMD = '\'' + CATMOVIELOCATION + '\''
@@ -354,6 +343,25 @@ class Control:
     def checkSegmentsForChanges(self):
         '''
         Retrieve the jobs agenda and check for the work items that changed.
+        '''
+        
+        allSegments = self.getAllSegments()
+        for segment in allSegments:
+            if not (segment['name'].startswith(('Initialize', 'Output'))):
+                if segment['name'] in dependantNames:
+                    fileName = segment.get('package', {}).get('outputName', '')
+                    segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
+                    segChanges = segment.get('resultpackage', {}).get('Changed', '0')
+                    if segChanges != '0':
+                        changes = True
+                    logger.debug('Found Dependent: ' + str(segment['name']))
+                    logger.debug('Changes: ' + str(changes))
+        
+        pass
+    
+    def loadSegmentOutputPaths(self):
+        '''
+        Retrieve the segment output paths from their result packages.
         '''
         
         pass

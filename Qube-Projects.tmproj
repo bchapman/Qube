@@ -40,7 +40,7 @@
 			<key>filename</key>
 			<string>Jobtypes/Submit Transcoder/Control.py</string>
 			<key>lastUsed</key>
-			<date>2011-08-19T05:20:38Z</date>
+			<date>2011-08-21T06:27:21Z</date>
 			<key>selected</key>
 			<true/>
 		</dict>
@@ -68,37 +68,37 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>46</integer>
+				<integer>37</integer>
 				<key>line</key>
-				<integer>35</integer>
+				<integer>69</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>27</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/Control.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>38</integer>
 				<key>line</key>
-				<integer>157</integer>
+				<integer>355</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>122</integer>
+			<integer>185</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/Job.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>3</integer>
+				<integer>41</integer>
 				<key>line</key>
-				<integer>8</integer>
+				<integer>34</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -119,35 +119,33 @@
 			<key>firstVisibleLine</key>
 			<integer>5</integer>
 		</dict>
+		<key>Jobtypes/Submit Transcoder/bootstrap.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>32</integer>
+				<key>line</key>
+				<integer>78</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>32</integer>
+		</dict>
 		<key>Jobtypes/Submit Transcoder/execute.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>99</integer>
 				<key>line</key>
-				<integer>229</integer>
+				<integer>300</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>177</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>214</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>229</integer>
-			</dict>
+			<integer>185</integer>
 		</dict>
 		<key>Jobtypes/Submit Transcoder/job.conf</key>
 		<dict>
@@ -168,42 +166,42 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>2</integer>
+				<integer>56</integer>
 				<key>line</key>
-				<integer>64</integer>
+				<integer>224</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>124</integer>
+			<integer>137</integer>
 		</dict>
 		<key>Modules/inputValidation.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>56</integer>
+				<integer>32</integer>
 				<key>line</key>
-				<integer>31</integer>
+				<integer>13</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>-1</integer>
+			<integer>0</integer>
 		</dict>
 		<key>Modules/sequenceTools.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>43</integer>
+				<integer>28</integer>
 				<key>line</key>
-				<integer>284</integer>
+				<integer>20</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>250</integer>
+			<integer>0</integer>
 		</dict>
 		<key>Submission/SubmitTranscoder.py</key>
 		<dict>
@@ -223,11 +221,12 @@
 	<key>openDocuments</key>
 	<array>
 		<string>Jobtypes/Submit Transcoder/Blender_InitSequence.py</string>
+		<string>Jobtypes/Submit Transcoder/Control.py</string>
 		<string>Modules/sequenceTools.py</string>
 		<string>Modules/inputValidation.py</string>
 		<string>Jobtypes/Submit Transcoder/testJob.py</string>
 		<string>Jobtypes/Submit Transcoder/execute.py</string>
-		<string>Jobtypes/Submit Transcoder/Control.py</string>
+		<string>Jobtypes/Submit Transcoder/bootstrap.py</string>
 		<string>Jobtypes/Submit Transcoder/Job.py</string>
 		<string>Jobtypes/Submit Transcoder/TranscoderPreFlight.py</string>
 		<string>Jobtypes/Submit Transcoder/job.conf</string>
@@ -235,8 +234,8 @@
 		<string>Submission/SubmitTranscoder.py</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
-	<false/>
+	<true/>
 	<key>windowFrame</key>
-	<string>{{1, 4}, {958, 1174}}</string>
+	<string>{{1, 120}, {958, 1058}}</string>
 </dict>
 </plist>

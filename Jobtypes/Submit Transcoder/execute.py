@@ -298,7 +298,7 @@ def executeJob(control):
                     errors = True
 
                 if transcode:
-                    cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath)
+                    cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath, agendaItem)
                     returnCode = runCMD(cmd)
                     logger.debug('Final Output CMD Exit Code: ' + str(returnCode))
                     if returnCode != 0:
