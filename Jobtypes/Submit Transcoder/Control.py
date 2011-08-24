@@ -288,7 +288,7 @@ class Control:
 
         return cmd
 
-    def getFinalizeCMD(self, segmentOutputPaths, finalOutputPath, startFrame,
+    def getFinalOutputCMD(self, segmentOutputPaths, finalOutputPath, startFrame,
                         frameRate, work):
         '''
         Returns the Finalize command to put together a final quicktime.
