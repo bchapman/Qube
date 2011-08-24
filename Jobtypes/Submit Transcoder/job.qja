@@ -18,7 +18,7 @@
 		<object type = 'subjob_list'>
 		</object>
 	</subjobs>
-	<name>Quicktime: blindness</name>
+	<name>Quicktime: testIS</name>
 	<cpus>100</cpus>
 	<todo>0</todo>
 	<cluster></cluster>
@@ -90,7 +90,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(frameRange=1-200)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_1.mov))</data>
+					<data>(=(frameRange=1-200)(segmentFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/Segments/testOutput/testOutput_1.mov))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -136,7 +136,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(frameRange=201-400)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_201.mov))</data>
+					<data>(=(frameRange=201-400)(segmentFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/Segments/testOutput/testOutput_201.mov))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -182,7 +182,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(frameRange=401-600)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_401.mov))</data>
+					<data>(=(frameRange=401-600)(segmentFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/Segments/testOutput/testOutput_401.mov))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -228,7 +228,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(frameRange=601-800)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_601.mov))</data>
+					<data>(=(frameRange=601-800)(segmentFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/Segments/testOutput/testOutput_601.mov))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -260,7 +260,7 @@
 			</item>
 			<item>
 				<object type = 'work'>
-					<name>Output: testing_A.mov</name>
+					<name>Output: testOutput.mov</name>
 					<sub_id>-1</sub_id>
 					<host></host>
 					<status>
@@ -274,7 +274,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(outputFile=/tmp/testing_A.mov)(segmentSubjobs=(=Segment: 1-200)(=Segment: 201-400)(=Segment: 401-600)(=Segment: 601-800)))</data>
+					<data>(=(outputFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testOutput.mov)(segmentSubjobs=(=Segment: 1-200)(=Segment: 201-400)(=Segment: 401-600)(=Segment: 601-800)))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -306,7 +306,7 @@
 			</item>
 			<item>
 				<object type = 'work'>
-					<name>Segment: 801-1000</name>
+					<name>Segment: 801-959</name>
 					<sub_id>-1</sub_id>
 					<host></host>
 					<status>
@@ -320,191 +320,7 @@
 						</object>
 					</address>
 					<pid>-1</pid>
-					<data>(=(frameRange=801-1000)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_801.mov))</data>
-					<id>-1</id>
-					<result></result>
-					<retry>0</retry>
-					<count>0</count>
-					<dependency></dependency>
-					<percent>0</percent>
-					<last_update>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</last_update>
-					<seq>0</seq>
-					<time_start>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_start>
-					<time_complete>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_complete>
-					<mac_address>
-						<object type = 'macaddress'>
-							<value></value>
-						</object>
-					</mac_address>
-				</object>
-			</item>
-			<item>
-				<object type = 'work'>
-					<name>Segment: 1001-1200</name>
-					<sub_id>-1</sub_id>
-					<host></host>
-					<status>
-						<object type = 'status'>
-							<value>272</value>
-						</object>
-					</status>
-					<address>
-						<object type = 'address'>
-							<value>0</value>
-						</object>
-					</address>
-					<pid>-1</pid>
-					<data>(=(frameRange=1001-1200)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_1001.mov))</data>
-					<id>-1</id>
-					<result></result>
-					<retry>0</retry>
-					<count>0</count>
-					<dependency></dependency>
-					<percent>0</percent>
-					<last_update>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</last_update>
-					<seq>0</seq>
-					<time_start>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_start>
-					<time_complete>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_complete>
-					<mac_address>
-						<object type = 'macaddress'>
-							<value></value>
-						</object>
-					</mac_address>
-				</object>
-			</item>
-			<item>
-				<object type = 'work'>
-					<name>Segment: 1201-1400</name>
-					<sub_id>-1</sub_id>
-					<host></host>
-					<status>
-						<object type = 'status'>
-							<value>272</value>
-						</object>
-					</status>
-					<address>
-						<object type = 'address'>
-							<value>0</value>
-						</object>
-					</address>
-					<pid>-1</pid>
-					<data>(=(frameRange=1201-1400)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_1201.mov))</data>
-					<id>-1</id>
-					<result></result>
-					<retry>0</retry>
-					<count>0</count>
-					<dependency></dependency>
-					<percent>0</percent>
-					<last_update>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</last_update>
-					<seq>0</seq>
-					<time_start>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_start>
-					<time_complete>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_complete>
-					<mac_address>
-						<object type = 'macaddress'>
-							<value></value>
-						</object>
-					</mac_address>
-				</object>
-			</item>
-			<item>
-				<object type = 'work'>
-					<name>Segment: 1401-1564</name>
-					<sub_id>-1</sub_id>
-					<host></host>
-					<status>
-						<object type = 'status'>
-							<value>272</value>
-						</object>
-					</status>
-					<address>
-						<object type = 'address'>
-							<value>0</value>
-						</object>
-					</address>
-					<pid>-1</pid>
-					<data>(=(frameRange=1401-1564)(segmentFile=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/Segments/testing/testing_1401.mov))</data>
-					<id>-1</id>
-					<result></result>
-					<retry>0</retry>
-					<count>0</count>
-					<dependency></dependency>
-					<percent>0</percent>
-					<last_update>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</last_update>
-					<seq>0</seq>
-					<time_start>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_start>
-					<time_complete>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</time_complete>
-					<mac_address>
-						<object type = 'macaddress'>
-							<value></value>
-						</object>
-					</mac_address>
-				</object>
-			</item>
-			<item>
-				<object type = 'work'>
-					<name>Output: testing_B.mov</name>
-					<sub_id>-1</sub_id>
-					<host></host>
-					<status>
-						<object type = 'status'>
-							<value>272</value>
-						</object>
-					</status>
-					<address>
-						<object type = 'address'>
-							<value>0</value>
-						</object>
-					</address>
-					<pid>-1</pid>
-					<data>(=(outputFile=/tmp/testing_B.mov)(segmentSubjobs=(=Segment: 801-1000)(=Segment: 1001-1200)(=Segment: 1201-1400)(=Segment: 1401-1564)))</data>
+					<data>(=(frameRange=801-959)(segmentFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/Segments/testOutput/testOutput_801.mov))</data>
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
@@ -544,30 +360,9 @@
 					<pid>-1</pid>
 					<code>import qb
 
-qb.workunblock('%s:Output: testing_A.mov' % qb.jobid())
+qb.workunblock('%s:Output: testOutput.mov' % qb.jobid())
 qb.unblock(qb.jobid())</code>
 					<triggers>complete-work-self-Segment: 1-200 and complete-work-self-Segment: 201-400 and complete-work-self-Segment: 401-600 and complete-work-self-Segment: 601-800</triggers>
-					<language>2</language>
-					<max>-1</max>
-					<count>0</count>
-					<user></user>
-					<ready>0</ready>
-					<lastupdate>
-						<object type = 'time'>
-							<value>0</value>
-						</object>
-					</lastupdate>
-				</object>
-			</item>
-			<item>
-				<object type = 'callback'>
-					<id>-1</id>
-					<pid>-1</pid>
-					<code>import qb
-
-qb.workunblock('%s:Output: testing_B.mov' % qb.jobid())
-qb.unblock(qb.jobid())</code>
-					<triggers>complete-work-self-Segment: 801-1000 and complete-work-self-Segment: 1001-1200 and complete-work-self-Segment: 1201-1400 and complete-work-self-Segment: 1401-1564</triggers>
 					<language>2</language>
 					<max>-1</max>
 					<count>0</count>
@@ -588,7 +383,7 @@ qb.unblock(qb.jobid())</code>
 	<groups></groups>
 	<hosts></hosts>
 	<host_order>+host.processors.avail</host_order>
-	<data>(=(outputFile=/tmp/testing.mov)(sequence=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/blindness_00000.png)(selfContained=1)(transcoderFolder=/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/_Transcoder/)(fillMissingFrames=1)(preset=/Users/bchapman/Projects/Scripts+Apps/Qube/_localRepo/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend)(frameRange=1-1564)(smartUpdate=1)(audioFile=/Users/bchapman/Projects/Scripts+Apps/Qube/_testingGrounds/blindness.wav))</data>
+	<data>(=(outputFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testOutput.mov)(sequence=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testIS_00000.png)(selfContained=1)(transcoderFolder=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/_Transcoder/)(fillMissingFrames=1)(preset=/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend)(frameRange=1-959)(smartUpdate=1)(audioFile=/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/test.wav))</data>
 	<queue></queue>
 	<prototype>Submit Transcoder</prototype>
 	<path></path>
@@ -661,7 +456,7 @@ qb.unblock(qb.jobid())</code>
 		</object>
 	</env>
 	<kind></kind>
-	<server_id>2065709607</server_id>
+	<server_id>32711</server_id>
 	<last_update>
 		<object type = 'time'>
 			<value>0</value>

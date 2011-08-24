@@ -363,10 +363,10 @@ def testJob():
     # job['hosts'] = 'bchapman.local'
     job['priority'] = 100
     job['hostorder'] = '+host.processors.avail'
-    sequenceFile = '/Users/bchapman/Projects/Scripts+Apps/Qube/Compressor/Testing/blindnessIS/blindness_00000.png'
-    outputFile = '/tmp/testing.mov'
-    preset = '/Users/bchapman/Projects/Scripts+Apps/Qube/_localRepo/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
-    audioFile = '/Users/bchapman/Projects/Scripts+Apps/Qube/_testingGrounds/blindness.wav'
+    sequenceFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testIS_00000.png'
+    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testOutput.mov'
+    preset = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
+    audioFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/test.wav'
     job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4, fillMissingFrames=True)
     logger.info(job)
     qb.archivejob('job.qja', job)
