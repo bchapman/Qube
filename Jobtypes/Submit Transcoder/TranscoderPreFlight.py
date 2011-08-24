@@ -15,9 +15,7 @@ BLENDERLOCATION = "/Applications/blender.app"
 QTCOFFEELOCATION = "/usr/local/bin/catmovie"
 
 ''' Setup the logger. '''
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 def run():
     logger.info("Running Transcoder PreFlight...")
@@ -69,12 +67,3 @@ def checkQTCoffee():
         logger.info("- QTCoffee not installed.")
     
     return result
-        
-    
-    
-        
-        
-        
-        
-        
-        

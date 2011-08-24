@@ -11,7 +11,6 @@ import logging
 ''' Setup the logger. '''
 # logging.basicConfig()
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
 
 def validateFile(filepath, expand=True, checkExist=True):
     '''

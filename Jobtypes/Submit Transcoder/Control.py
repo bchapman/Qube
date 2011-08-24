@@ -26,10 +26,11 @@ CATMOVIELOCATION = '/usr/local/bin/catmovie'
 MUXMOVIELOCATION = '/usr/local/bin/muxmovie'
 MODTIMEDBFILEPREFIX = '.DATA.'
 
-''' Setup the logger. '''
+'''
+Setup this files logging settings
+'''
 # logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class Control:

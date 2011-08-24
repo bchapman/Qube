@@ -18,8 +18,6 @@ Set up the logging module.
 ''' Setup the logger. '''
 # logging.basicConfig()
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-logger.setLevel(logging.DEBUG)
 
 def loadFrameRange(frameRange):
     '''

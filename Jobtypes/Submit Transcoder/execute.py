@@ -41,10 +41,6 @@ import TranscoderPreFlight
 import Control
 import sequenceTools
 
-'''
-Set up the logging module.
-'''
-
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
         self.passlevel = passlevel
@@ -56,8 +52,11 @@ class SingleLevelFilter(logging.Filter):
         else:
             return (record.levelno == self.passlevel)
 
-# logging.basicConfig()
+'''
+Set the root logging settings
+'''
 rootLogger = logging.getLogger()            
+
 h1 = logging.StreamHandler(sys.stdout)
 h1_formatter = logging.Formatter(
         "%(levelname)s: %(message)s")
@@ -65,17 +64,21 @@ h1.setFormatter(h1_formatter)
 f1 = SingleLevelFilter(logging.INFO, False)
 h1.addFilter(f1)
 rootLogger.addHandler(h1)
+
 h2 = logging.StreamHandler(sys.stderr)
 h2_formatter = logging.Formatter(
-        "%(name)s:%(levelname)s: %(message)s")
+        "%(levelname)s:%(name)s:%(funcName)s: %(message)s")
 h2.setFormatter(h2_formatter)
 f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
-logger = logging.getLogger('Execute')
-# logger.setLevel(logging.INFO)
-logger.setLevel(logging.DEBUG)
 
+rootLogger.setLevel(logging.DEBUG)
+
+'''
+Setup this files logging settings
+'''
+logger = logging.getLogger(__name__)
 
 def initControl():
     '''
