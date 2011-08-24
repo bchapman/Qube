@@ -165,7 +165,7 @@ class Control:
                 except:
                     logger.warning('Unable to delete existing file. ' + str(resultPath))
                     resultPath = inName + '_' + str(count) + inExt
-                    logger.debug('Trying update output path. ' + resultPath)
+                    logger.debug('Trying updated output path. ' + resultPath)
                 if count > 5:
                     logger.error('Unable to find valid output path.')
                     resultPath = None
@@ -419,28 +419,14 @@ class Control:
 
         return result
 
-    def getFinalOutputFile(self, work):
-        '''
-        Returns a full path for a final output file based
-        on the supplied work item's name.
-        '''
-
-        fileName = work.get('name', '')
-        finalFolder = os.path.dirname(self.outputFile)
-        result = os.path.join(finalFolder, fileName)
-
-        self.makeFolders(finalFolder)
-
-        return result
-
     def getTempOutputFile(self, work):
         '''
         Returns a full path for a temporary output file for catmovie
         based on the supplied work item's name.
-        We'll just use the segments folder.
+        We'll place this under the segments folder.
         '''
 
-        fileName = work.get('name', '')
+        fileName = os.path.basename(work['package'].get('outputFile', ''))
         result = self.getSegmentOutputFile(fileName)
 
         return result
