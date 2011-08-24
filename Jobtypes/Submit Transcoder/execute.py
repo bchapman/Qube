@@ -126,7 +126,7 @@ def executeJob(control):
                 blocked -- perhaps item is part of a dependency
                 '''
                 jobstate = agendaItem['status']
-                print 'job %s state is now %s' % (qbJob['id'], jobstate)
+                logger.info('Job %s state is now %s' % (qbJob['id'], jobstate))
                 break
 
             '''
@@ -139,15 +139,14 @@ def executeJob(control):
                     Merge that output's segments together with audio.
             '''
             if agendaItem['name'] == 'Initialize':
-                logger.info('Starting Transcoder Initialize Process...\n')
+                logger.info('Initializing...\n')
 
                 returnCode = runCMD(control.getInitCMD(agendaItem))
-                logger.debug('Initialize Exit Code: ' + str(returnCode))
 
                 if returnCode == 0:
-                    logger.info("Transcoder Initialize Process Complete!\n")
+                    logger.info('Initialization Complete! (' + str(returnCode) + ')\n')
                 else:
-                    logger.error("Transcoder Initialization Failed! (Exit Code)\n")
+                    logger.error('Initialization Failed! (' + str(returnCode) + ')\n')
 
             elif agendaItem['name'].startswith('Segment'):
                 '''
@@ -195,18 +194,18 @@ def executeJob(control):
                 else:
 
                     ''' Load the frame range from the work package '''
-                    logger.debug("Loading frame range from the work package...")
                     frameRangeString = agendaItem['package']['frameRange']
                     frameRange = sequenceTools.loadFrameRange(frameRangeString)
 
                     ''' Check for Missing Frames '''
-                    logger.info("Checking for missing frames...")
                     mySequence = control.getSequence()
                     missingFrames = mySequence.getMissingFrames(frameRange)
 
                     if len(missingFrames) > 0:
                         logger.error('Missing frames!\n' + ','.join(missingFrames))
                         error = True
+                    else:
+                        logger.info('No Missing Frames')
 
                 if not error:
 
@@ -226,17 +225,25 @@ def executeJob(control):
                         logger.debug('ModTimeDBFile Exists: ' + str(modTimeDBFileExists))
 
                         if segmentFileExists and modTimeDBFileExists:
-                            logger.info('Loading frames...')
+                            logger.info('Smart Updating')
 
-                            logger.info('Retrieving current modification times...')
+                            logger.debug('Loading current modification times...')
                             currentModTimes = mySequence.getModTimes(frameRange)
+                            logger.debug('Current modication times loaded.')
 
-                            logger.info('Comparing modification times...')
+                            logger.debug('Comparing modification times...')
                             compare = mySequence.compare(modTimeDBFile, frameRange, currentModTimes=currentModTimes)
                             logger.debug('Sequence Differences: ' + str(compare))
 
-                            differences = compare['Added'] + compare['Deleted'] + compare['Modified']
-                            logger.info('Differences: ' + str(len(differences)))
+                            differences = 'Sequence Differences:'
+                            if len(compare['Added']) > 0:
+                                differences += '\n\tAdded: ' + sequenceTools.convertListToRanges(compare['Added'])
+                            if len(compare['Deleted']) > 0:
+                                differences += '\n\tDeleted: ' + sequenceTools.convertListToRanges(compare['Deleted'])
+                            if len(compare['Modified']) > 0:
+                                differences += '\n\tModified: ' + sequenceTools.convertListToRanges(compare['Modified'])
+                            
+                            logger.info(differences)
 
                             if len(differences) > 0:
                                 render = True
@@ -255,15 +262,16 @@ def executeJob(control):
                             error = True
 
                     if render:
+                        logger.info('Transcoding Segment ' + agendaItem['name'])
                         cmd = control.getSegmentCMD(agendaItem)
                         returnCode = runCMD(cmd)
-                        logger.debug('Initialize Exit Code: ' + str(returnCode))
+                        logger.info('Transcoding Segment Complete! (' + str(returnCode) + ')')
 
                         if control.getSmartUpdate():
-                            logger.info("Saving modification times...")
                             logger.debug("Saved ModTimes: " + str(currentModTimes))
                             control.job.sequence.saveModTimes(modTimeDBFile,
                                 modTimeDict=currentModTimes, frameRange=frameRange)
+                            logger.info("Saved Modification Times")
 
                     else:
                         if not error:
@@ -326,7 +334,6 @@ def executeJob(control):
                     errors = True
 
                 changes = control.checkSegmentsForChanges(dependantSegments)
-                logger.debug('Changes: ' + str(changes))
                 if changes or not os.path.exists(finalOutputPath):
                     transcode = True
                 else:
@@ -344,23 +351,21 @@ def executeJob(control):
                 if transcode:
                     cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath, startFrame, 29.97, agendaItem)
                     returnCode = runCMD(cmd)
-                    logger.debug('Final Output CMD Exit Code: ' + str(returnCode))
                     if returnCode != 0:
-                        logger.error('Non-zero exit code. ' + str(returnCode))
                         errors = True
                 else:
                     logger.info('No changes to Final ' + agendaItem['name'])
 
                 if not errors:
                     agendaItem['resultpackage'] = {'outputPaths': finalOutputPath}
-                    logger.info("Transcoder Finalize Process Completed Succesfully!\n")
+                    logger.info('Transcoder Final ' + agendaItem['name'] + ' Completed Succesfully! (' + str(returnCode) + ')\n')
                 else:
-                    logger.info("Transcoder Finalize Process Failed!\n")
+                    logger.info('Transcoder Final ' + agendaItem['name'] + ' Failed!' + str(returnCode) + ')\n')
 
 
             else:
-                logger.error("Invalid Work Item")
-                logger.info(str(agendaItem))
+                logger.error("Invalid Agenda Item")
+                logger.error(str(agendaItem))
 
             '''
             Update the work status based on the return code.
