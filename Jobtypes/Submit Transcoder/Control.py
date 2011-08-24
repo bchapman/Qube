@@ -363,6 +363,7 @@ class Control:
                 logger.debug(segment['name'] + ' - segmentFile: ' + segmentFile)
         
         error = False
+        logger.debug('outputPaths: ' + str(outputPaths))
         for path in outputPaths:
             if not os.path.exists(path):
                 logger.error('Segment Output doesn\'t exist: ' + path)
