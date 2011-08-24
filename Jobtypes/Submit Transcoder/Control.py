@@ -320,12 +320,12 @@ class Control:
 
         muxCMD = '\'' + MUXMOVIELOCATION + '\''
         muxCMD += ' -o \'' + finalOutputPath + '\''
-        if self.selfContained:
+        if self.job.selfContained:
             muxCMD += ' -self-contained -trimToShortestTrack'
-        if self.audioFile:
+        if self.job.audioFile:
             ''' Calculate the offset start time for the audio. '''
             audioStart = float(startFrame)/float(frameRate)
-            muxCMD += ' \'' + str(self.audioFile) + '\' -startAt ' + str(audioStart)
+            muxCMD += ' \'' + str(self.job.audioFile) + '\' -startAt ' + str(audioStart)
         muxCMD += ' ' + catOutput
 
         cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
