@@ -27,7 +27,7 @@ MUXMOVIELOCATION = '/usr/local/bin/muxmovie'
 MODTIMEDBFILEPREFIX = '.DATA.'
 
 ''' Setup the logger. '''
-logging.basicConfig()
+# logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
