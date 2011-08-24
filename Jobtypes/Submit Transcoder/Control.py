@@ -17,6 +17,7 @@ sys.path.append('../../Modules/')
 import sequenceTools
 import inputValidation
 import Job
+import qb
 
 ''' Constants '''
 BLENDERLOCATION = '/Applications/blender.app/Contents/MacOS/blender'
@@ -175,19 +176,24 @@ class Control:
     def getSequence(self):
         return self.job.sequence
 
-    def getAllSegments(self):
+    def getSegments(self, segmentNameList=[]):
         '''
         Load the all segments from the qube job object.
         '''
 
-        agenda = self.qubejob.get('agenda', {})
+        agenda = qb.jobinfo(id=self.job.qubejob['id'], agenda=True)[0]['agenda']
         if (agenda == {}):
             logger.error('Job missing agenda')
-            sys.exit(1)
+            return None
+            
         else:
             segments = []
             for subjob in agenda:
-                segments.append(subjob)
+                if segmentNameList != []:
+                    if subjob['name'] in segmentNameList:
+                        segments.append(subjob)
+                else:
+                    segments.append(subjob)
 
             return segments
 
@@ -303,25 +309,28 @@ class Control:
             muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile
         '''
 
-        allSegments = self.getAllSegments()
-        dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
-        logger.debug('Dependants: ' + str(dependantNames))
 
-        ''' Only add the files that are dependants. '''
-        segments = ''
-        cmd = ''
-        logger.debug('Anything changed? ' + str(changes))
+        dependantNames = work.get('package', {}).get('Dependencies', {}).split(',')
+        logger.debug('Dependants Names: ' + str(dependantNames))
+
+        dependantSegments = self.getSegments(dependantNames)
+        logger.debug('Dependants Segments: ' + str(dependantNames))
+        
+        changes = self.checkSegmentsForChanges(dependantSegments)
+        logger.debug('Changes: ' + str(changes))
+
         finalOutputFile = self.getFinalOutputFile(work)
         logger.debug('Final Output File: ' + str(finalOutputFile))
 
-        if not self.checkSegmentsForChanges():
-            cmd = None
-        else:
+        cmd = ''
+        if changes:
+            segmentPaths = self.getSegmentOutputPaths(dependantSegments)
+            
             catOutput = self.getTempOutputFile(work)
             catCMD = '\'' + CATMOVIELOCATION + '\''
             catCMD += ' -o \'' + catOutput + '\''
             catCMD += ' -'
-            catCMD += segments
+            catCMD += ' '.join(segmentPaths)
 
             muxCMD = '\'' + MUXMOVIELOCATION + '\''
             muxCMD += ' -o \'' + finalOutputFile + '\''
@@ -337,34 +346,42 @@ class Control:
             muxCMD += ' ' + catOutput
 
             cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
+            
+            return cmd
+        else:
+            return None
 
-        return cmd
-
-    def checkSegmentsForChanges(self):
+    def checkSegmentsForChanges(self, segments):
         '''
-        Retrieve the jobs agenda and check for the work items that changed.
+        Takes a list of segment subjobs and checks the result package of each
+        for the changes property.  If changes are found to any of the
+        segments the return in True, otherwise it's False.
         '''
         
-        allSegments = self.getAllSegments()
-        for segment in allSegments:
+        changes = False
+        for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                if segment['name'] in dependantNames:
-                    fileName = segment.get('package', {}).get('outputName', '')
-                    segments += ' \'' + self.getSegmentOutputFile(fileName) + '\''
-                    segChanges = segment.get('resultpackage', {}).get('Changed', '0')
-                    if segChanges != '0':
-                        changes = True
-                    logger.debug('Found Dependent: ' + str(segment['name']))
-                    logger.debug('Changes: ' + str(changes))
+                segmentChanges = bool(segment.get('package', {}).get('changes', ''))
+                logger.debug(segment['name'] + ' - Changes: ' + str(segmentChanges))
+                if segmentChanges:
+                    changes = True
         
-        pass
+        return changes
     
-    def loadSegmentOutputPaths(self):
+    def getSegmentOutputPaths(self, segments):
         '''
-        Retrieve the segment output paths from their result packages.
+        Takes a list of segment subjobs and checks the result package of each
+        for the segmentFile property.  These are added to an array and returned.
         '''
         
-        pass
+        outputPaths = []
+        for segment in segments:
+            if not (segment['name'].startswith(('Initialize', 'Output'))):
+                segmentFile = segment.get('package', {}).get('segmentFile', '')
+                outputPaths.append(segmentFile)
+                logger.debug(segment['name'] + ' - segmentFile: ' + segmentFile)
+        
+        return outputPaths
 
     def getBlendFile(self):
         '''
