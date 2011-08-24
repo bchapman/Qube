@@ -44,10 +44,32 @@ import sequenceTools
 '''
 Set up the logging module.
 '''
+
+class SingleLevelFilter(logging.Filter):
+    def __init__(self, passlevel, reject):
+        self.passlevel = passlevel
+        self.reject = reject
+
+    def filter(self, record):
+        if self.reject:
+            return (record.levelno != self.passlevel)
+        else:
+            return (record.levelno == self.passlevel)
+
 logging.basicConfig()
+rootLogger = logging.getLogger()            
+h1 = logging.StreamHandler(sys.stdout)
+f1 = SingleLevelFilter(logging.INFO, False)
+h1.addFilter(f1)
+rootLogger.addHandler(h1)
+h2 = logging.StreamHandler(sys.stderr)
+f2 = SingleLevelFilter(logging.INFO, True)
+h2.addFilter(f2)
+rootLogger.addHandler(h2)
 logger = logging.getLogger('Execute')
 # logger.setLevel(logging.INFO)
 logger.setLevel(logging.DEBUG)
+
 
 def initControl():
     '''

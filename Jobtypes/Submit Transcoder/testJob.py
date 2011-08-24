@@ -25,11 +25,35 @@ sys.path.append('../../Modules')
 import sequenceTools
 
 ''' Logger Setup '''
-logger = logging.getLogger(__name__)
-ch = logging.StreamHandler(sys.__stdout__)
-logger.addHandler(ch)
+class SingleLevelFilter(logging.Filter):
+    def __init__(self, passlevel, reject):
+        self.passlevel = passlevel
+        self.reject = reject
+
+    def filter(self, record):
+        if self.reject:
+            return (record.levelno != self.passlevel)
+        else:
+            return (record.levelno == self.passlevel)
+
+logging.basicConfig()
+rootLogger = logging.getLogger()            
+h1 = logging.StreamHandler(sys.stdout)
+f1 = SingleLevelFilter(logging.INFO, False)
+h1.addFilter(f1)
+rootLogger.addHandler(h1)
+h2 = logging.StreamHandler(sys.stderr)
+f2 = SingleLevelFilter(logging.INFO, True)
+h2.addFilter(f2)
+rootLogger.addHandler(h2)
+logger = logging.getLogger('Execute')
+# logger.setLevel(logging.INFO)
 logger.setLevel(logging.DEBUG)
-ch.setLevel(logging.DEBUG)
+# logger = logging.getLogger(__name__)
+# ch = logging.StreamHandler(sys.__stdout__)
+# logger.addHandler(ch)
+# logger.setLevel(logging.DEBUG)
+# ch.setLevel(logging.DEBUG)
 
 
 def splitPath(inputPath):
@@ -39,7 +63,7 @@ def splitPath(inputPath):
         File Name
         File Extension
     '''
-    logger.debug('Splitting Path: ' + str(locals()))
+    # logger.debug('Splitting Path: ' + str(locals()))
     folder, fullName = os.path.split(inputPath)
     name, extension = os.path.splitext(fullName)
 
@@ -52,32 +76,28 @@ def chunkWithTolerance(inputList, chunkSize, tolerance):
     value isn't met, the remaining values are
     added to the last chunk.
     '''
+    
+    myList = list(inputList) # Make a copy
 
     logger.debug('Chunk With Tolerance: ' + str(locals()))
     if tolerance > chunkSize:
         tolerance = 0
 
     resultLists = []
-    itemNum = 1
-    listLength = len(inputList)
-    while(itemNum < listLength):
+    while len(myList) > 0:
         resultList = []
-        for item in inputList:
-            while(itemNum % chunkSize != 0 and itemNum < listLength):
-                resultList.append(inputList[itemNum-1])
-                itemNum += 1
+        count = 0
+        while count < chunkSize and len(myList) > 0:
+            resultList.append(myList.pop(0))
+            count += 1
 
-        if listLength - itemNum in range(1, tolerance+1):
-            resultList.extend(inputList[itemNum:])
-            itemNum = listLength
+        if len(resultList) <= tolerance:
+            resultLists[-1].extend(resultList)
         else:
-            resultList.append(inputList[itemNum-1])
-        itemNum += 1
+            resultLists.append(resultList)
 
-        resultLists.append(resultList)
-
+    logger.debug('Chunk with Tolerance Results: ' + str(resultLists))
     return resultLists
-
 
 def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
                         selfContained=True, frameRange='ALL', audioFile='',
@@ -360,7 +380,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
                 lastSegmentIndex = index
                 break
         if lastSegmentIndex:
-            job['agenda'].insert(lastSegmentIndex+3+outputNum, output) # +2 for Initialization and last segment
+            job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
         else:
             print "ERROR: Unable to find last segment for output " + output['name']
 
@@ -383,10 +403,11 @@ def testJob():
     job['priority'] = 100
     job['hostorder'] = '+host.processors.avail'
     sequenceFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testIS_00000.png'
-    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testOutput.mov'
+    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testOutput.mov'
     preset = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
     audioFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/test.wav'
-    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=4, fillMissingFrames=True)
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=3,
+        fillMissingFrames=True, maxSegmentTolerance=2)
     logger.info(job)
     qb.submit([job])
     # qb.archivejob('job.qja', job)

@@ -433,7 +433,7 @@ class Control:
 
     def makeFolders(self, folderPath):
         try:
-            logger.debug('Creating folder ' + str(folderPath) + '...')
+            logger.debug('Creating folder ' + str(folderPath))
             os.makedirs(folderPath)
         except:
             logger.debug('Folder already exists ' + str(folderPath) + '.')
