@@ -67,7 +67,8 @@ def main():
             continue with missing frames.
             '''
             missingFrames = mySequence.getMissingFrames()
-            logger.warning('Sequence Missing Frames: ' + mySequence.convertListToRanges(missingFrames))
+            if missingFrames:
+                logger.warning('Sequence Missing Frames: ' + mySequence.convertListToRanges(missingFrames))
             if fillMissingFrames:
                 logger.warning('Fill missing frames enabled, ignoring missing frames.')
 
