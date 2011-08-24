@@ -253,7 +253,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
         # segment.package({'frameRange':segment['name'], 'segmentFile':segmentFile})
 
         segment['status'] = 'blocked'
-        segment['name'] = 'Segment: ' + segment['name']
+        segment['name'] = 'Segment:' + segment['name']
 
 
     ''' Final Outputs '''
@@ -285,9 +285,28 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
         finalOutputs.append(output)
 
 
-    ''' Callbacks '''
+    '''
+    Callbacks
+        1 - Unblock the segments when the initialize command is completed.
+        2 - Unblock the outputs when the dependant segments are completed.
+    '''
 
     callbacks = []
+    
+    ''' Unblock Segments '''
+    callback = {}
+    callback['triggers'] = 'complete-work-self-Initialize'
+    callback['language'] = 'python'
+    
+    code = 'import qb\n'
+    for segment in segments:
+        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', segment['name'], '\' % qb.jobid())')
+    code += '\nqb.unblock(qb.jobid())'
+    callback['code'] = code
+    
+    callbacks.append(callback)
+    
+    ''' Unblock Outputs '''
     for finalOutput in finalOutputs:
         callback = {}
         triggers = []
@@ -341,7 +360,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
                 lastSegmentIndex = index
                 break
         if lastSegmentIndex:
-            job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
+            job['agenda'].insert(lastSegmentIndex+3+outputNum, output) # +2 for Initialization and last segment
         else:
             print "ERROR: Unable to find last segment for output " + output['name']
 

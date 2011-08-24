@@ -294,7 +294,7 @@ def executeJob(control):
                 else:
                     logger.info('No changes for final output.')
 
-                segmentOutputPaths = control.loadSegmentOutputPaths(dependantSegments)
+                segmentOutputPaths = control.getSegmentOutputPaths(dependantSegments)
                 if segmentOutputPaths:
                     transcode = True
                 else:
