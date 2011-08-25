@@ -10,41 +10,46 @@ from odict import OrderedDict
 gettext.install('Demo', unicode = 1)
 
 class FormDialog(wx.Dialog):
-  def __init__(self, parent, id = -1, panel = None, title = _("Unnamed Dialog"),
+    def __init__(self, parent, id = -1, panel = None, title = _("Unnamed Dialog"),
                modal = False, sizes = (400, -1), refid = None):
-    wx.Dialog.__init__(self, parent, id, _(title),
-                       style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        wx.Dialog.__init__(self, parent, id, _(title),
+                           style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.STAY_ON_TOP)
 
-    if panel is not None:
-      self._panel = panel(self, refid)
+        if panel is not None:
+            self._panel = panel(self, refid)
 
-      self._panel.SetSizeHints(*sizes)
+            self._panel.SetSizeHints(*sizes)
 
-      ds = wx.GridBagSizer(self._panel._gap, self._panel._gap)
+            ds = wx.GridBagSizer(self._panel._gap, self._panel._gap)
 
-      ds.Add(self._panel, (0, 0), (1, 1), wx.EXPAND | wx.ALL, self._panel._gap)
+            ds.Add(self._panel, (0, 0), (1, 1), wx.EXPAND | wx.ALL, self._panel._gap)
 
-      ds.Add(wx.StaticLine(self), (1, 0), (1, 1), wx.EXPAND | wx.RIGHT | wx.LEFT, self._panel._gap)
+            ds.Add(wx.StaticLine(self), (1, 0), (1, 1), wx.EXPAND | wx.RIGHT | wx.LEFT, self._panel._gap)
 
-      self.bs = self.CreateButtonSizer(self._panel._form.get('Buttons', wx.OK | wx.CANCEL))
+            self.bs = self.CreateButtonSizer(self._panel._form.get('Buttons', wx.OK | wx.CANCEL))
 
-      ds.Add(self.bs, (2, 0), (1, 1), wx.ALIGN_RIGHT | wx.ALL, self._panel._gap)
+            ds.Add(self.bs, (2, 0), (1, 1), wx.ALIGN_RIGHT | wx.ALL, self._panel._gap)
 
-      ds.AddGrowableCol(0)
-      ds.AddGrowableRow(0)
+            ds.AddGrowableCol(0)
+            ds.AddGrowableRow(0)
 
-      self.SetSizerAndFit(ds)
+            self.SetSizerAndFit(ds)
 
-      self.Center()
+            self.Center()
 
-      self.Bind(wx.EVT_BUTTON, self._panel.onOk, id = wx.ID_OK)
-      self.Bind(wx.EVT_BUTTON, self._panel.onClose, id = wx.ID_CANCEL)
-      # self.Bind(wx.EVT_CLOSE, self._panel.onClose)
+            self.Bind(wx.EVT_BUTTON, self._panel.onOk, id = wx.ID_OK)
+            self.Bind(wx.EVT_BUTTON, self._panel.onClose, id = wx.ID_CANCEL)
+            # self.Bind(wx.EVT_CLOSE, self._panel.onClose)
 
-      if modal:
-        self.ShowModal()
-      else:
-        self.Show()
+            # if modal:
+            #   self.ShowModal()
+            # else:
+            #   self.Show()
+    
+    def sayHello(self):
+        return 'Hi There'
+
+     
 
 class Form(wx.Panel):
   def __init__(self, parent = None, refid = None, id = -1, gap = 3, sizes = (-1, -1)):

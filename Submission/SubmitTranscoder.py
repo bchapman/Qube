@@ -90,24 +90,18 @@ class TranscoderWidget(wx.Panel):
         self.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
 
     def AddButtonClick(self, event=None):
-        Transcoder.FormDialog(self,
-             panel = Transcoder.TranscoderSettings,
-             title = 'Transcoder Settings',
-             sizes = (400, -1))
-        # text = wx.GetTextFromUser('Test: Enter an item:', 'Insert dialog')
-        # if text != '':
-        #     self.listbox.Append(text)
+        transcoderDlg = Transcoder.FormDialog(self,
+                     panel = Transcoder.TranscoderSettings,
+                     title = 'Transcoder Settings',
+                     sizes = (400, -1),
+                     modal=True)
+        results = transcoderDlg.ShowModal()
+        result = transcoderDlg.sayHello()
+        logging.info(str(result))
+        pass
 
-    # def EditButtonClick(self, event=None):
-    #     sel = self.listbox.GetSelection()
-    #     jobDetailsDlg = TranscoderJobDlg(self, -1, "New Job")
-    #     text = jobDetailsDlg.ShowModal()
-    #     jobDetailsDlg.Destroy()
-        # text = self.listbox.GetString(sel)
-        # edited = wx.GetTextFromUser('Test: Edit item', 'Edit dialog', text)
-        # if edited != '':
-        #     self.listbox.Delete(sel)
-        #     self.listbox.Insert(edited, sel)
+    def EditButtonClick(self, event=None):
+        pass
 
     def RemoveButtonClick(self, event=None):
         sel = self.listbox.GetSelection()
