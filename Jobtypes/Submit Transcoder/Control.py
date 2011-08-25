@@ -132,7 +132,7 @@ class Control:
 
                 elif isFolderPath:
                     try:
-                        if os.path.isFile(result):
+                        if not os.path.isdir(result):
                             result = os.path.dirname(result)
                         result = inputValidation.validateFolder(result)
                     except:
