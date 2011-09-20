@@ -1,12 +1,5 @@
 #!/usr/bin/python
 
-# ======================================================
-# Sample script:
-#   cmdrange job submit with outputPaths
-#
-# PipelineFX, 2007
-#
-# ======================================================
 
 import os
 import sys
@@ -35,7 +28,6 @@ class SingleLevelFilter(logging.Filter):
         else:
             return (record.levelno == self.passlevel)
 
-# logging.basicConfig()
 '''
 Set the root logging settings
 '''
@@ -64,20 +56,6 @@ Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
 
-def splitPath(inputPath):
-    '''
-    Split an input path into:
-        Folder
-        File Name
-        File Extension
-    '''
-    # logger.debug('Splitting Path: ' + str(locals()))
-    folder, fullName = os.path.split(inputPath)
-    name, extension = os.path.splitext(fullName)
-
-    return folder + '/', name, extension
-
-
 def chunkWithTolerance(inputList, chunkSize, tolerance):
     '''
     Generate chunks of a list. If the tolerance
@@ -105,7 +83,21 @@ def chunkWithTolerance(inputList, chunkSize, tolerance):
             resultLists.append(resultList)
 
     logger.debug('Chunk with Tolerance Results: ' + str(resultLists))
+    logger.debug('Chunk with Tolerance Results Length: ' + str(len(resultLists)))
     return resultLists
+
+def splitPath(inputPath):
+    '''
+    Split an input path into:
+        Folder
+        File Name
+        File Extension
+    '''
+    # logger.debug('Splitting Path: ' + str(locals()))
+    folder, fullName = os.path.split(inputPath)
+    name, extension = os.path.splitext(fullName)
+
+    return folder + '/', name, extension
 
 def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
                         selfContained=True, frameRange='ALL', audioFile='',
@@ -275,7 +267,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
         outputFolder, outputName, outputExtension = splitPath(outputFile)
         segmentFile = os.path.join(transcoderFolder, 'Segments/')
         segmentFile += outputName + '/'
-        segmentFile += outputName + '_' + segment['name'].split('-')[0] + outputExtension
+        segmentFile += "Segment" + segment['name'].split('-')[0] + outputExtension
         segment['package']['segmentFile'] = segmentFile
 
         segment['status'] = 'blocked'
@@ -349,7 +341,6 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
 
         callbacks.append(callback)
 
-
     ''' ---- Now put the job together ---- '''
 
     job = qubeJobTemplate
@@ -357,7 +348,6 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     ''' General '''
     job['name'] = 'Quicktime: ' + sequenceName
     job['prototype'] = 'Submit Transcoder'
-
 
     ''' Package '''
     job['package'] = {}
@@ -370,7 +360,6 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     job['package']['fillMissingFrames'] = fillMissingFrames
     job['package']['frameRange'] = '1-' + str(mySequence.getDuration())
     job['package']['transcoderFolder'] = transcoderFolder
-
 
     ''' Agenda '''
     job['agenda'] = []
@@ -385,10 +374,10 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
             if segment['name'] == lastSegmentName:
                 lastSegmentIndex = index
                 break
-        if lastSegmentIndex:
+        if lastSegmentIndex != None:
             job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
         else:
-            print "ERROR: Unable to find last segment for output " + output['name']
+            logger.error("ERROR: Unable to find last segment for output " + output['name'])
 
     ''' Callbacks '''
     if not job.get('callbacks', None):
@@ -398,24 +387,45 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     return job
 
 
-def testJob():
+def testMoreSegments():
     # Set basic job properties
     job = {}
-    job['cpus'] = 100
+    job['cpus'] = 50
     job['requirements'] = ''
     job['reservations'] = 'host.processors=1'
-    job['flagsstring'] = 'auto_wrangling,expand'
+    job['flagsstring'] = 'auto_wrangling'
     # job['hosts'] = 'bchapman.local'
     job['priority'] = 100
     job['hostorder'] = '+host.processors.avail'
-    sequenceFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testIS/testIS_00000.png'
-    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/testOutput.mov'
+    sequenceFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/IS/LeadershipWeb_00000.tga'
+    outputFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/LeadershipWeb_MoreSegments.mov'
     preset = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
-    audioFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Compressor/test.wav'
-    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=3,
-        fillMissingFrames=True, maxSegmentTolerance=2)
+    audioFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/LeadershipWeb.wav'
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=5,
+        fillMissingFrames=True, maxSegmentTolerance=2, segmentDuration=200)
     logger.info(job)
     qb.submit([job])
     # qb.archivejob('job.qja', job)
 
-testJob()
+def testLessSegments():
+    # Set basic job properties
+    job = {}
+    job['cpus'] = 50
+    job['requirements'] = ''
+    job['reservations'] = 'host.processors=1'
+    job['flagsstring'] = 'auto_wrangling'
+    # job['hosts'] = 'bchapman.local'
+    job['priority'] = 100
+    job['hostorder'] = '+host.processors.avail'
+    sequenceFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/IS/LeadershipWeb_00000.tga'
+    outputFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/LeadershipWeb_LessSegments.mov'
+    preset = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/1280x720-29.97-ProRes4444.blend'
+    audioFile = '/Volumes/theGrill/Elevate_NonSeries_Projects/ElevateAtHome_Leadership/Renders/_Proxies/testIS/LeadershipWeb.wav'
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=1,
+        fillMissingFrames=True, maxSegmentTolerance=0, segmentDuration=1000)
+    logger.info(job)
+    qb.submit([job])
+
+
+testMoreSegments()
+testLessSegments()

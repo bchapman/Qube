@@ -74,7 +74,7 @@ def create():
     
     # Set some default job options
     cmdjob.properties['hostorder'] = '+host.memory.avail'
-    cmdjob.properties['reservations'] = 'host.processors=6' # Reserve all cpus for the one job
+    cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
     cmdjob.properties['retrysubjob'] = 3
     cmdjob.properties['retrywork'] = 3
     cmdjob.package.setdefault('shell', '/bin/bash')
