@@ -514,11 +514,6 @@ class TranscoderSettings(Form):
           'jobdrop': 'Copy Job to Queue'
         }
         
-        if not settings.has_key('name') and settings['imageSequence']:
-            jobName = 'Quicktime: '
-            jobName += os.path.basename(os.path.splitext(settings['imageSequence'])[0])
-            settings['name'] = jobName
-        
         self._form = {
         'Parts': OrderedDict([
             ('Required', [
@@ -573,4 +568,4 @@ if __name__ == "__main__":
                  modal=True, settings={'imageSequence': '/tmp/test.png'})
 
     results = transcoderDlg.ShowModal()
-    print transcoderDlg.settings
+    # print transcoderDlg.settings
