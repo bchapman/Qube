@@ -514,11 +514,16 @@ class TranscoderSettings(Form):
           'jobdrop': 'Copy Job to Queue'
         }
         
+        if not settings.has_key('name') and settings['imageSequence']:
+            jobName = 'Quicktime: '
+            jobName += os.path.basename(os.path.splitext(settings['imageSequence'])[0])
+            settings['name'] = jobName
+        
         self._form = {
         'Parts': OrderedDict([
             ('Required', [
               [({'type': 'StaticText', 'label': 'Job Name:'},
-                {'type': 'TextCtrl', 'name': 'jobName', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL}),
+                {'type': 'TextCtrl', 'name': 'name', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL}),
                ({'type': 'StaticText', 'label': 'Preset'},
                 {'type': 'ComboBox', 'name': 'preset', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
                ({'type': 'StaticText', 'label': 'Image Sequence:'},
@@ -544,6 +549,15 @@ class TranscoderSettings(Form):
 
         Form.__init__(self, parent)
 
+    def _bind(self):
+      self.Bind(wx.EVT_FILEPICKER_CHANGED, self.updateOutput, self.itemMap['outputMovie'])
+
+    def updateOutput(self, evt=None):
+        jobName = 'Quicktime: '
+        jobName += os.path.basename(self.itemMap['outputMovie'].GetTextCtrlValue())
+        self.itemMap['name'].SetValue(jobName)
+        print "Llama"
+
     def onOk(self, evt):
         self.onClose(evt)
 
@@ -559,5 +573,4 @@ if __name__ == "__main__":
                  modal=True, settings={'imageSequence': '/tmp/test.png'})
 
     results = transcoderDlg.ShowModal()
-    for setting in transcoderDlg.settings:
-        print setting
+    print transcoderDlg.settings
