@@ -423,15 +423,15 @@ class TranscoderSettings(Form):
         self._form = {
         'Parts': OrderedDict([
             ('General', [
-              [({'type': 'StaticText', 'label': 'Image Sequence:'},
+              [({'type': 'StaticText', 'label': 'Image Sequence', 'name':'imageSequenceLabel'},
                 {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'imageSequence', 'labelText':'', 'flags': wx.EXPAND | wx.ALL, 'changeCallback': self.onSequenceUpdate}),
                ({'type': 'StaticText', 'label': 'Recent Settings'},
                 {'type': 'ComboBox', 'name': 'recentSettings', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
                ({'type': 'StaticText', 'label': 'Audio File:'},
                 {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'audioFile', 'labelText':'', 'fileMask': 'Wave Files (*.wav)|*.wav', 'flags': wx.EXPAND | wx.ALL}),
-               ({'type': 'StaticText', 'label': 'Output Preset'},
+               ({'type': 'StaticText', 'label': 'Output Preset', 'name':'outputPresetLabel'},
                 {'type': 'ComboBox', 'name': 'outputPreset', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
-               ({'type': 'StaticText', 'label': 'Output Movie:'},
+               ({'type': 'StaticText', 'label': 'Output Movie', 'name':'outputMovieLabel'},
                 {'type': 'FilePickerCtrl', 'name': 'outputMovie', 'wildcard': 'Quicktime Movie (*.mov)|*.mov', 'style': wx.FLP_SAVE | wx.FLP_OVERWRITE_PROMPT | wx.FLP_USE_TEXTCTRL, 'flags': wx.EXPAND | wx.ALL})]
             ]),
             ('Advanced', [
@@ -522,7 +522,7 @@ class TranscoderSettings(Form):
 
     def loadInputs(self, inputs):
         if inputs:
-            imageSequences = inputs.get('imageSequences', [])
+            imageSequences = inputs.get('imageS equences', [])
             self.itemMap['imageSequence'].SetHistory(imageSequences)
 
             audioFiles = inputs.get('audioFiles', [])
@@ -614,22 +614,18 @@ class TranscoderSettings(Form):
         recSetFile.close()
 
     def validateForm(self):
-        errors = []
+        result = True
         if not self.itemMap['imageSequence'].GetValue():
-            errors.append("No image sequence specified.")
-        if not self.itemMap['outputMovie'].GetPath():
-            errors.append("No output movie specified.")
+            self.itemMap['imageSequenceLabel'].SetForegroundColour(wx.RED)
+            result = False
         if self.itemMap['outputPreset'].GetValue() == 'None':
-            errors.append("No output preset specified.")
+            self.itemMap['outputPresetLabel'].SetForegroundColour(wx.RED)
+            result = False
+        if not self.itemMap['outputMovie'].GetPath():
+            self.itemMap['outputMovieLabel'].SetForegroundColour(wx.RED)
+            result = False
         
-        dlg = wx.MessageDialog(self, "\n".join(errors), "Error", wx.OK | wx.ICON_WARNING)
-        dlg.ShowModal()
-        dlg.Destroy()
-        
-        if len(errors) > 0:
-            return True
-        else:
-            return False
+        return result
 
 if __name__ == "__main__":
     app = wx.PySimpleApp()
