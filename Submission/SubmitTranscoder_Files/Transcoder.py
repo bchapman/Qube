@@ -3,8 +3,12 @@ Transcoder Dialog for the Qube Submission Interface
 '''
 
 import wx, os, sys, gettext
+import wx.lib.filebrowsebutton
 from odict import OrderedDict
 import logging
+import pickle
+import datetime
+import re
 
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
@@ -51,14 +55,14 @@ gettext.install('Demo', unicode = 1)
 
 class FormDialog(wx.Dialog):
     def __init__(self, parent, id = -1, panel = None, title = _("Unnamed Dialog"),
-               modal = False, sizes = (400, -1), refid = None, settings = {}):
+               modal = False, sizes = (400, -1), refid = None, data = {}):
         wx.Dialog.__init__(self, parent, id, _(title),
                            style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.settings = settings
 
         if panel is not None:
-            self._panel = panel(self, refid, settings=settings)
+            self._panel = panel(self, refid, data=data)
 
             self._panel.SetSizeHints(*sizes)
 
@@ -80,7 +84,7 @@ class FormDialog(wx.Dialog):
             self.Center()
 
             self.Bind(wx.EVT_BUTTON, self._panel.onOk, id = wx.ID_OK)
-            self.Bind(wx.EVT_BUTTON, self._panel.onClose, id = wx.ID_CANCEL)
+            self.Bind(wx.EVT_BUTTON, self._panel.onCancel, id = wx.ID_CANCEL)
             # self.Bind(wx.EVT_CLOSE, self._panel.onClose)
 
             # if modal:
@@ -268,7 +272,10 @@ class Form(wx.Panel):
             if type == 'ComboBox':
                 params['choices'] = self._form['Options'].get(params['name'], [])
 
-            element = getattr(wx, type)(self, -1, **params)
+            if "." in type:
+                element = eval(type)(self, -1, **params)
+            else:
+                element = getattr(wx, type)(self, -1, **params)
 
             if type == 'ComboTreeBox':
                 choices = self._form['Options'].get(params['name'], [])
@@ -348,9 +355,10 @@ class Form(wx.Panel):
             self._form['Options'] = {}
 
     def onOk(self, evt):
+        self.GetParent().settings = self.getOptions()
         self.onClose(evt)
 
-    def onClose(self, evt):
+    def getOptions(self):
         params = {}
 
         for name, field in self.itemMap.iteritems():
@@ -383,189 +391,257 @@ class Form(wx.Panel):
                     print name
 
                     continue
-        self.GetParent().settings = params
+
+        return params
+
+    def onCancel(self, evt):
+        self.GetParent().settings = None
+        self.onClose(evt)
+
+    def onClose(self, evt):
         self.GetParent().Hide()
 
-class ActionForm(Form):
-    def __init__(self, parent, refid = None):
-        self.refid = refid
-
-        Form.__init__(self, parent)
-
-    def onOk(self, evt = None):
-        params = {}
-
-        for name, field in self.itemMap.iteritems():
-            try:
-                value = field.GetValue()
-
-                if self._form.has_key('Translations'):
-                    if self._form['Translations'].has_key(name):
-                        value = self._form['Translations'][name][1].get(value, value)
-
-                if hasattr(value, 'isdecimal'):
-                    try:
-                        f = float(value)
-
-                        i = int(f)
-
-                        if i == f:
-                            value = i
-                        else:
-                            value = f
-                    except ValueError:
-                        pass # No conversion to int / float - string value.
-
-                params[name] = value
-            except AttributeError, e:
-                print e
-                try:
-                    params[name] = field.GetPath()
-                except AttributeError:
-                    print name
-
-                    continue
-
-        # Something here to store in the database.
-
-        evt.Skip()
-
-class TransformForm(Form):
-    def __init__(self, parent, refid = None):
-        self.refid = refid
-
-        Form.__init__(self, parent)
-
-    def addByte(self, f, b):
-        p, s = f.GetInsertionPoint(), f.GetSelection()
-
-        f.Remove(*s)
-
-        v = f.GetValue()
-
-        f.SetValue(v[0:p] + b + v[p:])
-
-        f.SetInsertionPoint(p + len(b))
-
-        f.SetFocus()
-
-    def addESC(self, f):
-        self.addByte(f, r'\x1B')
-
-    def addCR(self, f):
-        self.addByte(f, r'\r')
-
-    def addLF(self, f):
-        self.addByte(f, r'\n')
-
-    def addFF(self, f):
-        self.addByte(f, r'\f')
-
-    def addTAB(self, f):
-        self.addByte(f, r'\t')
-
-    def onOk(self, evt = None):
-        params = {}
-
-        for name, field in self.itemMap.iteritems():
-            try:
-                value = field.GetValue()
-
-                if self._form.has_key('Translations'):
-                    if self._form['Translations'].has_key(name):
-                        value = self._form['Translations'][name][1].get(value, value)
-
-                if hasattr(value, 'isdecimal'):
-                    try:
-                        f = float(value)
-
-                        i = int(f)
-
-                        if i == f:
-                            value = i
-                        else:
-                            value = f
-                    except ValueError:
-                        pass # No conversion to int / float - string value.
-
-                params[name] = value
-            except AttributeError:
-                try:
-                    params[name] = field.GetPath()
-                except AttributeError:
-                    print name
-
-                    continue
-
-        # Something here to store in the database / config file.
-
-        evt.Skip()
-
 class TranscoderSettings(Form):
-    def __init__(self, parent, refid = None, settings={}):        
+    def __init__(self, parent, refid = None, data={}):
+        
+        settings = data.get('settings', {})
+        inputs = data.get('inputs', [])
+        presetsFolder = data.get('presetsFolder', None)
+
         baseDefaults = {
-          'preset': '1280x720',
+          'outputPreset': 'None',
           'selfContained': True,
           'smartUpdate': True,
           'fillMissing': False,
           'interval': 3,
           'unit': 'Days',
           'printtasks': 5,
-          'jobdrop': 'Copy Job to Queue'
+          'jobdrop': 'Copy Job to Queue',
+          'recentSettings':'None'
         }
+        
+        self.recentSettings = []
         
         self._form = {
         'Parts': OrderedDict([
-            ('Required', [
-              [({'type': 'StaticText', 'label': 'Job Name:'},
-                {'type': 'TextCtrl', 'name': 'name', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL}),
-               ({'type': 'StaticText', 'label': 'Preset'},
-                {'type': 'ComboBox', 'name': 'preset', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
-               ({'type': 'StaticText', 'label': 'Image Sequence:'},
-                {'type': 'FilePickerCtrl', 'name': 'imageSequence', 'flags': wx.EXPAND | wx.ALL}),
-               ({'type': 'StaticText', 'label': 'Output Movie:'},
-                {'type': 'FilePickerCtrl', 'name': 'outputMovie', 'wildcard': 'Quicktime Movie (*.mov)|*.mov', 'style': wx.FLP_SAVE | wx.FLP_OVERWRITE_PROMPT | wx.FLP_USE_TEXTCTRL, 'flags': wx.EXPAND | wx.ALL}),
+            ('General', [
+              [({'type': 'StaticText', 'label': 'Image Sequence:'},
+                {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'imageSequence', 'labelText':'', 'flags': wx.EXPAND | wx.ALL, 'changeCallback': self.onSequenceUpdate}),
+               ({'type': 'StaticText', 'label': 'Recent Settings'},
+                {'type': 'ComboBox', 'name': 'recentSettings', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
                ({'type': 'StaticText', 'label': 'Audio File:'},
-                {'type': 'FilePickerCtrl', 'name': 'audioFile', 'wildcard': 'Wave Files (*.wav)|*.wav', 'flags': wx.EXPAND | wx.ALL })]
+                {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'audioFile', 'labelText':'', 'fileMask': 'Wave Files (*.wav)|*.wav', 'flags': wx.EXPAND | wx.ALL}),
+               ({'type': 'StaticText', 'label': 'Output Preset'},
+                {'type': 'ComboBox', 'name': 'outputPreset', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
+               ({'type': 'StaticText', 'label': 'Output Movie:'},
+                {'type': 'FilePickerCtrl', 'name': 'outputMovie', 'wildcard': 'Quicktime Movie (*.mov)|*.mov', 'style': wx.FLP_SAVE | wx.FLP_OVERWRITE_PROMPT | wx.FLP_USE_TEXTCTRL, 'flags': wx.EXPAND | wx.ALL})]
             ]),
             ('Advanced', [
-              {'type': 'CheckBox', 'name': 'selfContained', 'label': 'Self Contained'},
+              {'type': 'CheckBox', 'name': 'selfContained', 'label': 'Self-contained'},
               {'type': 'CheckBox', 'name': 'smartUpdate', 'label': 'Only update what\'s changed'},
               {'type': 'CheckBox', 'name': 'fillMissing', 'label': 'Fill in missing frames.'}
             ]),
         ]),
         'Options': {
-          'preset': ['1280x720','1920x1080'],
+          'outputPreset': ['None'],
           'unit': ['Hours', 'Days', 'Months'],
-          'jobdrop': ['Copy Job to Queue', 'Move Job to Queue']
+          'jobdrop': ['Copy Job to Queue', 'Move Job to Queue'],
+          'recentSettings': ['None']
         },
         'Defaults': dict(baseDefaults.items() + settings.items())
         }
 
         Form.__init__(self, parent)
+        
+        if settings.has_key('imageSequence'):
+            self.loadRecentSettings(settings['imageSequence'])
+            if len(self.recentSettings) > 0:
+                self.applyRecentSetting()
+                
+        self.loadInputs(inputs)
+        self.loadPresets(presetsFolder)
+        
+    def applyRecentSetting(self, select=0):
+        if len(self.recentSettings) > 0:
+            data = self.recentSettings[select]
+            self.itemMap['recentSettings'].SetValue(self.getSettingName(data))
+            self.itemMap['audioFile'].SetValue(data['audioFile'])
+            self.itemMap['outputPreset'].SetValue(data['outputPreset'])
+            self.itemMap['outputMovie'].SetPath(data['outputMovie'])
+            self.itemMap['selfContained'].SetValue(data['selfContained'])
+            self.itemMap['smartUpdate'].SetValue(data['smartUpdate'])
+            self.itemMap['fillMissing'].SetValue(data['fillMissing'])
 
+        # Put together the list of recent settings
+        recSetCtrl = self.itemMap['recentSettings']
+        recSetCtrl.Clear()
+        for setting in self.recentSettings:
+            settingName = self.getSettingName(setting)
+            recSetCtrl.Append(settingName)
+
+        recSetCtrl.SetSelection(select)
+
+        
     def _bind(self):
-      self.Bind(wx.EVT_FILEPICKER_CHANGED, self.updateOutput, self.itemMap['outputMovie'])
+        self.Bind(wx.EVT_COMBOBOX, self.onRecentSettings, self.itemMap['recentSettings'])
+        self.itemMap['imageSequence'].browseButton.Bind(wx.EVT_BUTTON, self.onSequenceBrowse)
 
-    def updateOutput(self, evt=None):
-        jobName = 'Quicktime: '
-        jobName += os.path.basename(self.itemMap['outputMovie'].GetTextCtrlValue())
-        self.itemMap['name'].SetValue(jobName)
-        print "Llama"
+    def compareSettings(self, settingA, settingB):
+        logger.debug("SettingA: " + str(settingA))
+        logger.debug("SettingB: " + str(settingB))
+        result = True
+        for item in settingA.items():
+            logger.debug("Item: " + str(item))
+            if item[0] not in ('date','recentSettings'):
+                logger.debug("Not in date, recentSettings")
+                if item[1] != settingB.get(item[0], ''):
+                    logger.debug(str(item[1]) + ' != ' + str(settingB.get(item[0], '')))
+                    result = False
+        return result
+
+    def getSettingName(self, setting):
+        result = setting['date'] + ' ' + os.path.basename(setting['outputMovie'])
+        return result
+
+    def getRecentSettingsFilePath(self, imageSequenceFile):
+        '''
+        Return the file path of the recent settings file stored
+        in the image sequence directory.
+        '''
+
+        imgSeqFile = os.path.split(imageSequenceFile)
+        recSetFilePath = imgSeqFile[0]
+        match = re.match('(.+?)(\d\d+?)(\.\w+)', imgSeqFile[1])
+        recSetFilePath += '/.TRANSCODE.'
+        if match:
+            name, number, ext = match.groups()
+            recSetFilePath += name + ('0'*len(number)) + ext
+        else:
+            recSetFilePath += imgSeqFile[1]
+
+        logger.debug("recentSettingsFilePath: " + recSetFilePath)
+        return recSetFilePath
+
+    def loadInputs(self, inputs):
+        imageSequences = inputs.get('imageSequences', [])
+        self.itemMap['imageSequence'].SetHistory(imageSequences)
+
+        audioFiles = inputs.get('audioFiles', [])
+        self.itemMap['audioFile'].SetHistory(audioFiles)            
+
+    def loadPresets(self, presetsFolder):
+        fileList = os.listdir(presetsFolder)
+
+        self.itemMap['outputPreset'].Clear()
+        for item in fileList:
+            if item.endswith('.blend'):
+                self.itemMap['outputPreset'].Append(os.path.splitext(item)[0])
+
+        self.itemMap['outputPreset'].SetSelection(0)
+
+    def loadRecentSettings(self, imageSequencePath):
+        '''
+        Load recent settings from a data file
+        in the image sequence folder if it exists.
+        '''
+
+        recSettings = []
+
+        recSetFilePath = self.getRecentSettingsFilePath(imageSequencePath)
+
+        print "recSetFilePath: " + recSetFilePath
+        if os.path.exists(recSetFilePath):
+            recSetFile = open(recSetFilePath, 'r')
+            recSettings = pickle.load(recSetFile)
+            logger.debug("Loaded Settings: " + str(recSettings))
+
+            recSetFile.close()
+
+        logger.debug("Loaded Settings: " + str(recSettings))
+
+        self.recentSettings = recSettings
 
     def onOk(self, evt):
-        self.onClose(evt)
+        if self.validateForm():
+            self.saveSettings()
+            super(TranscoderSettings, self).onOk(evt)
 
+    def onRecentSettings(self, evt=None):
+        selection = self.itemMap['recentSettings'].GetSelection()
+        self.applyRecentSetting(selection)
+
+    def onSequenceBrowse(self, evt=None):
+        self.itemMap['imageSequence'].OnBrowse()
+        self.onSequenceUpdate()
+
+    def onSequenceUpdate(self, evt=None):
+        print "Sequence Updated."
+        self.loadRecentSettings(self.itemMap['imageSequence'].GetValue())
+        print "Recent Settings: " + str(self.recentSettings)
+        print "Length : " + str(len(self.recentSettings))
+        if len(self.recentSettings) > 0:
+            self.applyRecentSetting()
+
+    def saveSettings(self):
+        '''
+        Save the current settings to a preset file
+        in the image sequence folder. Limited to 10 entries.
+        '''
+        
+        options = self.getOptions()
+        unique = True
+        if options['outputMovie']:
+            for setting in self.recentSettings:
+                if self.compareSettings(options, setting):
+                    unique = False
+
+        if unique:
+            logger.debug("New Setting")
+            now = datetime.datetime.now()
+            options['date'] = now.strftime("%b%d %H:%M")
+            self.recentSettings.insert(0, options)
+            self.recentSettings = self.recentSettings[:9] # Limit to 10 entries
+            logger.debug("recentSettings: " + str(options))
+        else:
+            logger.debug("Setting used before")
+
+        recSetFilePath = self.getRecentSettingsFilePath(self.itemMap['imageSequence'].GetValue())
+        recSetFile = open(recSetFilePath, 'w')
+        pickle.dump(self.recentSettings, recSetFile)
+        recSetFile.close()
+
+    def validateForm(self):
+        errors = []
+        if not self.itemMap['imageSequence'].GetValue():
+            errors.append("No image sequence specified.")
+        if not self.itemMap['outputMovie'].GetPath():
+            errors.append("No output movie specified.")
+        if self.itemMap['outputPreset'].GetValue() == 'None':
+            errors.append("No output preset specified.")
+        
+        dlg = wx.MessageDialog(self, "\n".join(errors), "Error", wx.OK | wx.ICON_WARNING)
+        dlg.ShowModal()
+        dlg.Destroy()
+        
+        if len(errors) > 0:
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
     app = wx.PySimpleApp()
 
-
+    settings = {'imageSequence': ''}
+    inputs = {'audioFiles':['test1.wav','test2.wav'], 'imageSequences':['sequence1.png','sequence2.png']}
+    presetsFolder = '/tmp/testPresets'
+    
     transcoderDlg = FormDialog(None,
                  panel = TranscoderSettings,
                  title = 'Transcoder Settings',
                  sizes = (400, -1),
-                 modal=True, settings={'imageSequence': '/tmp/test.png'})
+                 modal=True, data={'settings':settings,
+                                    'inputs':inputs,
+                                    'presetsFolder':presetsFolder})
 
-    results = transcoderDlg.ShowModal()
-    # print transcoderDlg.settings
+    print transcoderDlg.ShowModal()
+    print transcoderDlg.settings
