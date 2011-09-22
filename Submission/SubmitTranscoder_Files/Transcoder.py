@@ -618,12 +618,18 @@ class TranscoderSettings(Form):
         if not self.itemMap['imageSequence'].GetValue():
             self.itemMap['imageSequenceLabel'].SetForegroundColour(wx.RED)
             result = False
+        else:
+            self.itemMap['imageSequenceLabel'].SetForegroundColour(wx.BLACK)
         if self.itemMap['outputPreset'].GetValue() == 'None':
             self.itemMap['outputPresetLabel'].SetForegroundColour(wx.RED)
             result = False
+        else:
+            self.itemMap['outputPresetLabel'].SetForegroundColour(wx.BLACK)
         if not self.itemMap['outputMovie'].GetPath():
             self.itemMap['outputMovieLabel'].SetForegroundColour(wx.RED)
             result = False
+        else:
+            self.itemMap['outputMovieLabel'].SetForegroundColour(wx.BLACK)
         
         return result
 
