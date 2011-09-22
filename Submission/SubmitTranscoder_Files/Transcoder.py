@@ -530,14 +530,16 @@ class TranscoderSettings(Form):
         self.itemMap['audioFile'].SetHistory(audioFiles)            
 
     def loadPresets(self, presetsFolder):
-        fileList = os.listdir(presetsFolder)
+        try:
+            fileList = os.listdir(presetsFolder)
+            self.itemMap['outputPreset'].Clear()
+            for item in fileList:
+                if item.endswith('.blend'):
+                    self.itemMap['outputPreset'].Append(os.path.splitext(item)[0])
 
-        self.itemMap['outputPreset'].Clear()
-        for item in fileList:
-            if item.endswith('.blend'):
-                self.itemMap['outputPreset'].Append(os.path.splitext(item)[0])
-
-        self.itemMap['outputPreset'].SetSelection(0)
+            self.itemMap['outputPreset'].SetSelection(0)
+        except:
+            logger.error("Unable to load presets from the presets folder. " + str(presetsFolder))
 
     def loadRecentSettings(self, imageSequencePath):
         '''
