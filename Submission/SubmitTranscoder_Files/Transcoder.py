@@ -59,8 +59,6 @@ class FormDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, id, _(title),
                            style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
-        self.settings = settings
-
         if panel is not None:
             self._panel = panel(self, refid, data=data)
 
