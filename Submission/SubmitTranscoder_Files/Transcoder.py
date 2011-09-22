@@ -403,7 +403,7 @@ class TranscoderSettings(Form):
     def __init__(self, parent, refid = None, data={}):
         
         settings = data.get('settings', {})
-        inputs = data.get('inputs', [])
+        inputs = data.get('inputs', {})
         presetsFolder = data.get('presetsFolder', None)
 
         baseDefaults = {
@@ -521,11 +521,14 @@ class TranscoderSettings(Form):
         return recSetFilePath
 
     def loadInputs(self, inputs):
-        imageSequences = inputs.get('imageSequences', [])
-        self.itemMap['imageSequence'].SetHistory(imageSequences)
+        if inputs:
+            imageSequences = inputs.get('imageSequences', [])
+            self.itemMap['imageSequence'].SetHistory(imageSequences)
 
-        audioFiles = inputs.get('audioFiles', [])
-        self.itemMap['audioFile'].SetHistory(audioFiles)            
+            audioFiles = inputs.get('audioFiles', [])
+            self.itemMap['audioFile'].SetHistory(audioFiles)            
+        else:
+            logger.debug("No inputs provided.")
 
     def loadPresets(self, presetsFolder):
         try:
