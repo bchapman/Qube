@@ -108,7 +108,7 @@ class Control:
                         ' from the qube job package.')
 
         if not errors:
-            if result == '':
+            if not result or result == 'None':
                 if required:
                     errors.append('Required option ' + name + ' is empty.')
             else:
@@ -120,7 +120,10 @@ class Control:
 
                 if isBool:
                     try:
-                        result = bool(result)
+                        if result == 'True' or result == '1':
+                            result = True
+                        else:
+                            result = False
                     except:
                         errors.append('Invalid Boolean Value of ' + str(result) + ' for ' + name)
 
@@ -310,7 +313,7 @@ class Control:
 
         Command Templates:
             catmovie -o tempOutputFile - (Segments)
-            muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) tempOutputFile
+            muxmovie -o finalOutputFile (-self-contained) (-startAt SECONDS audioFile) -trimToLengthOfMovie tempOutputFile tempOutputFile
         '''
 
         cmd = ''
@@ -324,12 +327,12 @@ class Control:
         muxCMD = '\'' + MUXMOVIELOCATION + '\''
         muxCMD += ' -o \'' + finalOutputPath + '\''
         if self.job.selfContained:
-            muxCMD += ' -self-contained -trimToShortestTrack'
+            muxCMD += ' -self-contained'
+        muxCMD += ' \'' + catOutput + '\''
         if self.job.audioFile:
             ''' Calculate the offset start time for the audio. '''
             audioStart = float(startFrame)/float(frameRate)
-            muxCMD += ' \'' + str(self.job.audioFile) + '\' -startAt ' + str(audioStart)
-        muxCMD += ' ' + catOutput
+            muxCMD += ' \'' + str(self.job.audioFile) + '\' -startAt ' + str(audioStart) + ' -trimToLengthOfMovie \'' + catOutput + '\''
 
         cmd += '/bin/bash -c "' + catCMD + '; ' + muxCMD + '"'
         
@@ -345,10 +348,12 @@ class Control:
         changes = False
         for segment in segments:
             if not (segment['name'].startswith(('Initialize', 'Output'))):
-                segmentChanges = bool(segment.get('resultpackage', {}).get('Changed', ''))
+                segmentChanges = int(segment.get('resultpackage', {}).get('Changed', ''))
                 logger.debug(segment['name'] + ' - Changes: ' + str(segmentChanges))
-                if segmentChanges:
+                if segmentChanges != 0:
                     changes = True
+
+        logger.debug("Changes Found: " + str(changes))
         
         return changes
     

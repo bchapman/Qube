@@ -141,7 +141,11 @@ def executeJob(control):
             if agendaItem['name'] == 'Initialize':
                 logger.info('Initializing...\n')
 
-                returnCode = runCMD(control.getInitCMD(agendaItem))
+                if os.path.exists(control.getBlendFile()):
+                    logger.info("Initialization script alread exists.")
+                    returnCode = 0
+                else:
+                    returnCode = runCMD(control.getInitCMD(agendaItem))
 
                 if returnCode == 0:
                     logger.info('Initialization Complete! (' + str(returnCode) + ')\n')
@@ -237,11 +241,11 @@ def executeJob(control):
 
                             differences = ''
                             if len(compare['Added']) > 0:
-                                differences += '\n\tAdded: ' + sequenceTools.convertListToRanges(compare['Added'])
+                                differences += '\n\tAdded: ' + mySequence.convertListToRanges(compare['Added'])
                             if len(compare['Deleted']) > 0:
-                                differences += '\n\tDeleted: ' + sequenceTools.convertListToRanges(compare['Deleted'])
+                                differences += '\n\tDeleted: ' + mySequence.convertListToRanges(compare['Deleted'])
                             if len(compare['Modified']) > 0:
-                                differences += '\n\tModified: ' + sequenceTools.convertListToRanges(compare['Modified'])    
+                                differences += '\n\tModified: ' + mySequence.convertListToRanges(compare['Modified'])    
                             
                             if differences:
                                 logger.info('Sequence Differences:' + differences)
@@ -326,27 +330,44 @@ def executeJob(control):
                 logger.debug('Dependants Segments: ' + str(dependantSegments))
 
                 finalOutputPath = agendaItem['package']['outputFile']
-                finalOutputPath = control.getValidOutputPath(finalOutputPath)
                 if finalOutputPath:
                     transcode = True
                 else:
                     errors = True
 
-                changes = control.checkSegmentsForChanges(dependantSegments)
-                if changes or not os.path.exists(finalOutputPath):
-                    transcode = True
-                else:
-                    logger.info('No changes for final output.')
+                if transcode:
+                    changes = control.checkSegmentsForChanges(dependantSegments)
+                    if not changes:
+                        logger.info("No changes to segments.")
+                    
+                        if os.path.exists(str(finalOutputPath)):
+                            logger.info('Final output movie already exists. ' + str(finalOutputPath))
+                            returnCode = 0
+                            transcode = False
+                        else:
+                            logger.info('Final output movie doesn\'t exist. ' + str(finalOutputPath))
+                            transcode = True
+                    else:
+                        transcode = True
 
-                segmentOutputPaths = control.getSegmentOutputPaths(dependantSegments)
-                if segmentOutputPaths:
-                    transcode = True
-                else:
-                    errors = True
+                if transcode:
+                    segmentOutputPaths = control.getSegmentOutputPaths(dependantSegments)
+                    if segmentOutputPaths:
+                        transcode = True
+                    else:
+                        errors = True
 
-                startFrame = control.getOutputStartFrame(dependantSegments)
-                logger.debug('Output Start Frame: ' + startFrame)
+                if transcode:
+                    startFrame = control.getOutputStartFrame(dependantSegments)
+                    logger.debug('Output Start Frame: ' + startFrame)
 
+                if transcode:                    
+                    finalOutputPath = control.getValidOutputPath(finalOutputPath)
+                    if finalOutputPath:
+                        transcode = True
+                    else:
+                        errors = True
+                    
                 if transcode:
                     cmd = control.getFinalOutputCMD(segmentOutputPaths, finalOutputPath, startFrame, 29.97, agendaItem)
                     returnCode = runCMD(cmd)
@@ -377,6 +398,9 @@ def executeJob(control):
             ''' Report back the results to the Supervisor '''
             qb.reportwork(agendaItem)
 
+
+    if jobstate == 'blocked':
+        jobstate = 'pending'
 
     return jobstate
 

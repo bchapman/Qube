@@ -8,8 +8,16 @@ Provides methods to assist in working with image sequences
 
 '''
 
-import os, sys, re, glob, hashlib, FileLock, DictDifferences
-import sqlite3
+import os, sys, re, glob, hashlib, DictDifferences
+
+# Qube workaraound
+try:
+    import sqlite3
+except:
+    sys.path.append('/System/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5')
+    sys.path.append('/System/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5/lib-dynload/')
+    import sqlite3
+
 import logging
 
 '''
