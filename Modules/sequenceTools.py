@@ -8,9 +8,23 @@ Provides methods to assist in working with image sequences
 
 '''
 
-import os, sys, re, glob, hashlib, FileLock, DictDifferences
+import os, sys, re, glob, hashlib, DictDifferences
 import sqlite3
 import logging
+
+PIL = False
+try:
+    import Image
+    PIL = True
+except:
+    try:
+        sys.path.append("/Library/Python/2.5/site-packages/PIL/")
+        import Image
+        PIL = True
+    except:
+        print "Unable to import PIL Image module."
+
+
 
 '''
 Set up the logging module.
@@ -18,6 +32,7 @@ Set up the logging module.
 ''' Setup the logger. '''
 # logging.basicConfig()
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 def loadFrameRange(frameRange):
     '''
@@ -69,6 +84,7 @@ class Sequence:
         '''
         if type(frameRange) is list:
             return frameRange
+        frameRange = str(frameRange)
         if frameRange.upper() == 'ALL':
             bounds = self.getBounds()
             frameRange = str(bounds['start']) + '-' + str(bounds['end'])
@@ -95,7 +111,35 @@ class Sequence:
                 deleteCount += 1
         
         return deleteCount
-            
+
+    def getCorruptFrames(self, frames='All'):
+        framesToVerify = []
+        
+        if str(frames).upper() == 'ALL':
+            framesToVerify = self.getFrames()
+        else:
+            for frameNumber in self.loadFrameRange(frames):
+                framesToVerify.extend(self.getFrames(frameNumber))
+        
+        corruptFrames = []
+        if PIL:
+            for frame in framesToVerify:
+                filePath = self.getFrameFilename(frame)
+                # logger.debug("Opening image: " + str(filePath))
+                try:
+                    img = Image.open(filePath)
+                    img.verify()
+                    # logger.debug("Image verified: " + filePath)
+                except Exception, e:
+                    logger.debug("Corrupt image path: " + filePath)
+                    corruptFrames.append(frame)
+            if corruptFrames:
+                logger.warning("Corrupt Frame Numbers: " + self.convertListToRanges(corruptFrames))
+        else:
+            logger.warning("Python Imaging Library(PIL) not installed.")
+
+        return corruptFrames
+        
     def getDuration(self, frameRate=29.97, timecode=False):
         '''
         Get the time in either frames or timecode
