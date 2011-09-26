@@ -47,7 +47,7 @@ class FileLock(object):
             try:
                 self.fd = os.open(self.lockfile, os.O_CREAT|os.O_EXCL|os.O_RDWR)
                 break;
-            except OSError as e:
+            except OSError, e:
                 if e.errno != errno.EEXIST:
                     raise 
                 if (time.time() - start_time) >= self.timeout:

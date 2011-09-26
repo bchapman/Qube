@@ -1,6 +1,11 @@
 '''
-Transcoder Dialog for the Qube Submission Interface
+Transcoder Classes and Tools
+Author: Brennan Chapman
+
+Can be easily imported into any other submission interface.
 '''
+
+PRESETSFOLDER = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets'
 
 import wx, os, sys, gettext
 import wx.lib.filebrowsebutton
@@ -9,6 +14,12 @@ import logging
 import pickle
 import datetime
 import re
+import qb
+import qbCache
+
+sys.path.append('/Volumes/theGrill/.qube/Modules')
+import sequenceTools
+
 
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
@@ -42,12 +53,129 @@ f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
-rootLogger.setLevel(logging.DEBUG)
+# rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+class TranscoderWidget(wx.Panel):
+    '''
+    Transcoder Job Widget
+    Listbox with Add, Edit, and Remove Buttons
+    '''
+    buttonLabel='Browser'
+    def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
+        wx.Panel.__init__ (self, parent, id, pos, size, style)
+
+        self.SetMinSize(size)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.listbox = wx.ListBox(self, -1) # size=(250, 110)
+        sizer.Add( self.listbox, 1, wx.EXPAND|wx.ALL, 2)
+
+        btnPanel = wx.Panel(self, -1, style=0)
+        # btnPanel.SetMinSize(wx.DefaultSize)
+        btnSizer = wx.BoxSizer(wx.VERTICAL)
+        
+        self.addButton = wx.Button(btnPanel, -1, "Add", size=(75, 24))
+        self.editButton = wx.Button(btnPanel, -1, "Edit", size=(75, 24))
+        self.removeButton = wx.Button(btnPanel, -1, "Remove", size=(75, 24))
+        self.clearButton = wx.Button(btnPanel, -1, "Clear", size=(75, 24))
+
+        self.addButton.Bind(wx.EVT_BUTTON, self.AddButtonClick)
+        self.editButton.Bind(wx.EVT_BUTTON, self.EditButtonClick)
+        self.removeButton.Bind(wx.EVT_BUTTON, self.RemoveButtonClick)
+        self.clearButton.Bind(wx.EVT_BUTTON, self.ClearButtonClick)
+        
+        btnSizer.Add(self.addButton, 1, wx.Top, 5)
+        btnSizer.Add(self.editButton, 1, wx.Top, 5)
+        btnSizer.Add(self.removeButton, 1, wx.Top, 5)
+        btnSizer.Add(self.clearButton, 1, wx.Top, 5)
+
+        btnPanel.SetSizer(btnSizer)
+
+        sizer.Add( btnPanel, 0, wx.RIGHT, 5)
+
+        # Cleanup the layout
+        self.SetAutoLayout(True)
+        self.SetSizer( sizer )
+        self.Layout()
+        self.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
+        
+        self.imageSequenceList = []
+        self.audioFileList = []
+
+    def setInputLists(self, imageSequenceList=[], audioFileList=[]):
+        self.imageSequenceList = imageSequenceList
+        self.audioFileList = audioFileList
+
+    def loadTranscoderWindow(self, edit=False):
+        if edit:
+            sel = self.listbox.GetSelection()
+            settings = self.listbox.GetClientData(sel)
+        else:
+            settings = {}
+        inputs = {'imageSequences': self.imageSequenceList, 'audioFiles': self.audioFileList}
+        transcoderDlg = FormDialog(self,
+                     panel = TranscoderSettings,
+                     title = 'Transcoder Settings',
+                     sizes = (450, -1),
+                     modal=True, data={'settings':settings,
+                                         'inputs':inputs,
+                                         'presetsFolder':PRESETSFOLDER})
+        transcoderDlg.ShowModal()
+        results = transcoderDlg.settings
+        transcoderDlg.Destroy()
+        if results:
+            if edit:
+                self.addItemToList(results, itemNum=sel)
+            else:
+                self.addItemToList(results)
+
+    def getItemName(self, item):
+        result = os.path.basename(item['outputMovie'])
+        return result
+
+    def addItemToList(self, item, itemNum=-1):
+        if itemNum > -1:
+            self.listbox.Delete(itemNum)
+        else:
+            itemNum = 0
+        logging.info("Adding Item to list")
+        logging.info(str(item))
+        # if not item['outputPreset'].startswith(PRESETSFOLDER):
+        #     item['outputPreset'] = PRESETSFOLDER + item['outputPreset'] + '.blend'
+        self.listbox.Insert(self.getItemName(item), itemNum, item)
+        self.listbox.SetSelection(itemNum)
+
+    def AddButtonClick(self, event=None):
+        self.loadTranscoderWindow()
+        pass
+
+    def EditButtonClick(self, event=None):
+        self.loadTranscoderWindow(edit=True)
+        pass
+
+    def RemoveButtonClick(self, event=None):
+        sel = self.listbox.GetSelection()
+        if sel != -1:
+            self.listbox.Delete(sel)
+
+    def ClearButtonClick(self, event=None):
+        self.listbox.Clear()
+
+    def GetValue(self):
+        result = []
+        for index in range(self.listbox.GetCount()):
+            result.append(self.listbox.GetClientData(index))
+        return result
+        
+    def SetValue(self, items):
+        for item in items:
+            self.addItemToList(item)
 
 
 # This installs gettext as _() for translation catalogs.
@@ -402,12 +530,17 @@ class Form(wx.Panel):
 class TranscoderSettings(Form):
     def __init__(self, parent, refid = None, data={}):
         
+        self.initComplete = False
         settings = data.get('settings', {})
         inputs = data.get('inputs', {})
         presetsFolder = data.get('presetsFolder', None)
 
+        self.recentSettings = []
+        self.outputPresets = ['Choose an output preset...']
+        self.loadPresets(presetsFolder)
+
         baseDefaults = {
-          'outputPreset': 'None',
+          'outputPreset': self.outputPresets[0],
           'selfContained': True,
           'smartUpdate': True,
           'fillMissing': False,
@@ -417,8 +550,6 @@ class TranscoderSettings(Form):
           'jobdrop': 'Copy Job to Queue',
           'recentSettings':'None'
         }
-        
-        self.recentSettings = []
         
         self._form = {
         'Parts': OrderedDict([
@@ -437,11 +568,11 @@ class TranscoderSettings(Form):
             ('Advanced', [
               {'type': 'CheckBox', 'name': 'selfContained', 'label': 'Self-contained'},
               {'type': 'CheckBox', 'name': 'smartUpdate', 'label': 'Only update what\'s changed'},
-              {'type': 'CheckBox', 'name': 'fillMissing', 'label': 'Fill in missing frames.'}
+              {'type': 'CheckBox', 'name': 'fillMissingFrames', 'label': 'Fill in missing frames.'}
             ]),
         ]),
         'Options': {
-          'outputPreset': ['None'],
+          'outputPreset': self.outputPresets,
           'unit': ['Hours', 'Days', 'Months'],
           'jobdrop': ['Copy Job to Queue', 'Move Job to Queue'],
           'recentSettings': ['None']
@@ -453,17 +584,18 @@ class TranscoderSettings(Form):
         
         if settings.has_key('imageSequence'):
             self.loadRecentSettings(settings['imageSequence'])
-            if len(self.recentSettings) > 0:
-                self.applyRecentSetting()
+            self.applyRecentSetting()
                 
         self.loadInputs(inputs)
-        self.loadPresets(presetsFolder)
         
-    def applyRecentSetting(self, select=0):
-        if len(self.recentSettings) > 0:
+        self.initComplete = True
+        
+    def applyRecentSetting(self, select=-1):
+        if len(self.recentSettings) > 0 and select > -1:
             data = self.recentSettings[select]
             self.itemMap['recentSettings'].SetValue(self.getSettingName(data))
             self.itemMap['audioFile'].SetValue(data['audioFile'])
+            logger.debug("Apply output preset: " + data['outputPreset'])
             self.itemMap['outputPreset'].SetValue(data['outputPreset'])
             self.itemMap['outputMovie'].SetPath(data['outputMovie'])
             self.itemMap['selfContained'].SetValue(data['selfContained'])
@@ -473,11 +605,12 @@ class TranscoderSettings(Form):
         # Put together the list of recent settings
         recSetCtrl = self.itemMap['recentSettings']
         recSetCtrl.Clear()
+        recSetCtrl.Append("Choose a recent setting...")
         for setting in self.recentSettings:
             settingName = self.getSettingName(setting)
             recSetCtrl.Append(settingName)
 
-        recSetCtrl.SetSelection(select)
+        recSetCtrl.SetSelection(select+1)
 
         
     def _bind(self):
@@ -533,12 +666,13 @@ class TranscoderSettings(Form):
     def loadPresets(self, presetsFolder):
         try:
             fileList = os.listdir(presetsFolder)
-            self.itemMap['outputPreset'].Clear()
+            # self.itemMap['outputPreset'].Clear()
             for item in fileList:
                 if item.endswith('.blend'):
-                    self.itemMap['outputPreset'].Append(os.path.splitext(item)[0])
+                    self.outputPresets.append(os.path.splitext(item)[0])
+                    # self.itemMap['outputPreset'].Append()
 
-            self.itemMap['outputPreset'].SetSelection(0)
+            # self.itemMap['outputPreset'].SetSelection(0)
         except:
             logger.error("Unable to load presets from the presets folder. " + str(presetsFolder))
 
@@ -552,7 +686,7 @@ class TranscoderSettings(Form):
 
         recSetFilePath = self.getRecentSettingsFilePath(imageSequencePath)
 
-        print "recSetFilePath: " + recSetFilePath
+        logger.debug("recSetFilePath: " + recSetFilePath)
         if os.path.exists(recSetFilePath):
             recSetFile = open(recSetFilePath, 'r')
             recSettings = pickle.load(recSetFile)
@@ -570,7 +704,7 @@ class TranscoderSettings(Form):
             super(TranscoderSettings, self).onOk(evt)
 
     def onRecentSettings(self, evt=None):
-        selection = self.itemMap['recentSettings'].GetSelection()
+        selection = self.itemMap['recentSettings'].GetSelection() - 1
         self.applyRecentSetting(selection)
 
     def onSequenceBrowse(self, evt=None):
@@ -578,12 +712,10 @@ class TranscoderSettings(Form):
         self.onSequenceUpdate()
 
     def onSequenceUpdate(self, evt=None):
-        print "Sequence Updated."
-        self.loadRecentSettings(self.itemMap['imageSequence'].GetValue())
-        print "Recent Settings: " + str(self.recentSettings)
-        print "Length : " + str(len(self.recentSettings))
-        if len(self.recentSettings) > 0:
-            self.applyRecentSetting()
+        if self.initComplete:
+            self.loadRecentSettings(self.itemMap['imageSequence'].GetValue())
+            if len(self.recentSettings) > 0:
+                self.applyRecentSetting()
 
     def saveSettings(self):
         '''
@@ -595,15 +727,16 @@ class TranscoderSettings(Form):
         unique = True
         if options['outputMovie']:
             for setting in self.recentSettings:
-                if self.compareSettings(options, setting):
-                    unique = False
+                if type(setting) == dict:
+                    if self.compareSettings(options, setting):
+                        unique = False
 
         if unique:
             logger.debug("New Setting")
             now = datetime.datetime.now()
             options['date'] = now.strftime("%b%d %H:%M")
             self.recentSettings.insert(0, options)
-            self.recentSettings = self.recentSettings[:9] # Limit to 10 entries
+            self.recentSettings = self.recentSettings[:10] # Limit to 10 entries
             logger.debug("recentSettings: " + str(options))
         else:
             logger.debug("Setting used before")
@@ -632,6 +765,388 @@ class TranscoderSettings(Form):
             self.itemMap['outputMovieLabel'].SetForegroundColour(wx.BLACK)
         
         return result
+
+def chunkWithTolerance(inputList, chunkSize, tolerance):
+    '''
+    Generate chunks of a list. If the tolerance
+    value isn't met, the remaining values are
+    added to the last chunk.
+    '''
+
+    myList = list(inputList) # Make a copy
+
+    logger.debug('Chunk With Tolerance: ' + str(locals()))
+    if tolerance > chunkSize:
+        tolerance = 0
+
+    resultLists = []
+    while len(myList) > 0:
+        resultList = []
+        count = 0
+        while count < chunkSize and len(myList) > 0:
+            resultList.append(myList.pop(0))
+            count += 1
+
+        if len(resultList) <= tolerance:
+            resultLists[-1].extend(resultList)
+        else:
+            resultLists.append(resultList)
+
+    logger.debug('Chunk with Tolerance Results: ' + str(resultLists))
+    logger.debug('Chunk with Tolerance Results Length: ' + str(len(resultLists)))
+    return resultLists
+
+def splitPath(inputPath):
+    '''
+    Split an input path into:
+        Folder
+        File Name
+        File Extension
+    '''
+    # logger.debug('Splitting Path: ' + str(locals()))
+    folder, fullName = os.path.split(inputPath)
+    name, extension = os.path.splitext(fullName)
+
+    return folder + '/', name, extension
+
+def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
+                        selfContained=True, frameRange='ALL', audioFile='',
+                        smartUpdate=True, fillMissingFrames=True, transcoderFolder='',
+                        segmentDuration=200, maxSegmentsPerOutput=-1, maxSegmentTolerance=5):
+    '''
+    Setup a qube job dictionary based on the input.
+    Required Inputs:
+        qubeJobTemplate (dictionary)
+            Template qube job dictionary to build from.
+        sequenceInitFile (string)
+            One image from the input image sequence.
+            Can be any image from the sequence.
+        outputFile (string)
+            The destination file for the output
+            of the transcoder.
+        preset (string)
+            The blender file that serves as the template
+            for the transcoding process.
+    Optional:
+        selfContained (boolean)
+            Determines if the outputFile should be a
+            reference quicktime movie or self-contained.
+            Self-contained movies are much larger and take
+            more time to create.  Referenced quicktimes
+            are much smaller, and much faster to create.
+            However, referenced quicktimes must maintain
+            their connectiong their associated inputs.
+        frameRange (string)
+            The output frame range to render from the input
+            image sequence. Ex: 1-10
+        audioFile (string)
+            The audio file to be added to the output file.
+            This audio should match the exact timeline of
+            the input image sequence.
+        smartUpdate (boolean)
+            Automatically update only the segments and outputs
+            that have been changed since the last transcode.
+        transcoderFolder (string)
+            The folder in which to store all files related
+            to the transcoding process.  This includes the
+            segmented movies and the blender projects. If
+            creating a referenced output file, these are
+            the segments that movie will reference.
+        fillMissingFrames (boolean)
+            Automatically fill in missing frames with the
+            last frame that exists.  This is useful for
+            creating quicktimes from sequences rendered on
+            every nth frame.
+    Advanced:
+        segmentDuration (integer)
+            Frame count for each segment.
+        maxSegmentsPerOutput (integer)
+            Maximum number of segments that can be in each
+            output file.  If the number of segments needed
+            for the sequence exceeds this amount, the output
+            file is split into multiple segments of this
+            length.
+        maxSegmentTolerance (integer)
+            If the maxSegmentsPerOutput limit is reached,
+            check that the input sequence exceeds this tolerance
+            value as well. If not, keep the outputFile as one file.
+
+    Agenda
+        The agenda is setup in 3 main sections:
+            Initialization:
+                Purpose
+                    This single subjobs loads the input sequence
+                    into the provided blender scene preset.
+                    This is done once, then all subsequent
+                    jobs reference the resulting scene file.
+                Package
+                    None
+                resultPackage
+                    None
+                Naming
+                    Initialize
+            Segments:
+                Purpose
+                    These subjobs each create their assigned
+                    segment of the image sequence.
+                Package
+                    frameRange (string)
+                        Range of frames to render for this segment.
+                    segmentFile (string)
+                        Destination path for the segment file.
+                resultPackage
+                    changes (boolean)
+                        Returns if any changes were made for
+                        this segment.
+                    segmentFile (string)
+                        Destination path for the segment file
+                        that actually rendered.  Sometimes file
+                        issues occur where the output file can't
+                        be overwritten, so we automatically
+                        compensate for this.
+                Naming
+                    Segment: (frameRange)
+            Final Outputs:
+                Purpose
+                    These subjobs render the output files.
+                    They are split up based on the number of segments
+                    and the max segments per output.  They are placed
+                    in the agenda right after their dependent segments
+                    have been processed.
+                Package
+                    segmentSubjobs (list of strings)
+                        List of the names of the dependant
+                        segment subjobs.
+                    outputFile (string)
+                        destination for the output
+                resultPackage
+                    outputPaths (string)
+                        Path to the final output file.
+                Naming
+                    Output: (outputFile)
+
+    Callbacks
+        Callbacks are added to unblock subjobs when they are
+        ready to be processed.
+            Initialization subjob completion
+                Once the initialization is complete, all
+                segment subjobs are unblocked.
+            Segment subjobs complete.
+                Once all segments that pertain to a final
+                output are complete, that output subjob
+                is unblocked.
+            Job retried
+                If the job is retried
+
+
+
+
+
+    '''
+
+    ''' Verify input types '''
+    sequenceInitFile = str(sequenceInitFile)
+    outputFile = str(outputFile)
+    preset = str(preset)
+    frameRange = str(frameRange)
+    audioFile = str(audioFile)
+    transcoderFolder = str(transcoderFolder)
+
+    ''' ---- Pre-Processing For Agenda ---- '''
+
+    logger.debug('Setup Sequence: ' + str(locals()))
+
+    ''' General '''
+    mySequence = sequenceTools.Sequence(sequenceInitFile, frameRange)
+    if not transcoderFolder:
+        transcoderFolder = os.path.join(os.path.dirname(outputFile), '_Transcoder/')
+
+    ''' Initialize '''
+    init = qb.Work()
+    init['name'] = 'Initialize'
+
+
+    ''' Segments
+
+    Use the qube chunk method to split up the frame range.
+    Then prep each segment:
+        Add the frameRange to the package.
+        Add the segmentFile to the package.
+        Change the subjob name to Segment: (frameRange)
+        Submit as blocked, because they will be unblocked
+            once the initialize command is completed.
+    '''
+    segments = qb.genchunks(segmentDuration, '1-' + str(mySequence.getDuration()))
+    for segment in segments:
+        segment['package']= {}
+        segment['package']['frameRange'] = segment['name']
+
+        outputFolder, outputName, outputExtension = splitPath(outputFile)
+        segmentFile = os.path.join(transcoderFolder, 'Segments/')
+        segmentFile += outputName + '/'
+        segmentFile += "Segment" + segment['name'].split('-')[0] + outputExtension
+        segment['package']['segmentFile'] = segmentFile
+
+        segment['status'] = 'blocked'
+        segment['name'] = 'Segment:' + segment['name']
+    logger.debug("Segments: " + str(segments))
+
+
+    ''' Final Outputs '''
+    if not selfContained:
+        maxSegmentsPerOutput = -1
+    
+    if maxSegmentsPerOutput == -1:
+        finalOutputSegments = [list(segments)]
+    else:
+        finalOutputSegments = chunkWithTolerance(segments, maxSegmentsPerOutput, maxSegmentTolerance)
+
+    finalOutputs = []
+    count = 1
+    for outputSegment in finalOutputSegments:
+        output = qb.Work()
+        output['package'] = {}
+
+        segmentSubjobs = []
+        for segment in outputSegment:
+            segmentSubjobs.append(segment['name'])
+        output['package']['segmentSubjobs'] = segmentSubjobs
+
+        outputFolder, outputName, outputExtension = splitPath(outputFile)
+        finalOutputFile = outputFolder + outputName
+        if len(finalOutputSegments) > 1:
+            finalOutputFile += '_' + chr(64+count)
+        finalOutputFile += outputExtension
+        output['package']['outputFile'] = finalOutputFile
+
+        output['status'] = 'blocked'
+        output['name'] = 'Output:' + os.path.basename(finalOutputFile)
+
+        count += 1
+
+        finalOutputs.append(output)
+    logger.debug("Final Outputs: " + str(finalOutputs))
+
+    '''
+    Callbacks
+        1 - Unblock the segments when the initialize command is completed.
+        2 - Unblock the outputs when the dependant segments are completed.
+    '''
+
+    callbacks = []
+
+    ''' Unblock Segments '''
+    callback = {}
+    callback['triggers'] = 'complete-work-self-Initialize'
+    callback['language'] = 'python'
+
+    code = 'import qb\n'
+    for segment in segments:
+        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', segment['name'], '\' % qb.jobid())')
+    code += '\nqb.unblock(qb.jobid())'
+    callback['code'] = code
+
+    callbacks.append(callback)
+
+    ''' Unblock Outputs '''
+    for finalOutput in finalOutputs:
+        callback = {}
+        triggers = []
+
+        for segment in finalOutput['package']['segmentSubjobs']:
+            triggers.append('complete-work-self-' + segment)
+        callback['triggers'] = ' and '.join(triggers)
+        callback['language'] = 'python'
+
+        code = 'import qb\n'
+        code += '%s%s%s' % ('\nqb.workunblock(\'%s:', finalOutput['name'], '\' % qb.jobid())')
+        code += '\nqb.unblock(qb.jobid())'
+        callback['code'] = code
+
+        callbacks.append(callback)
+
+
+    ''' ---- Now put the job together ---- '''
+
+    job = qubeJobTemplate.copy()
+
+    ''' General '''
+    job['name'] = 'Quicktime: ' + os.path.basename(outputFile)
+    job['prototype'] = 'Submit Transcoder'
+
+    ''' Package '''
+    job['package'] = {}
+    job['package']['sequence'] = sequenceInitFile
+    job['package']['audioFile'] = audioFile
+    job['package']['outputFile'] = outputFile
+    job['package']['preset'] = os.path.join(PRESETSFOLDER,preset + ".blend")
+    job['package']['selfContained'] = selfContained
+    job['package']['smartUpdate'] = smartUpdate
+    job['package']['fillMissingFrames'] = fillMissingFrames
+    job['package']['frameRange'] = '1-' + str(mySequence.getDuration())
+    job['package']['transcoderFolder'] = transcoderFolder
+
+    ''' Agenda '''
+    job['agenda'] = []
+    job['agenda'].append(init)
+    job['agenda'].extend(segments)
+    logger.debug("Agenda: " + str(job['agenda']))
+
+    ''' Place the final outputs after their last segment. '''
+    for outputNum, output in enumerate(finalOutputs):
+        lastSegmentName = output['package']['segmentSubjobs'][-1]
+        lastSegmentIndex = None
+        for index, segment in enumerate(segments):
+            if segment['name'] == lastSegmentName:
+                lastSegmentIndex = index
+                break
+        if lastSegmentIndex != None:
+            job['agenda'].insert(lastSegmentIndex+2+outputNum, output) # +2 for Initialization and last segment
+        else:
+            logger.error("ERROR: Unable to find last segment for output " + output['name'])
+
+    ''' Callbacks '''
+    if not job.get('callbacks', None):
+        job['callbacks'] = []
+    job['callbacks'].extend(callbacks)
+
+    return job
+
+def prepareJobsFromDlg(qubejob):
+
+    tJobs = qubejob.get('package', {}).get('transcodeJobs', [])
+
+    jobsToSubmit = []
+    for tJob in tJobs:    
+        logger.info("job from array: " + str(tJob))
+        sequenceFile = tJob['imageSequence']
+        logger.info("imageSequence: " + str(sequenceFile))
+        outputFile = tJob['outputMovie']
+        logger.info("outputMovie: " + str(outputFile))
+        preset = tJob['outputPreset']
+        logger.info("preset: " + str(preset))
+        audioFile = tJob['audioFile']
+        selfContained = tJob['selfContained']
+        logger.info("selfContained: " + str(preset))
+        smartUpdate = tJob['smartUpdate']
+        logger.info("smartUpdate: " + str(smartUpdate))
+        smartUpdate = tJob['smartUpdate']
+        logger.info("smartUpdate: " + str(smartUpdate))
+        fillMissingFrames = tJob['fillMissingFrames']
+        logger.info("fillMissingFrames: " + str(fillMissingFrames))
+        transcodeJob = setupSequenceJob(qubejob, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=5,
+            fillMissingFrames=fillMissingFrames, maxSegmentTolerance=2, segmentDuration=100, selfContained=selfContained, smartUpdate=smartUpdate)
+        logger.info("Setup Sequence Job: " + str(transcodeJob))
+        jobsToSubmit.append(transcodeJob)
+
+    submittedJobs = qb.submit(jobsToSubmit)
+
+    request = qbCache.QbServerRequest(action="jobinfo", value=[i['id'] for i in submittedJobs], method='reload')
+    qbCache.QbServerRequestQueue.put(request)
+
+def addTranscodeWidgetToDlg(cmdjob):
+    cmdjob.add_option( 'transcodeJobs', 'choice', label='Transcoder Jobs', required=True,
+                        editable=True, widget=TranscoderWidget)
 
 if __name__ == "__main__":
     app = wx.PySimpleApp()

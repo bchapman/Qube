@@ -426,6 +426,25 @@ def testLessSegments():
     logger.info(job)
     qb.submit([job])
 
+def testBibleStory():
+    # Set basic job properties
+    job = {}
+    job['cpus'] = 50
+    job['requirements'] = ''
+    job['reservations'] = 'host.processors=1'
+    job['flagsstring'] = 'auto_wrangling'
+    # job['hosts'] = 'bchapman.local'
+    job['priority'] = 100
+    job['hostorder'] = '+host.processors.avail'
+    sequenceFile = '/Volumes/theGrill/Elevate_Series/Port_Of_Call/Kids/Art_Anim/_Renders_and_Exports/Image_Sequences/L2/POC_BS_L2_00000.png'
+    outputFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Transcoder/POC_BS_L2_Test.mov'
+    preset = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets/720p_wAlpha.blend'
+    audioFile = '/Volumes/theGrill/Staff-Directories/Brennan/Testing/Transcoder/POC_BS_L2.wav'
+    job = setupSequenceJob(job, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=5,
+        fillMissingFrames=True, maxSegmentTolerance=2, segmentDuration=200)
+    logger.info(job)
+    qb.submit([job])
 
-testMoreSegments()
-testLessSegments()
+# testMoreSegments()
+# testLessSegments()
+testBibleStory()
