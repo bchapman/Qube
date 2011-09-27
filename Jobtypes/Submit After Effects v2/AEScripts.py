@@ -29,16 +29,23 @@ for (var r=1; r<=app.project.renderQueue.numItems; r++) {
 
 rqItem = app.project.renderQueue.item(rqIndex);
 // If the rq index has already been rendered once, create a duplicate to render from.
-if (rqItem.status == RQItemStatus.USER_STOPPED || rqItem.status == RQItemStatus.ERR_STOPPED || rqItem.status == RQItemStatus.DONE) {
-    var origRQItem = rqItem;
-    rqItem = origRQItem.duplicate();
-    
-    // Make sure the output files are still the same
-    for (var o=1; o<=origRQItem.outputModules.length; o++) {
-        rqItem.outputModule(o).file = origRQItem.outputModule(o).file;
+var origRQItem = rqItem;
+rqItem = origRQItem.duplicate();
+origRQItem.render = false;
+
+// Make sure the output files are still the same
+for (var o=1; o<=origRQItem.outputModules.length; o++) {
+    // Prefix the output file path of the original because multiple rq items can't have the same output file.
+    outputFile = origRQItem.outputModule(o).file;
+    if (outputFile.fsName.substr(0, 5) == "/RNDR") {
+        outputFile = new File(outputFile.fsName.slice(5));
+    } else {
+        origRQItem.outputModule(o).file = new File("/RNDR" + outputFile.fsName);
     }
+    rqItem.outputModule(o).file = outputFile;
 }
 rqItem.render = true;
+origRQItem.render = false;
 rqItem.logType = LogType.ERRORS_AND_PER_FRAME_INFO;
 
 // Set up the start and end frames
