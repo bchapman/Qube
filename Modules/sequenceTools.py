@@ -120,7 +120,14 @@ class Sequence:
         
         return deleteCount
 
-    def getCorruptFrames(self, frames='All'):
+    def checkForCorruptFrame(self, frame):
+        result = self.checkForCorruptFrames(str(frame) + '-' + str(frame))
+        if result:
+            return True
+        else:
+            return False
+
+    def checkForCorruptFrames(self, frames='All'):
         framesToVerify = []
         
         if str(frames).upper() == 'ALL':

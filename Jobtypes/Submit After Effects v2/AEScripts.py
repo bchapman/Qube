@@ -62,6 +62,28 @@ outputs.toString();
 
     return prepScript(script)
 
+def getMultProcsScript(enable=True):
+    script = '''\
+switch (parseFloat(app.version)) {
+    case 8:
+        app.preferences.savePrefAsLong("MP", "Enable MP", %s);
+        break;
+    case 9:
+        app.preferences.savePrefAsLong("New MP", "Enable MP", %s);
+        break;
+    case 10: case 10.5:
+        app.preferences.savePrefAsLong("MP - CS5 - 4", "MP - Enable", %s);
+        break;
+};
+app.preferences.saveToDisk();
+true;
+'''
+    if enable:
+        script = script % (1,1,1)
+    else:
+        script = script % (0,0,0)
+    return prepScript(script)
+
 def prepScript(script):
     result = []
     lines = script.split("\n")

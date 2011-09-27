@@ -118,5 +118,5 @@ def testMovieJob():
     qb.archivejob('testMovieJob.qja', job)
 
 
-# testISJob()
-testMovieJob()
+testISJob()
+# testMovieJob()

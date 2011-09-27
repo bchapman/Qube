@@ -17,9 +17,8 @@ import qb
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 import AESocket
 import AEScripts
+import Tools
 
-sys.path.insert(0, '../../Modules')
-import sequenceTools
 
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
@@ -78,7 +77,7 @@ def executeJob(job):
 
     while 1:
         agendaItem = qb.requestwork()
-        returnCode = 1
+        returnCode = 0
 
         '''
         First Handle non-running state cases
@@ -103,41 +102,23 @@ def executeJob(job):
         outputs = outputString.replace("\n", "").split(',')
         logger.debug("Outputs: " + str(outputs))
         
-        ''' If output is a movie, go ahead and delete it before rendering. '''
-        for output in outputs:
-            if output.endswith('.mov'):
-                if os.path.exists(output):
-                    try:
-                        os.remove(output)
-                        logger.info("Deleted existing movie.")
-                    except:
-                        logger.warning("Unable to remove existing movie. " + str(output))
-        
+        renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
         script = AEScripts.getRenderAllScript()
-        result = aeSocket.runScript(script)
-        if result == True:
-            returnCode = 0
+        aeSocket.sendScript(script)
+        monitorResult = renderTools.monitorRender()
+        socketResult = aeSocket.getResponse()
+        renderTools.alreadyComplete = True
         
-        for output in outputs:
-            if '##' in output:
-                firstFrame = output.replace("[", "").replace("]", "")
-                firstFrame = firstFrame.replace("#", "0")
-                mySequence = sequenceTools.Sequence(firstFrame)
-                corruptFrames = mySequence.getCorruptFrames(str(startFrame) + " - " + str(endFrame))
-                if corruptFrames:
-                    returnCode = 22
-                for frame in corruptFrames:
-                    framePath = mySequence.getFrameFilename(frame)
-                    logger.debug("Deleting corrupt frame: " + os.path.basename(framePath))
-                    try:
-                        os.remove(framePath)
-                    except:
-                        logger.error("Unable to delete corrupt frame: " + os.path.basename(framePath))
+        if socketResult == True:
+            returnCode = 1
+        if not monitorResult:
+            returnCode = 2
 
         '''
         Update the work status based on the return code.
         '''
         if returnCode == 0:
+            agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs)}
             agendaItem['status'] = 'complete'
         else:
             agendaItem['status'] = 'failed'
