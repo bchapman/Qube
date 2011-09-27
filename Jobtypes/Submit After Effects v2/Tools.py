@@ -82,7 +82,8 @@ class Tools:
                     if not self.alreadyComplete:
                         if time.time() > idleStartTime + self.chunkProgressDelay:
                             logger.debug("Chunk Progress: " + str(self.getChunkProgress()))
-                            self.agendaItem['chunkProgress'] = self.getChunkProgress()
+                            resultPackage = {'progress':self.getChunkProgress()}
+                            self.agendaItem['resultpackage'] = resultPackage
                             qb.reportwork(self.agendaItem)
 
                 complete = self.reSearch(self.completePattern, line)
