@@ -14,8 +14,8 @@ import logging
 import pickle
 import datetime
 import re
-import qb
-import qbCache
+# import qb
+# import qbCache
 
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
@@ -53,7 +53,7 @@ f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
-# rootLogger.setLevel(logging.DEBUG)
+rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
@@ -716,9 +716,14 @@ class TranscoderSettings(Form):
 
     def onSequenceUpdate(self, evt=None):
         if self.initComplete:
-            self.loadRecentSettings(self.itemMap['imageSequence'].GetValue())
+            sequence = self.itemMap['imageSequence'].GetValue()
+            self.loadRecentSettings(sequence)
             if len(self.recentSettings) > 0:
                 self.applyRecentSetting()
+            mySequence = sequenceTools.Sequence(sequence)
+            result = mySequence.getBounds()
+            frameRange = result['start'] + '-' + result['end']
+            self.itemMap['frameRange'].SetValue(frameRange)
 
     def saveSettings(self):
         '''
