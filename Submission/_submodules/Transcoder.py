@@ -14,8 +14,8 @@ import logging
 import pickle
 import datetime
 import re
-# import qb
-# import qbCache
+import qb
+import qbCache
 
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
