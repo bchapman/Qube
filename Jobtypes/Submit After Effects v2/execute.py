@@ -77,7 +77,9 @@ def executeJob(job):
 
     while 1:
         agendaItem = qb.requestwork()
+        logger.debug("Agenda Item: " + str(agendaItem))
         returnCode = 0
+        errors = False
 
         '''
         First Handle non-running state cases
@@ -94,34 +96,47 @@ def executeJob(job):
 
         '''
         Main
-        '''        
-        startFrame, endFrame = agendaItem['name'].split('-')
-        logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
-        script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
-        outputString = aeSocket.runScript(script)
-        outputs = outputString.replace("\n", "").split(',')
-        logger.debug("Outputs: " + str(outputs))
+        '''
+        if agendaItem['name'].strip() != '':
+            logger.debug("Working")
+            if '-' in agendaItem['name']:
+                startFrame, endFrame = agendaItem['name'].split('-')
+            else:
+                startFrame = endFrame = agendaItem['name']
+            logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
+            script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
+            outputString = aeSocket.runScript(script)
+            if (outputString.strip() == "ERROR"):
+                logger.error("Unable to setup segment.")
+                errors = True
+            else:
+                outputs = outputString.replace("\n", "").split(',')
+                logger.debug("Outputs: " + str(outputs))
         
-        renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
-        script = AEScripts.getRenderAllScript()
-        aeSocket.sendScript(script)
-        monitorResult = renderTools.monitorRender()
-        socketResult = aeSocket.getResponse()
-        renderTools.alreadyComplete = True
+            if not errors:
+                renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
+                script = AEScripts.getRenderAllScript()
+                aeSocket.sendScript(script)
+                monitorResult = renderTools.monitorRender()
+                socketResult = aeSocket.getResponse()
+                renderTools.alreadyComplete = True
         
-        if socketResult == True:
-            returnCode = 1
-        if not monitorResult:
-            returnCode = 2
+                if socketResult == True:
+                    returnCode = 1
+                if not monitorResult:
+                    returnCode = 2
 
-        '''
-        Update the work status based on the return code.
-        '''
-        if returnCode == 0:
-            agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs)}
-            agendaItem['status'] = 'complete'
-        else:
-            agendaItem['status'] = 'failed'
+            if errors:
+                returnCode = 3
+
+            '''
+            Update the work status based on the return code.
+            '''
+            if returnCode == 0:
+                agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs)}
+                agendaItem['status'] = 'complete'
+            else:
+                agendaItem['status'] = 'failed'
 
         ''' Report back the results to the Supervisor '''
         qb.reportwork(agendaItem)
