@@ -19,7 +19,7 @@ import sequenceTools
 Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Tools:
     def __init__(self, agendaItem, outputs, logFilePath, startFrame, endFrame):
@@ -56,6 +56,7 @@ class Tools:
     def deleteExistingMovies(self):
         for output in self.outputs:
             if os.path.exists(output):
+                logging.info("Deleting existing output. " + str(output))
                 try:
                     os.remove(output)
                 except:
@@ -82,9 +83,10 @@ class Tools:
                     if not self.alreadyComplete:
                         if time.time() > idleStartTime + self.chunkProgressDelay:
                             logger.debug("Chunk Progress: " + str(self.getChunkProgress()))
-                            resultPackage = {'progress':self.getChunkProgress()}
+                            resultPackage = {'progress':str(self.getChunkProgress())}
                             self.agendaItem['resultpackage'] = resultPackage
                             qb.reportwork(self.agendaItem)
+                            idleStartTime = time.time()
 
                 complete = self.reSearch(self.completePattern, line)
                 if complete:
@@ -99,10 +101,8 @@ class Tools:
     def getChunkProgress(self):
         myFrame = float(int(self.currFrame) - int(self.startFrame))
         myDuration = float(self.duration + 1)
-        logger.info("Current Frame: " + str(myFrame))
-        logger.info("Duration: " + str(myDuration))
-        logger.info("Percentage: " + str(round(myFrame / myDuration * 100)))
-        return round(myFrame / myDuration * 100)
+        logger.info("Current Progress: " + str(round(myFrame / myDuration * 100)))
+        return myFrame / myDuration
 
     def verifyCurrFrame(self):
         # logger.debug("Verifying frame " + str(frame))

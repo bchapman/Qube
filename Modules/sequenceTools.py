@@ -20,6 +20,14 @@ except:
     import sqlite3
 
 
+'''
+Set up the logging module.
+'''
+''' Setup the logger. '''
+# logging.basicConfig()
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+
 PIL = False
 try:
     import Image
@@ -30,17 +38,7 @@ except:
         import Image
         PIL = True
     except:
-        print "Unable to import PIL Image module."
-
-
-
-'''
-Set up the logging module.
-'''
-''' Setup the logger. '''
-# logging.basicConfig()
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+        logger.warning("Unable to import PIL Image module.")
 
 def loadFrameRange(frameRange):
     '''
@@ -145,7 +143,7 @@ class Sequence:
                     img = Image.open(filePath)
                     img.verify()
                     # logger.debug("Image verified: " + filePath)
-                except Exception, e:
+                except:
                     logger.debug("Corrupt image path: " + filePath)
                     corruptFrames.append(frame)
             if corruptFrames:
@@ -354,6 +352,16 @@ class Sequence:
 
         frame = int(round(float(frame)))
         return '0' * (pad - len(str(frame))) + str(frame)
+
+    def getFramesFromFilenames(self, filenames):
+        '''
+        Given an array of sequence filenames, return a list of
+        the corresponding frame numbers.
+        '''
+        frameNumbers = []
+        for frame in filenames:
+            frameNumbers.append(self.splitPath(frame)['currentFrame'])
+        return frameNumbers
 
     def splitPath(self, path):
         '''

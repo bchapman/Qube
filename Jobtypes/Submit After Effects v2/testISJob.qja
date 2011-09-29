@@ -498,11 +498,11 @@
 	<reservations>host.processors=1+</reservations>
 	<restrictions></restrictions>
 	<groups></groups>
-	<hosts></hosts>
+	<hosts>bchapman.local</hosts>
 	<host_order>+host.processors.avail</host_order>
-	<data>(=(renderProjectPath=/tmp/testComp.aep)(rqIndex=1))</data>
+	<data>(=(renderProjectPath=/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep)(rqIndex=1))</data>
 	<queue></queue>
-	<prototype></prototype>
+	<prototype>Submit After Effects v2</prototype>
 	<path></path>
 	<reason></reason>
 	<logpath></logpath>
@@ -573,7 +573,7 @@
 		</object>
 	</env>
 	<kind></kind>
-	<server_id>1</server_id>
+	<server_id>1701078373</server_id>
 	<last_update>
 		<object type = 'time'>
 			<value>0</value>

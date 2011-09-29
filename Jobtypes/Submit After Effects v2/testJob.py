@@ -4,6 +4,7 @@
 import os
 import sys
 import logging
+import time
 
 if 'QBDIR' in os.environ:
     sys.path.append('%s/api/python' % os.environ['QBDIR'])
@@ -11,7 +12,7 @@ elif os.uname()[0] == 'Darwin':
     sys.path.append('/Applications/pfx/qube/api/python')
 else:
     sys.path.append('/usr/local/pfx/qube/api/python')
-
+sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
 
 sys.path.append('../../Modules')
@@ -74,15 +75,16 @@ def testISJob():
     job = {}
     job['name'] = 'Test After Effects v2'
     job['cpus'] = 50
+    job['prototype'] = "Submit After Effects v2"
     job['requirements'] = ''
     job['reservations'] = 'host.processors=1+'
     job['flagsstring'] = 'auto_wrangling'
-    # job['hosts'] = 'bchapman.local'
+    job['hosts'] = 'bchapman.local'
     job['priority'] = 100
     job['hostorder'] = '+host.processors.avail'
     
     pkg = {}
-    pkg['renderProjectPath'] = "/tmp/testComp.aep"
+    pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep"
     pkg['rqIndex'] = 1
     job['package'] = pkg
     
@@ -90,33 +92,35 @@ def testISJob():
     job['agenda'] = agenda
 
     logger.info(job)
-    # qb.submit([job])
+    print qb.submit([job])
     qb.archivejob('testISJob.qja', job)
 
 def testMovieJob():
     # Set basic job properties
     job = {}
     job['name'] = 'Test After Effects v2'
-    job['cpus'] = 50
+    job['cpus'] = 1
     job['requirements'] = ''
+    job['prototype'] = "Submit After Effects v2"
     job['reservations'] = 'host.processors=1+'
     job['flagsstring'] = 'auto_wrangling'
-    # job['hosts'] = 'bchapman.local'
-    job['priority'] = 100
+    job['hosts'] = 'bchapman.local'
+    job['priority'] = 50
     job['hostorder'] = '+host.processors.avail'
 
     pkg = {}
-    pkg['renderProjectPath'] = "/tmp/testComp.aep"
-    pkg['rqIndex'] = 1
+    pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep"
+    pkg['rqIndex'] = 2
     job['package'] = pkg
 
     agenda = qb.genchunks(100, '1-100')
     job['agenda'] = agenda
 
     logger.info(job)
-    # qb.submit([job])
-    qb.archivejob('testMovieJob.qja', job)
+    print qb.submit([job])
+    # qb.archivejob('testMovieJob.qja', job)
 
 
 testISJob()
-# testMovieJob()
+time.sleep(15)
+testMovieJob()

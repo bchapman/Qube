@@ -52,7 +52,7 @@ f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
-rootLogger.setLevel(logging.DEBUG)
+rootLogger.setLevel(logging.INFO)
 
 '''
 Setup this files logging settings
@@ -118,7 +118,7 @@ def executeJob(job):
         Update the work status based on the return code.
         '''
         if returnCode == 0:
-            agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs)}
+            agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs), 'progress':'1'}
             agendaItem['status'] = 'complete'
         else:
             agendaItem['status'] = 'failed'
@@ -127,7 +127,7 @@ def executeJob(job):
         qb.reportwork(agendaItem)
     
     aeSocket.terminateConnection()
-
+    logger.info("AERender finished.")
     return jobstate
 
 

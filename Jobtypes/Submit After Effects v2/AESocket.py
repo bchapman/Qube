@@ -2,7 +2,7 @@
 After Effects Socket Communications Class
 Launches and communicates with an After Effects process through a socket.
 '''
-AERENDER = "\"/Applications/Adobe After Effects CS5.5/aerender\""
+AERENDER = "\"/Applications/Adobe After Effects CS5/aerender\""
 
 import os
 import socket
@@ -25,7 +25,7 @@ class SingleLevelFilter(logging.Filter):
 Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 class AESocket:
     def __init__(self, port=None):
@@ -120,4 +120,6 @@ class AESocket:
         self.runScript("INITIALIZE")
 
     def terminateConnection(self):
-        self.runScript("TERMINATE")
+        self.sendScript("TERMINATE")
+        del self.aerender
+        del self.aerenderlog

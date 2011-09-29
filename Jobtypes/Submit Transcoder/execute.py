@@ -241,11 +241,14 @@ def executeJob(control):
 
                             differences = ''
                             if len(compare['Added']) > 0:
-                                differences += '\n\tAdded: ' + mySequence.convertListToRanges(compare['Added'])
+                                frameNumbers = mySequence.getFramesFromFilenames(compare['Added'])
+                                differences += '\n\tAdded: ' + mySequence.convertListToRanges(frameNumbers)
                             if len(compare['Deleted']) > 0:
-                                differences += '\n\tDeleted: ' + mySequence.convertListToRanges(compare['Deleted'])
+                                frameNumbers = mySequence.getFramesFromFilenames(compare['Deleted'])
+                                differences += '\n\tDeleted: ' + mySequence.convertListToRanges(frameNumbers)
                             if len(compare['Modified']) > 0:
-                                differences += '\n\tModified: ' + mySequence.convertListToRanges(compare['Modified'])    
+                                frameNumbers = mySequence.getFramesFromFilenames(compare['Modified'])
+                                differences += '\n\tModified: ' + mySequence.convertListToRanges(frameNumbers)    
                             
                             if differences:
                                 logger.info('Sequence Differences:' + differences)
