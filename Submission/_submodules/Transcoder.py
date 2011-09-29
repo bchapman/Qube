@@ -9,6 +9,7 @@ PRESETSFOLDER = '/Volumes/theGrill/.qube/Jobtypes/Submit Transcoder/Presets'
 
 import wx, os, sys, gettext
 import wx.lib.filebrowsebutton
+from odict import OrderedDict
 import logging
 import pickle
 import datetime
@@ -18,7 +19,6 @@ import qbCache
 
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
-from odict import OrderedDict
 
 
 class SingleLevelFilter(logging.Filter):
@@ -35,7 +35,7 @@ class SingleLevelFilter(logging.Filter):
 '''
 Set the root logging settings
 '''
-rootLogger = logging.getLogger()
+rootLogger = logging.getLogger()            
 
 h1 = logging.StreamHandler(sys.stdout)
 h1_formatter = logging.Formatter(
@@ -66,7 +66,7 @@ class TranscoderWidget(wx.Panel):
     Transcoder Job Widget
     Listbox with Add, Edit, and Remove Buttons
     '''
-    
+    buttonLabel='Browser'
     def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
         wx.Panel.__init__ (self, parent, id, pos, size, style)
 
@@ -558,7 +558,9 @@ class TranscoderSettings(Form):
                 {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'imageSequence', 'labelText':'', 'flags': wx.EXPAND | wx.ALL, 'changeCallback': self.onSequenceUpdate}),
                ({'type': 'StaticText', 'label': 'Recent Settings'},
                 {'type': 'ComboBox', 'name': 'recentSettings', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
-               ({'type': 'StaticText', 'label': 'Audio File:'},
+               ({'type': 'StaticText', 'label': 'Frame Range', 'name':'frameRangeLabel'},
+                {'type': 'TextCtrl', 'name': 'frameRange', 'flags': wx.EXPAND | wx.ALL}),
+               ({'type': 'StaticText', 'label': 'Audio File'},
                 {'type': 'wx.lib.filebrowsebutton.FileBrowseButtonWithHistory', 'name': 'audioFile', 'labelText':'', 'fileMask': 'Wave Files (*.wav)|*.wav', 'flags': wx.EXPAND | wx.ALL}),
                ({'type': 'StaticText', 'label': 'Output Preset', 'name':'outputPresetLabel'},
                 {'type': 'ComboBox', 'name': 'outputPreset', 'colGrowable': True, 'flags': wx.EXPAND | wx.ALL, 'style': wx.CB_READONLY}),
@@ -594,6 +596,7 @@ class TranscoderSettings(Form):
         if len(self.recentSettings) > 0 and select > -1:
             data = self.recentSettings[select]
             self.itemMap['recentSettings'].SetValue(self.getSettingName(data))
+            self.itemMap['frameRange'].SetValue(data['frameRange'])
             self.itemMap['audioFile'].SetValue(data['audioFile'])
             logger.debug("Apply output preset: " + data['outputPreset'])
             self.itemMap['outputPreset'].SetValue(data['outputPreset'])
@@ -748,6 +751,22 @@ class TranscoderSettings(Form):
 
     def validateForm(self):
         result = True
+        if not self.itemMap['frameRange'].GetValue():
+            self.itemMap['frameRangeLabel'].SetForegroundColour(wx.RED)
+            result = False
+        else:
+            self.itemMap['frameRangeLabel'].SetForegroundColour(wx.BLACK)
+        try:
+            startFrame, endFrame = self.itemMap['frameRange'].GetValue().split('-')
+            if not startFrame.isdigit() or not endFrame.isdigit():
+                self.itemMap['frameRangeLabel'].SetForegroundColour(wx.RED)
+                result = False
+            else:
+                self.itemMap['frameRangeLabel'].SetForegroundColour(wx.BLACK)
+        except:
+            self.itemMap['frameRangeLabel'].SetForegroundColour(wx.RED)
+            result = False
+            
         if not self.itemMap['imageSequence'].GetValue():
             self.itemMap['imageSequenceLabel'].SetForegroundColour(wx.RED)
             result = False
@@ -1121,6 +1140,8 @@ def prepareJobsFromDlg(qubejob):
         logger.info("job from array: " + str(tJob))
         sequenceFile = tJob['imageSequence']
         logger.info("imageSequence: " + str(sequenceFile))
+        frameRange = tJob['frameRange']
+        logger.info("frameRange: " + str(frameRange))
         outputFile = tJob['outputMovie']
         logger.info("outputMovie: " + str(outputFile))
         preset = tJob['outputPreset']
@@ -1134,7 +1155,7 @@ def prepareJobsFromDlg(qubejob):
         logger.info("smartUpdate: " + str(smartUpdate))
         fillMissingFrames = tJob['fillMissingFrames']
         logger.info("fillMissingFrames: " + str(fillMissingFrames))
-        transcodeJob = setupSequenceJob(qubejob, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=5,
+        transcodeJob = setupSequenceJob(qubejob, sequenceFile, outputFile, preset, audioFile=audioFile, maxSegmentsPerOutput=5, frameRange=frameRange,
             fillMissingFrames=fillMissingFrames, maxSegmentTolerance=2, segmentDuration=100, selfContained=selfContained, smartUpdate=smartUpdate)
         logger.info("Setup Sequence Job: " + str(transcodeJob))
         jobsToSubmit.append(transcodeJob)
