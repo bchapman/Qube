@@ -36,6 +36,7 @@ class AESocket:
             self.port = 5000
         self.aerender = None
         self.socket = None
+        self.connected = False
         
         self.logFilePath = None
         self.logFile = None
@@ -71,6 +72,7 @@ class AESocket:
             
             if time.time() > (startTime + timeout):
                 logger.error("Timeout limit reached.  No response from After Effects. Shutting down.")
+                self.connected = False
                 break
             
             time.sleep(.1)
@@ -82,25 +84,25 @@ class AESocket:
         return self.getResponse()
 
     def sendScript(self, javascript):
-        self.waitForAE()
-        javascript = str(javascript)
-        response = None
-        try:
-            logger.debug("Sending script: " + javascript)
-            self.socket.send(javascript + "\n")
-        except Exception, e:
-            logger.error("Unable to send script. " + str(e))
+        if self.connected:
+            self.waitForAE()
+            javascript = str(javascript)
+            try:
+                logger.debug("Sending script: " + javascript)
+                self.socket.send(javascript + "\n")
+            except Exception, e:
+                logger.error("Unable to send script. " + str(e))
         
     def getResponse(self):
-        response = None
-        try:
-            response = self.socket.recv(1024)
-            logger.debug("Received: %s" % response)
-        except Exception, e:
-            logger.error("Unable to receive response." + str(e))
+        if self.connected:
+            response = None
+            try:
+                response = self.socket.recv(1024)
+                logger.debug("Received: %s" % response)
+            except Exception, e:
+                logger.error("Unable to receive response." + str(e))
         
-        return response
-        
+            return response
 
     def launchAERender(self):
         cmd = AERENDER + " -daemon " + str(self.port)
@@ -114,6 +116,7 @@ class AESocket:
         self.logFile = open(self.logFilePath, 'w')
         self.aerender = subprocess.Popen(cmd, shell=True, stdout=self.logFile)
         self.aerenderlog = subprocess.Popen(shlex.split("tail -f " + self.logFilePath))
+        self.connected = True
         self.initConnection()
 
     def initConnection(self):
