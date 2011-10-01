@@ -15,7 +15,7 @@ import pickle
 import datetime
 import re
 import qb
-import qbCache
+# import qbCache
 
 sys.path.append('/Volumes/theGrill/.qube/Modules')
 import sequenceTools
@@ -981,6 +981,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     logger.debug('Setup Sequence: ' + str(locals()))
 
     ''' General '''
+    logger.info("frameRangeSequenceInit: " + frameRange)
     mySequence = sequenceTools.Sequence(sequenceInitFile, frameRange)
     logger.info("frameRangeBounds: " + str(mySequence.getBounds()))
     if not transcoderFolder:
