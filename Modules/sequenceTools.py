@@ -283,16 +283,14 @@ class Sequence:
             result.append(self.getFrameFilename(frame, includeFolder))
         return result
 
-    def getBounds(self, update=False, frameRange='ALL'):
+    def getBounds(self, update=False, frameRange=''):
         '''
         Get the start and end frames for the sequence.
         Uses the frameRange when the sequence was initialized
         unless Update is true.
         '''
 
-        if frameRange.upper() == 'ALL':
-            frames = self.getExistingFrames() # All existing frames
-        else:
+        if frameRange != '':
             frames = loadFrameRange(self.frameRange)
     
         result = {}
