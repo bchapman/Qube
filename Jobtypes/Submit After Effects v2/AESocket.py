@@ -1,6 +1,19 @@
 '''
 After Effects Socket Communications Class
 Launches and communicates with an After Effects process through a socket.
+
+Author: Brennan Chapman
+Version: 1.1
+
+Basic Use:
+launchAERender()
+    Start the aerender daemon
+runScript(scriptString, scriptName)
+    Send a script for aerender to run, and return the result.
+terminateConnection()
+    Shutdown aerender
+    FUTURE: Ensure any related aerendercore processes
+    are shutdown.
 '''
 AERENDER = "\"/Applications/Adobe After Effects CS5/aerender\""
 
@@ -30,9 +43,12 @@ logger.setLevel(logging.INFO)
 
 class AESocket:
     def __init__(self, port=None):
+        '''
+        If no port is specifed, we find the first open port after 5000.
+        '''
         self.host = '127.0.0.1'
         if not port:
-            self.port = self.getOpenPort()
+            self.port = self._getOpenPort()
         else:
             self.port = 5000
         self.aerender = None
@@ -42,7 +58,14 @@ class AESocket:
         self.logFilePath = None
         self.logFile = None
 
-    def getOpenPort(self, startingValue=5000):
+    '''
+    Private Methods
+    '''
+
+    def _getOpenPort(self, startingValue=5000):
+        '''
+        Find an open port to use to for the daemon.
+        '''
 
         openPort = startingValue
 
@@ -52,14 +75,17 @@ class AESocket:
                 s.bind((self.host, openPort))
                 break
             except Exception, e:
-                logger.debug("Unable to connect on port " + str(openPort) + "\n" + str(e))
+                logger.debug("Unable to connect on port %s\n%s" % (str(openPort), str(e)))
             openPort += 1
     
         logger.info("Found open port: " + str(openPort))
 
         return openPort
 
-    def waitForAE(self, timeout=180):
+    def _waitForAE(self, timeout=180):
+        '''
+        Wait for AE to send response.
+        '''
         logger.info("Waiting for After Effects...")
         
         startTime = time.time()
@@ -79,20 +105,45 @@ class AESocket:
             
             time.sleep(.1)
             
-        logger.debug("Total wait time: " + str(time.time() - startTime))
+        logger.debug("Total wait time: %s" % str(time.time() - startTime))
 
-    def runScript(self, script):
-        self.sendScript(script)
-        return self.getResponse()
-
-    def sendScript(self, script, timeout=60):
+    def _sendScript(self, script, name, timeout=60):
+        '''
+        Send a script to the AERender daemon.
+        '''
         if self.connected:
-            self.waitForAE(timeout)
-            logger.info("Sending script: " + script['name'])
-            logger.debug("Script Contents: " + script['script'])
-            self.socket.send(script['script'] + "\n")
+            self._waitForAE(timeout)
+            logger.info("Sending script: %s" % name)
+            logger.debug("Script Contents: %s" % script)
+            self.socket.send("%s\n" % script)
+        else:
+            logger.error("Unable to send script %s.  AERender isn't connected." % name)
+
+    def _initConnection(self):
+        '''
+        Init the AERender daemon to start receiving input.
+        '''
+        self.runScript('INITIALIZE', 'Initialize AERender')
+
+    '''
+    Public Methods
+    '''
+
+    def runScript(self, script, name=""):
+        '''
+        Run the supplied script.
+        Input includes the name of the script, and the script as a string.
+        '''
+        if not name:
+            name = script.split("\n")[0]
+        
+        self._sendScript(script, name)
+        return self.getResponse()
         
     def getResponse(self):
+        '''
+        Wait for a response from aerender. Then return it.
+        '''
         if self.connected:
             response = None
             response = self.socket.recv(1024)
@@ -103,24 +154,36 @@ class AESocket:
             return response
 
     def launchAERender(self):
+        '''
+        Launch the aerender daemon.
+        Uses the custom aerender commandLineRenderer with the -daemon flag.
+        '''
         cmd = AERENDER + " -daemon " + str(self.port)
-        logger.debug("CMD: " + cmd)
-        self.logFilePath = '/tmp/aerender.' + str(self.port) + '.log'
+        logger.debug("AERender CMD: %s" % cmd)
+        
+        '''
+        We will store the log output to a file,
+        then have another process read it back in.
+        '''
+        self.logFilePath = '/tmp/aerender.%s.log' % str(self.port)
+        
         if os.path.exists(self.logFilePath):
             try:
                 os.remove(self.logFilePath)
             except:
-                logger.error("Unable to remove existing " + os.path.basename(self.logFilePath) + " log file")
+                logger.error("Unable to remove existing AERender log file. (%s)" % os.path.basename(self.logFilePath))
         self.logFile = open(self.logFilePath, 'w')
+        
         self.aerender = subprocess.Popen(cmd, shell=True, stdout=self.logFile)
         self.aerenderlog = subprocess.Popen(shlex.split("tail -f " + self.logFilePath))
         self.connected = True
-        self.initConnection()
-
-    def initConnection(self):
-        self.runScript({'name':'Initialize AERender', 'script':'INITIALIZE'})
+        self._initConnection()
 
     def terminateConnection(self):
-        self.sendScript({'name':'Terminate Connection', 'script':"TERMINATE"})
+        '''
+        Shutdown the aerender daemon.
+        '''
+        self._sendScript('TERMINATE', 'Terminate Connection')
+        self.connected = False
         del self.aerender
         del self.aerenderlog
