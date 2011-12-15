@@ -19,7 +19,8 @@ import sequenceTools
 Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class Tools:
     def __init__(self, agendaItem, outputs, logFilePath, startFrame, endFrame):
@@ -62,17 +63,26 @@ class Tools:
                 except:
                     logger.warning("Unable to delete existing output. " + str(output))
 
-    def monitorRender(self):
+    def monitorRender(self, timeout=1800):
         logger.debug("Monitoring Render...")
 
-        idleStartTime = time.time()
+        mainIdleTime = time.time()
+        frameIdleTime = time.time()
         while True:
             where = self.readLogFile.tell()
             line = self.readLogFile.readline()
             if not line:
                 time.sleep(.3)
                 self.readLogFile.seek(where)
+                if time.time() - mainIdleTime > timeout:
+                    raise RuntimeError("Frame timeout reached.")
             else:
+                '''
+                Reset the idle time each time a new line is read.
+                If the frame timeout is reached, raise an exception.
+                '''
+                mainIdleTime = time.time()
+                
                 ''' Retrieve the info from each line of output '''
                 self.currFrame = self.reSearch(self.progressPattern, line)
                 if self.currFrame != "":
@@ -81,16 +91,17 @@ class Tools:
                     if not self.isOutputMovie:
                         self.verifyCurrFrame()
                     if not self.alreadyComplete:
-                        if time.time() > idleStartTime + self.chunkProgressDelay:
+                        if time.time() - frameIdleTime > self.chunkProgressDelay:
                             logger.debug("Chunk Progress: " + str(self.getChunkProgress()))
                             resultPackage = {'progress':str(self.getChunkProgress())}
                             self.agendaItem['resultpackage'] = resultPackage
                             qb.reportwork(self.agendaItem)
-                            idleStartTime = time.time()
+                            frameIdleTime = time.time()
 
                 complete = self.reSearch(self.completePattern, line)
                 if complete:
                     break
+                
 
         self.deleteCorruptFrames()
         if self.corruptFrames:
@@ -129,6 +140,15 @@ class Tools:
             firstFrame = outputPath.replace("[", "").replace("]", "")
             firstFrame = firstFrame.replace("#", "0")
             self.mySequences.append(sequenceTools.Sequence(firstFrame))
+
+    def getOutputPaths(self, startFrame, endFrame):
+        outputPaths = []
+        if not self.mySequences:
+            self.setupSequences()
+        for sequence in self.mySequences:
+            paths = sequence.getFrameFilenames(range(int(startFrame), int(endFrame)+1), includeFolder=True)
+            outputPaths.extend(paths)
+        return outputPaths
 
     def reSearch(self, pattern, data):
         pattern = re.compile(pattern)

@@ -63,19 +63,12 @@ class rqItemWidget(wx.Panel):
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         
-        rqPanel = wx.Panel(self, -1, style=0)
-        rqItemSizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        self.rqItemList = wx.ComboBox(rqPanel, -1, value='All', choices=['All', '1-CompA', '2-CompB'], size=(272, 24))
-        self.loadButton = wx.Button(rqPanel, -1, 'Load', size=(70, 24))
+        self.rqItemList = wx.ListBox(self, -1, choices=['All', '1-CompA', '2-CompB'])
+        # self.loadButton = wx.Button(rqPanel, -1, 'Load', size=(70, 24))
         
         self.outputList = wx.ListBox(self, -1, choices=['OutputA.mov', 'OutputB_#####.png'])
         
-        rqItemSizer.Add( self.rqItemList, 0, wx.EXPAND|wx.ALL, 2)
-        rqItemSizer.Add( self.loadButton, 0, wx.ALL, 2)
-        rqPanel.SetSizer(rqItemSizer)
-        
-        sizer.Add( rqPanel, 0, wx.TOP, 5)
+        sizer.Add( self.rqItemList, 0, wx.TOP, 5)
         sizer.Add( self.outputList, 1, wx.EXPAND|wx.ALL, 2)
         self.SetSizer(sizer)
 

@@ -26,6 +26,7 @@ Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class AESocket:
     def __init__(self, port=None):
@@ -58,7 +59,7 @@ class AESocket:
 
         return openPort
 
-    def waitForAE(self, timeout=60):
+    def waitForAE(self, timeout=180):
         logger.info("Waiting for After Effects...")
         
         startTime = time.time()
@@ -70,37 +71,34 @@ class AESocket:
             except:
                 pass
             
-            if time.time() > (startTime + timeout):
-                logger.error("Timeout limit reached.  No response from After Effects. Shutting down.")
-                self.connected = False
-                break
+            if timeout:
+                if time.time() > (startTime + timeout):
+                    logger.error("Timeout limit reached.  No response from After Effects. Shutting down.")
+                    self.connected = False
+                    break
             
             time.sleep(.1)
             
         logger.debug("Total wait time: " + str(time.time() - startTime))
 
-    def runScript(self, javascript):
-        self.sendScript(javascript)
+    def runScript(self, script):
+        self.sendScript(script)
         return self.getResponse()
 
-    def sendScript(self, javascript):
+    def sendScript(self, script, timeout=60):
         if self.connected:
-            self.waitForAE()
-            javascript = str(javascript)
-            try:
-                logger.debug("Sending script: " + javascript)
-                self.socket.send(javascript + "\n")
-            except Exception, e:
-                logger.error("Unable to send script. " + str(e))
+            self.waitForAE(timeout)
+            logger.info("Sending script: " + script['name'])
+            logger.debug("Script Contents: " + script['script'])
+            self.socket.send(script['script'] + "\n")
         
     def getResponse(self):
         if self.connected:
             response = None
-            try:
-                response = self.socket.recv(1024)
-                logger.debug("Received: %s" % response)
-            except Exception, e:
-                logger.error("Unable to receive response." + str(e))
+            response = self.socket.recv(1024)
+            logger.debug("Received: %s" % response)
+            if response.strip() == "ERROR":
+                raise RuntimeError("Received error from After Effects.")
         
             return response
 
@@ -120,9 +118,9 @@ class AESocket:
         self.initConnection()
 
     def initConnection(self):
-        self.runScript("INITIALIZE")
+        self.runScript({'name':'Initialize AERender', 'script':'INITIALIZE'})
 
     def terminateConnection(self):
-        self.sendScript("TERMINATE")
+        self.sendScript({'name':'Terminate Connection', 'script':"TERMINATE"})
         del self.aerender
         del self.aerenderlog

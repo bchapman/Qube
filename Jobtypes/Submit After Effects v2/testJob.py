@@ -79,16 +79,19 @@ def testISJob():
     job['requirements'] = ''
     job['reservations'] = 'host.processors=1+'
     job['flagsstring'] = 'auto_wrangling'
-    job['hosts'] = 'bchapman.local'
-    job['priority'] = 100
+    job['hosts'] = 'Elevate-bchapman'
+    job['priority'] = 50
     job['hostorder'] = '+host.processors.avail'
+    job['retrywork'] = 3
+    job['retrysubjob'] = 3
+    
     
     pkg = {}
     pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep"
     pkg['rqIndex'] = 1
     job['package'] = pkg
     
-    agenda = qb.genchunks(10, '1-100')
+    agenda = qb.genchunks(10, '1-199')
     job['agenda'] = agenda
 
     logger.info(job)
@@ -104,23 +107,79 @@ def testMovieJob():
     job['prototype'] = "Submit After Effects v2"
     job['reservations'] = 'host.processors=1+'
     job['flagsstring'] = 'auto_wrangling'
-    job['hosts'] = 'bchapman.local'
+    job['hosts'] = ''
     job['priority'] = 50
     job['hostorder'] = '+host.processors.avail'
+    job['retrywork'] = 3
+    job['retrysubjob'] = 3
 
     pkg = {}
     pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep"
     pkg['rqIndex'] = 2
     job['package'] = pkg
 
-    agenda = qb.genchunks(100, '1-100')
+    agenda = qb.genchunks(200, '0-199')
     job['agenda'] = agenda
 
     logger.info(job)
     print qb.submit([job])
     # qb.archivejob('testMovieJob.qja', job)
 
+def testJrBSJob():
+    # Set basic job properties
+    job = {}
+    job['name'] = 'Test After Effects v2'
+    job['cpus'] = 50
+    job['prototype'] = "Submit After Effects v2"
+    job['requirements'] = ''
+    job['reservations'] = 'host.processors=1+'
+    job['flagsstring'] = 'auto_wrangling'
+    job['hosts'] = ''
+    job['priority'] = 100
+    job['hostorder'] = '+host.processors.avail'
+    job['retrywork'] = 3
+    job['retrysubjob'] = 3
+
+    pkg = {}
+    pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testBSJr.aep"
+    pkg['rqIndex'] = 1
+    job['package'] = pkg
+
+    agenda = qb.genchunks(10, '1-199')
+    job['agenda'] = agenda
+
+    logger.info(job)
+    print qb.submit([job])
+    qb.archivejob('testISJob.qja', job)
+
+def testKidsBSJob():
+    # Set basic job properties
+    job = {}
+    job['name'] = 'Test After Effects v2'
+    job['cpus'] = 50
+    job['prototype'] = "Submit After Effects v2"
+    job['requirements'] = ''
+    job['reservations'] = 'host.processors=1+'
+    job['flagsstring'] = 'auto_wrangling'
+    job['hosts'] = ''
+    job['priority'] = 100
+    job['hostorder'] = '+host.processors.avail'
+    job['retrywork'] = 3
+    job['retrysubjob'] = 3
+
+    pkg = {}
+    pkg['renderProjectPath'] = "/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/POC_BS_L2.aep"
+    pkg['rqIndex'] = 1
+    job['package'] = pkg
+
+    agenda = qb.genchunks(10, '0-7422')
+    job['agenda'] = agenda
+
+    logger.info(job)
+    print qb.submit([job])
+    qb.archivejob('testISJob.qja', job)
 
 testISJob()
-time.sleep(15)
-testMovieJob()
+# testMovieJob()
+# testJrBSJob()
+# testKidsBSJob()

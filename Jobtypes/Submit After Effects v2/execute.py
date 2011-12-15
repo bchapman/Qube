@@ -10,6 +10,7 @@ import os
 import sys
 import inspect
 import logging
+import traceback
 
 sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
@@ -53,6 +54,7 @@ h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
 rootLogger.setLevel(logging.INFO)
+rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
@@ -69,79 +71,82 @@ def executeJob(job):
     pkg = job.setdefault('package', {})
     # logger.debug("Qube Job: " + str(job))
 
-    aeSocket = AESocket.AESocket()
-    aeSocket.launchAERender()
+    try:
+        aeSocket = AESocket.AESocket()
+        aeSocket.launchAERender()
     
-    script = AEScripts.getOpenProjectScript(pkg['renderProjectPath'])
-    aeSocket.runScript(script)
+        script = AEScripts.getOpenProjectScript(pkg['renderProjectPath'])
+        aeSocket.runScript(script)
 
-    while 1:
-        agendaItem = qb.requestwork()
-        logger.debug("Agenda Item: " + str(agendaItem))
-        returnCode = 0
-        errors = False
+        while 1:
+            agendaItem = qb.requestwork()
+            logger.debug("Agenda Item: " + str(agendaItem))
+            returnCode = 0
 
-        '''
-        First Handle non-running state cases
-        '''
-        if agendaItem['status'] in ('complete', 'pending', 'blocked', 'waiting'):
             '''
-            complete -- no more frames
-            pending -- preempted, so bail out
-            blocked -- perhaps item is part of a dependency
+            First Handle non-running state cases
             '''
-            jobstate = agendaItem['status']
-            logger.info('Job %s state is now %s' % (job['id'], jobstate))
-            break
+            if agendaItem['status'] in ('complete', 'pending', 'blocked', 'waiting'):
+                '''
+                complete -- no more frames
+                pending -- preempted, so bail out
+                blocked -- perhaps item is part of a dependency
+                '''
+                jobstate = agendaItem['status']
+                logger.info('Job %s state is now %s' % (job['id'], jobstate))
+                break
 
-        '''
-        Main
-        '''
-        if agendaItem['name'].strip() != '':
-            logger.debug("Working")
-            if '-' in agendaItem['name']:
-                startFrame, endFrame = agendaItem['name'].split('-')
-            else:
-                startFrame = endFrame = agendaItem['name']
-            logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
-            script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
-            outputString = aeSocket.runScript(script)
-            if (outputString.strip() == "ERROR"):
-                logger.error("Unable to setup segment.")
-                errors = True
-            else:
+            '''
+            Main
+            '''
+            if agendaItem['name'].strip() != '':
+                logger.debug("Working")
+                if '-' in agendaItem['name']:
+                    startFrame, endFrame = agendaItem['name'].split('-')
+                else:
+                    startFrame = endFrame = agendaItem['name']
+                logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
+                script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
+                outputString = aeSocket.runScript(script)
                 outputs = outputString.replace("\n", "").split(',')
                 logger.debug("Outputs: " + str(outputs))
-        
-            if not errors:
+
                 renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
                 script = AEScripts.getRenderAllScript()
-                aeSocket.sendScript(script)
-                monitorResult = renderTools.monitorRender()
+                aeSocket.sendScript(script, timeout=None) # Disable timeout here
+                monitorResult = renderTools.monitorRender(timeout=1800) # Max time for frame is 30min
                 socketResult = aeSocket.getResponse()
                 renderTools.alreadyComplete = True
-        
+
                 if socketResult == True:
                     returnCode = 1
                 if not monitorResult:
                     returnCode = 2
 
-            if errors:
-                returnCode = 3
+                '''
+                Update the work status based on the return code.
+                '''
+                if returnCode == 0:
+                    outputPaths = renderTools.getOutputPaths(startFrame, endFrame)
+                    agendaItem['resultpackage'] = {'outputPaths': ','.join(outputPaths),'progress':'1'}
+                    agendaItem['status'] = 'complete'
+                else:
+                    agendaItem['status'] = 'failed'
 
-            '''
-            Update the work status based on the return code.
-            '''
-            if returnCode == 0:
-                agendaItem['resultpackage'] = {'outputPaths': ','.join(outputs)}
-                agendaItem['status'] = 'complete'
-            else:
-                agendaItem['status'] = 'failed'
-
-        ''' Report back the results to the Supervisor '''
-        qb.reportwork(agendaItem)
+            ''' Report back the results to the Supervisor '''
+            qb.reportwork(agendaItem)
     
-    aeSocket.terminateConnection()
+    except Exception, e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logger.error(repr(traceback.extract_tb(exc_traceback)))
+        logger.error(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        # logger.debug("ERROR: " + str(e))
+    
+    try:
+        aeSocket.terminateConnection()
+    except Exception, e:
+        logger.error("Unable to terminate aerender. " + str(e))
+
     logger.info("AERender finished.")
     return jobstate
 

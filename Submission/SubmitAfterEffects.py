@@ -73,6 +73,8 @@ def create():
     cmdjob.properties['flagsstring'] = 'disable_windows_job_object'  # Needs to be disabled for Windows
     
     # Set some default job options
+    cmdjob.properties['groups'] = 'AfterEffects'
+    cmdjob.properties['cluster'] = '/Animation'
     cmdjob.properties['hostorder'] = '+host.memory.avail'
     cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
     cmdjob.properties['retrysubjob'] = 3
