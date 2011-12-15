@@ -53,7 +53,7 @@ f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
-rootLogger.setLevel(logging.DEBUG)
+# rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
@@ -811,7 +811,7 @@ def chunkWithTolerance(inputList, chunkSize, tolerance):
             resultList.append(myList.pop(0))
             count += 1
 
-        if len(resultList) <= tolerance:
+        if len(resultList) <= tolerance and len(resultList) > 1:
             resultLists[-1].extend(resultList)
         else:
             resultLists.append(resultList)
@@ -983,6 +983,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     ''' General '''
     logger.info("frameRangeSequenceInit: " + frameRange)
     mySequence = sequenceTools.Sequence(sequenceInitFile, frameRange)
+    logger.info("frameRangeBounds: " + str(mySequence.getBounds()))
     if not transcoderFolder:
         transcoderFolder = os.path.join(os.path.dirname(outputFile), '_Transcoder/')
 
@@ -1108,7 +1109,7 @@ def setupSequenceJob(qubeJobTemplate, sequenceInitFile, outputFile, preset,
     job['package']['selfContained'] = selfContained
     job['package']['smartUpdate'] = smartUpdate
     job['package']['fillMissingFrames'] = fillMissingFrames
-    job['package']['frameRange'] = '1-' + str(mySequence.getDuration())
+    job['package']['frameRange'] = str(frameRange)
     job['package']['transcoderFolder'] = transcoderFolder
 
     ''' Agenda '''

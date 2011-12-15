@@ -290,8 +290,13 @@ class Sequence:
         unless Update is true.
         '''
 
-        if frameRange != '':
-            frames = loadFrameRange(self.frameRange)
+        if frameRange == '':
+            if self.frameRange.upper() == 'ALL':
+                frames = self.getExistingFrames()
+            else:
+                frames = loadFrameRange(self.frameRange)
+        else:
+            frames = loadFrameRange(frameRange)
     
         result = {}
         result['start'] = str(frames[0])

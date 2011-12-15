@@ -4,14 +4,39 @@ Library of scripts that renderTalk uses
 '''
 
 def getOpenProjectScript(projectFile):
-    script = '''app.openFast(File("%s"));"Project Loaded"''' % str(projectFile)
-    return prepScript(script)
+    name = "Open Project"
+    script = '''\
+try {
+    app.openFast(File("%s"));
+    "Project Loaded"
+} catch(error) {
+    this.log_file.writeln("ERROR: Unable to open project.\n" + error)
+}
+''' % str(projectFile)
+    return prepScript(name, script)
 
 def getRenderAllScript():
-    script = '''app.project.renderQueue.render();"Project Rendered"'''
-    return prepScript(script)
+    name = "Render"
+    script = '''\
+try {
+    if (app.preferences.havePref("Misc Section", "Play sound when render finishes")) {
+    	saved_sound_setting = app.preferences.getPrefAsLong("Misc Section", "Play sound when render finishes");
+    } else {
+    	saved_sound_setting = 1;
+    }
+    app.preferences.savePrefAsLong("Misc Section", "Play sound when render finishes", 0);
+    app.project.renderQueue.render();
+    app.preferences.savePrefAsLong("Misc Section", "Play sound when render finishes", saved_sound_setting);
+    "Project Rendered";
+} catch(error) {
+    this.log_file.writeln("ERROR: Unable to render.\n" + error);
+    "ERROR";
+}
+'''
+    return prepScript(name, script)
 
 def getSetupSegmentScript(startFrame, endFrame, rqIndex):
+    name = "Setup Segment"
     script = '''\
 // Setup the render queue
 var startFrame = %s;
@@ -110,9 +135,10 @@ if (errors.length > 0) {
 };
 ''' % (startFrame, endFrame, rqIndex)
 
-    return prepScript(script)
+    return prepScript(name, script)
 
 def getMultProcsScript(enable=True):
+    name = "Setup Multiple Processors"
     script = '''\
 switch (parseFloat(app.version)) {
     case 8:
@@ -132,14 +158,21 @@ true;
         script = script % (1,1,1)
     else:
         script = script % (0,0,0)
-    return prepScript(script)
+    return prepScript(name, script)
 
-def prepScript(script):
-    result = []
+def prepScript(name, script):
+    '''
+    Remove comments and make the script one line
+    so it can be sent through the socket.
+    Return a dictionary containing the name and the script.
+    '''
+    resultScript = []
     lines = script.split("\n")
     for line in lines:
         if not line.strip().startswith("//"):
-            result.append(line)
+            resultScript.append(line)
     
-    result = "".join(result)
+    resultScript = "".join(resultScript)
+    
+    result = {'name':name, 'script':resultScript}
     return result

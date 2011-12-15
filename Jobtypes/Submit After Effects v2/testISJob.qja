@@ -2,7 +2,7 @@
 <object type = 'job'>
 	<id>1</id>
 	<pid>-1</pid>
-	<priority>100</priority>
+	<priority>50</priority>
 	<local_order>0</local_order>
 	<global_order>0</global_order>
 	<pgrp>-1</pgrp>
@@ -48,6 +48,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -94,6 +95,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -140,6 +142,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -186,6 +189,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -232,6 +236,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -278,6 +283,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -324,6 +330,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -370,6 +377,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -416,6 +424,7 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -462,6 +471,477 @@
 					<id>-1</id>
 					<result></result>
 					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>101-110</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>111-120</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>121-130</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>131-140</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>141-150</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>151-160</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>161-170</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>171-180</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>181-190</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
+					<count>0</count>
+					<dependency></dependency>
+					<percent>0</percent>
+					<last_update>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</last_update>
+					<seq>0</seq>
+					<time_start>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_start>
+					<time_complete>
+						<object type = 'time'>
+							<value>0</value>
+						</object>
+					</time_complete>
+					<mac_address>
+						<object type = 'macaddress'>
+							<value></value>
+						</object>
+					</mac_address>
+				</object>
+			</item>
+			<item>
+				<object type = 'work'>
+					<name>191-199</name>
+					<sub_id>-1</sub_id>
+					<host></host>
+					<status>
+						<object type = 'status'>
+							<value>0</value>
+						</object>
+					</status>
+					<address>
+						<object type = 'address'>
+							<value>0</value>
+						</object>
+					</address>
+					<pid>-1</pid>
+					<data></data>
+					<id>-1</id>
+					<result></result>
+					<retry>0</retry>
+					<retrydelay>0</retrydelay>
 					<count>0</count>
 					<dependency></dependency>
 					<percent>0</percent>
@@ -498,7 +978,7 @@
 	<reservations>host.processors=1+</reservations>
 	<restrictions></restrictions>
 	<groups></groups>
-	<hosts>bchapman.local</hosts>
+	<hosts>Elevate-bchapman</hosts>
 	<host_order>+host.processors.avail</host_order>
 	<data>(=(renderProjectPath=/Volumes/theGrill/Staff-Directories/Brennan/Testing/AESubmitv2/testComp.aep)(rqIndex=1))</data>
 	<queue></queue>
@@ -573,7 +1053,7 @@
 		</object>
 	</env>
 	<kind></kind>
-	<server_id>1701078373</server_id>
+	<server_id>100663297</server_id>
 	<last_update>
 		<object type = 'time'>
 			<value>0</value>
@@ -606,8 +1086,8 @@
 			</direct_map>
 		</object>
 	</path_map>
-	<retry_subjob>-1</retry_subjob>
-	<retry_work>-1</retry_work>
+	<retry_subjob>3</retry_subjob>
+	<retry_work>3</retry_work>
 	<omit_hosts></omit_hosts>
 	<omit_groups></omit_groups>
 	<dependency></dependency>
@@ -638,4 +1118,11 @@
 	<range></range>
 	<agenda_timeout>-1</agenda_timeout>
 	<auto_migrate_count>0</auto_migrate_count>
+	<retrywork_delay>0</retrywork_delay>
+	<p_agenda>
+		<object type = 'work_list'>
+		</object>
+	</p_agenda>
+	<p_agenda_priority>-1</p_agenda_priority>
+	<p_agenda_cpus>-1</p_agenda_cpus>
 </object>
