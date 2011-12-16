@@ -32,30 +32,25 @@ sys.path.append('%s/api/python' % qbdir)
 print 'Appending to python path "%s/api/python"' % qbdir
 import qb
 
+sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+
 # --------------------------
 
 from simplecmd import SimpleSubmit
 import logging
 import inspect
 import wx
+import wx.lib.filebrowsebutton
+import AESocket
 
 # rootLogger = logging.getLogger()
 # rootLogger.setLevel(logging.DEBUG)
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/SubmitAfterEffects_Files/')
-import SubmitAfterEffectsClasses
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/_submodules/')
 import Transcoder
 
-class rqItemWidget(wx.Panel):
-    '''
-    renderQueue Item Widget
-    Displays a dropdown with an editable drop down with a list of all
-    render queue items. Also displays a listbox containing the outputs of the
-    selected renderqueue item.
-    '''
-
+class aeProjectWidget(wx.Panel):
+    
     def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
         wx.Panel.__init__ (self, parent, id, pos, size, style)
 
@@ -63,12 +58,14 @@ class rqItemWidget(wx.Panel):
         
         sizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.rqItemList = wx.ListBox(self, -1, choices=['All', '1-CompA', '2-CompB'])
-        # self.loadButton = wx.Button(rqPanel, -1, 'Load', size=(70, 24))
+        comps = ['1-CompA', '2-CompB']
+        self.projectFile = wx.lib.filebrowsebutton.FileBrowseButtonWithHistory(self, -1, labelText="", labelWidth=0, buttonText="Browse", toolTip="Choose After Effects Project.", dialogTitle="Choose your After Effects Project", fileMask="*.aep", fileMode=1, changeCallback=self.updateProjectFile, history=["test.aep","test2.aep"])
+        self.rqItemList = wx.CheckListBox(self, -1, choices=comps, size=(-1, 100))
         
-        self.outputList = wx.ListBox(self, -1, choices=['OutputA.mov', 'OutputB_#####.png'])
+        self.outputList = wx.ListBox(self, -1, choices=['OutputA.mov', 'OutputB_#####.png'], size=(-1, 50))
         
-        sizer.Add( self.rqItemList, 0, wx.TOP, 5)
+        sizer.Add( self.projectFile, 0, wx.EXPAND|wx.ALL, 2)
+        sizer.Add( self.rqItemList, 0, wx.EXPAND|wx.ALL, 2)
         sizer.Add( self.outputList, 1, wx.EXPAND|wx.ALL, 2)
         self.SetSizer(sizer)
 
@@ -83,35 +80,96 @@ class rqItemWidget(wx.Panel):
     def GetValue(self):
         pass
 
+    def updateProjectFile(self, itm):
+        value = self.projectFile.GetValue()
+        logging.info("Loaded project: %s" % value) 
+
+    def SetValue(self, items):
+        pass
+
+class aeScriptsWidget(wx.Panel):
+    def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
+        wx.Panel.__init__ (self, parent, id, pos, size, style)
+
+        self.SetMinSize(size)
+
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.listbox = wx.ListBox(self, -1) # size=(250, 110)
+
+        btnPanel = wx.Panel(self, -1, style=0)
+        # btnPanel.SetMinSize(wx.DefaultSize)
+        btnSizer = wx.BoxSizer(wx.VERTICAL)
+        
+        self.addButton = wx.Button(btnPanel, -1, "Add", size=(75, 24))
+        self.editButton = wx.Button(btnPanel, -1, "Edit", size=(75, 24))
+        self.removeButton = wx.Button(btnPanel, -1, "Remove", size=(75, 24))
+        self.clearButton = wx.Button(btnPanel, -1, "Clear", size=(75, 24))
+
+        self.addButton.Bind(wx.EVT_BUTTON, self.AddButtonClick)
+        self.editButton.Bind(wx.EVT_BUTTON, self.EditButtonClick)
+        self.removeButton.Bind(wx.EVT_BUTTON, self.RemoveButtonClick)
+        self.clearButton.Bind(wx.EVT_BUTTON, self.ClearButtonClick)
+        
+        btnSizer.Add(self.addButton, 1, wx.Top, 5)
+        btnSizer.Add(self.editButton, 1, wx.Top, 5)
+        btnSizer.Add(self.removeButton, 1, wx.Top, 5)
+        btnSizer.Add(self.clearButton, 1, wx.Top, 5)
+
+        btnPanel.SetSizer(btnSizer)
+
+        sizer.Add( self.listbox, 1, wx.EXPAND|wx.ALL, 2)
+        sizer.Add( btnPanel, 0, wx.RIGHT, 5)
+        self.SetSizer(sizer)
+
+        self.SetAutoLayout(True)
+        self.Layout()
+        self.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
+        
+        self.count = 0
+
+    def AddButtonClick(self, event=None):
+        pass
+
+    def EditButtonClick(self, event=None):
+        pass
+
+    def RemoveButtonClick(self, event=None):
+        sel = self.listbox.GetSelection()
+        if sel != -1:
+            self.listbox.Delete(sel)
+
+    def ClearButtonClick(self, event=None):
+        self.listbox.Clear()
+
+    def GetValue(self):
+        return None
+
     def SetValue(self, items):
         pass
 
 def create():        
-    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, postDialog=postDialog, install=install)
-
-    # Initialize the AE Data Class
-    cmdjob.ctrl = SubmitAfterEffectsClasses.Controller(logging)
+    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, postDialog=postDialog, controlChanged=controlChanged)
 
     # Project Information
-    cmdjob.add_optionGroup('Info')
-    cmdjob.add_option( 'projectPath', 'file' , 'Project File Path', label='Project File',
-                        mode='open', required=True, editable=True)
-    cmdjob.add_option( 'rqItem', 'choice', label='Render Queue\nItems\n\nOutputs\n\n', required=True,
-                        editable=True, widget=rqItemWidget)
-    
+    cmdjob.add_optionGroup('Main')
+    cmdjob.add_option( 'rqItem', 'choice', label='\nProject Path\n\n\n\nRender Queue\nItems\n\n\n\nSelected Item\'s\nOutputs\n', required=True,
+                        editable=True, widget=aeProjectWidget)
+        
     # Required
-    cmdjob.add_optionGroup('Required', collapsed=False)
+    cmdjob.add_optionGroup('Required')
     cmdjob.add_option( 'notes', 'string', 'Notes about render', label='Notes',
                         required=True, lines=3, default=' ')
-    cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email',
-                        required=True, lines=1)
+    cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email', editable=True, required=True, multi=True, choices=["brennan.chapman","collin.brooks"])
 
     # Transcoder
     cmdjob.add_optionGroup('Transcoder', collapsed=False)
     Transcoder.addTranscodeWidgetToDlg(cmdjob)
 
     # Advanced
-    cmdjob.add_optionGroup('Advanced', collapsed=False)
+    cmdjob.add_optionGroup('Advanced')
+    cmdjob.add_option( 'quality', 'choice', label="Quality", required=True, editable=True, choices=["High", "Medium", "Low"])
+    cmdjob.add_option( 'script', 'choice', label="Scripts", required=False, editable=True, widget=aeScriptsWidget)
     cmdjob.add_option( 'multProcs', 'bool', 'Use Multiple Processors', label='Multiple Processors',
                         required=False, default=False)
 
@@ -123,181 +181,22 @@ def create():
     cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
     cmdjob.properties['retrysubjob'] = 3
     cmdjob.properties['retrywork'] = 3
+    cmdjob.properties['cpus'] = 10
+    cmdjob.properties['priority'] = 100
     cmdjob.package.setdefault('shell', '/bin/bash')
     
     return [cmdjob]
 
-# Custom method to update the choices for listboxes
-# The SimpleCMD framework only supports updating values directly
-# def updateChoiceList(dlg, valuesPkg, optName, newChoices, selection):
-#         logging.debug("Updating ChoiceList: " + str(optName) + " Selection: " + str(selection))
-#         for s in dlg.propertyBoxSizers:
-#             if (optName in s.optionNames):
-#                 s.options[optName]['choices'] = newChoices
-#                 s.widgets[optName]['entry'].Clear() # Clear the current choices
-#                 s.widgets[optName]['entry'].AppendItems(newChoices)
-#                 if isinstance(selection, list):
-#                     if (len(selection) > 0):
-#                         for sel in selection:
-#                             s.widgets[optName]['entry'].Check(sel)
-#                 else:
-#                     s.widgets[optName]['entry'].SetSelection(selection)
 
-
-# Updates dialog when controls are changed
-# def controlChanged(cmdjob, values, optionName, value, dlg, container):
-# 
-#     # Pointers
-#     valuesPkg = values.setdefault('package', {})
-#     ctrl = cmdjob.ctrl
-#     updateName = False
-# 
-#     # Playing with the dialog colors :)
-#     # for s in dlg.propertyBoxSizers:
-#     #     s.SetBackgroundColour("#7b7b7b")
-#     # dlg.SetBackgroundColour("#7b7b7b")
-#     # dlg.Refresh()
-# 
-#     # Project Path Updates
-#     if (optionName == "projectPath"):
-#         updateName = True
-#         # Make sure the file exists and is an after effects project before updating
-#         if (os.path.exists(value) and os.path.splitext(value)[1] == '.aep'):
-#             
-#             projectPath = value
-#             ctrl.setProjectPath(projectPath)
-# 
-#             # Set the qube job name to the name of the ae project without extension
-#             values['name'] = os.path.splitext(os.path.basename(projectPath))[0]
-#             
-#             # Determing the path to the AE Data File
-#             projectPathSplit = os.path.split(projectPath)
-#             dataPath = os.path.join(projectPathSplit[0], DATAPREFIX + projectPathSplit[1])
-# 
-#             makeDataFile = False # Sentinel to check if we need to make a new data file
-#             
-#             # Check whether the data file exists or not
-#             if os.path.exists(dataPath):
-#                 logging.debug("Data file found:\n" + dataPath)
-#         
-#                 # Load the data and check the hash
-#                 if not ctrl.loadDataFile(dataPath):
-#                     makeDataFile = True
-#                     logging.warning('Invalid Data File.')
-#         
-#                 # Calculate the hash of the project file
-#                 projHash = ctrl.getFileHash(projectPath)
-#                 logging.debug("Project Hash Code: " + projHash)
-# 
-#                 # Compare this hash to the hash stored in the file
-#                 dataHash = ctrl.getDataHash()
-#                 logging.debug("Data Hash Code: " + str(dataHash))
-#                 if (str(projHash) != str(dataHash)):
-#                     makeDataFile = True
-#                     logging.info("Hash Codes don't match between the project and data file.")
-#                     
-#             else:
-#                 makeDataFile = True
-#                 logging.info("No data file found for project.")
-# 
-#             if (makeDataFile):
-#                 ctrl.makeDataFile()
-#                 if not ctrl.loadDataFile(dataPath):
-#                     logging.error('Unable to load data file.')
-# 
-#             # If specified, get the rqIndex passed from After Effects
-#             rqIndex = valuesPkg.get('rqIndex', '1').strip()
-#             if not rqIndex.isdigit():
-#                 rqIndex = 1
-#             
-#             # Override with settings from After Effects if present
-#             if (ctrl.data.selRQIndex != ''):
-#                 rqIndex = int(ctrl.data.selRQIndex.split('.')[0])
-#                 # Remove it now that we've used it
-#                 ctrl.data.selRQIndex = ''
-#             
-#             # Load the RQ Item Choices into the dialog
-#             rqChoices = ctrl.getRQChoices()
-#             logging.debug("Updating Render Choices: " + str(rqChoices))
-#             updateChoiceList(dlg, valuesPkg, 'rqIndex', rqChoices, int(rqIndex)-1)
-#             valuesPkg['rqIndex'] = str(int(rqIndex))
-# 
-#             # Locate the rqItem with the specified index
-#             rqItem = ctrl.getRQIndex(rqIndex)
-#             
-#             if rqItem:
-#                 # Load the outputs list box
-#                 outputs = rqItem.getOutputNames()
-#                 # Make all outputs selected
-#                 selection = []
-#                 for i in range(0, len(outputs)):
-#                     selection.append(i)
-#                 updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
-#             
-#                 # Use expand flag if the output is a sequence
-#                 ctrl.data.isSequence = False
-#                 for item in outputs:
-#                     if ctrl.isSequence(item):
-#                         ctrl.data.isSequence = True
-#             else:
-#                 logging.info("No items in the projects Render Queue.")
-#             
-#         else:
-#             valuesPkg = values.setdefault('package', {})
-#             # Prompt user that there was an error loading the project file
-#             updateChoiceList(dlg, valuesPkg, 'rqIndex', ['Invalid Project File'], 0)
-#             valuesPkg['rqIndex'] = 'Invalid Project File'
-#             # Clear the outputs field
-#             updateChoiceList(dlg, valuesPkg, 'outputs', ['None'], [])
-# 
-#     # rqItem dropdown
-#     elif (optionName == "rqIndex"):
-#         # Check first character of the list box value to make sure it's a valid RQ Item
-#         if value[0].isdigit():
-#             rqIndex = value.split('.')[0]
-#             rqItem = ctrl.getRQIndex(rqIndex)
-#             outputs = rqItem.getOutputNames()
-#             
-#             # Make all outputs selected
-#             selection = []
-#             for i in range(0, len(outputs)):
-#                 selection.append(i)
-#             updateChoiceList(dlg, valuesPkg, 'outputs', outputs, selection)
-#             
-#             # Use expand flag if the output is a sequence
-#             ctrl.data.isSequence = False
-#             for item in outputs:
-#                 if ctrl.isSequence(item):
-#                     ctrl.data.isSequence = True
-#                     
-#             updateName = True
-#             
-# 
-#     if ctrl.data.isSequence:
-#         values['flagsstring'] = values['flagsstring'].replace(',expand', '') + ",expand"
-#     else:
-#         values['flagsstring'] = values['flagsstring'].replace(',expand', '')
-#     
-#     if updateName:
-#         # Update the job name
-#         projectPath = valuesPkg['projectPath']
-#         # rqIndex = valuesPkg.get('rqIndex', 'joe')
-#         rqIndex = valuesPkg.get('rqIndex', '')
-#         values['name'] = os.path.splitext(os.path.basename(projectPath))[0] + ' RQ#' + str(rqIndex).split('.')[0]
+def controlChanged(cmdjob, values, optionName, value, dlg, container):
+    logging.info("Value changed")
 
 
 # Setup the submission dialog
 def preDialog(cmdjob, values):
-    
-    valuesPkg = values.setdefault('package', {})
-    # Store the rqIndex that After Effects sends
-    rqIndex = valuesPkg.get('rqIndex', '')
-    if (rqIndex != ''):
-        cmdjob.ctrl.data.selRQIndex = rqIndex
-        projectPath = valuesPkg['projectPath']
-
 	# Clear our any saved dependencies
 	values['dependency'] = ''
+
 
 # Cleanup & create copy of project to render from
 def postDialog(cmdjob, values):
@@ -370,12 +269,7 @@ def postDialog(cmdjob, values):
     # Store the paths to aerender for mac and pc
     valuesPkg['aerenderwin'] = ctrl.getAERenderPath(sysOS='win32')
     valuesPkg['aerendermac'] = ctrl.getAERenderPath(sysOS='darwin')
-    
-    
-def install():
-    ctrl = SubmitAfterEffectsClasses.Controller(logging)
-    ctrl.checkAEScripts()
-    logging.info("After Effects In-App Submission Installed")
+
 
 if __name__ == '__main__':
     import simplecmd

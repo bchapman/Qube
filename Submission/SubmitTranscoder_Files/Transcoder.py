@@ -1166,7 +1166,7 @@ def prepareJobsFromDlg(qubejob):
     qbCache.QbServerRequestQueue.put(request)
 
 def addTranscodeWidgetToDlg(cmdjob):
-    cmdjob.add_option( 'transcodeJobs', 'choice', label='Transcoder Jobs', required=True,
+    cmdjob.add_option( 'transcodeJobs', 'choice', label='Conversions', required=True,
                         editable=True, widget=TranscoderWidget)
 
 if __name__ == "__main__":
