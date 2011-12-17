@@ -3,7 +3,7 @@ After Effects Socket Communications Class
 Launches and communicates with an After Effects process through a socket.
 
 Author: Brennan Chapman
-Version: 1.1
+Version: 1.2
 
 Basic Use:
 launchAERender()
@@ -22,6 +22,7 @@ import socket
 import time
 import logging
 import shlex, subprocess
+import signal
 
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
@@ -41,6 +42,12 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.INFO)
 
+class AESocketError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr("After Effects returned an error.\n%s" % self.value)
+
 class AESocket:
     def __init__(self, port=None):
         '''
@@ -56,10 +63,58 @@ class AESocket:
         
         self.logFilePath = None
         self.logFile = None
+        
+        signal.signal(signal.SIGTERM, self._exitHandler)
+        signal.signal(signal.SIGILL, self._exitHandler)
+        signal.signal(signal.SIGSEGV, self._exitHandler)
 
     '''
     Private Methods
     '''
+
+    def _exitHandler(self, signum, frame):
+        '''
+        Kill AERenderCore Processes for the specified project.
+        
+        The aerendercore process isn't directly tied to aerender.
+        It is spawned by launchd.
+        
+        So to find which aerendercore process correlates to each render
+        we sort through open files, the log files are most always open.
+        By default, these carry the name of the project.
+        We search for these to associate each aerendercore process
+        with it's project.
+        '''
+
+        # Wait a few seconds to make sure aerendercore has enough time to load the log file
+        time.sleep(10)
+
+        projectFile = self.job.projectPath
+        log = open('/tmp/aeCrashLog.log', 'a')
+        log.write(str(os.path.basename(projectFile)) + '\n')
+        log.write("Signal: %s" % signum)
+
+        processes = self.getAERenderCoreProcesses()
+        log.write("AERender Core Processes:" + str(processes))
+
+        # Scan each process for open files matching the project file
+        relatedPIDs = []
+        for pid,files in processes.iteritems():
+            for f in files:
+                found = False
+                log.write("Scanning:" + str(f) + '\n')
+                if os.path.basename(projectFile) in f:
+                    found = True
+                if found:
+                    relatedPIDs.append(pid)
+
+        log.write("Related AERender Core Processes:" + str(relatedPIDs) + '\n')
+        for pid in relatedPIDs:
+            log.write('Killing AERenderCore (' + str(pid) + ')\n')
+            os.kill(int(pid), 9)
+
+        log.close()
+
 
     def _getOpenPort(self, startingValue=5000):
         '''
@@ -80,6 +135,26 @@ class AESocket:
         logger.info("Found open port: " + str(openPort))
 
         return openPort
+
+    def _prepScript(self, script):
+        '''
+        Remove comments and make the script one line
+        so it can be sent through the socket.
+        Return a dictionary containing the name and the script.
+        '''
+        if "\n" in script:
+            resultScript = []
+            lines = script.split("\n")
+            for line in lines:
+                if not line.strip().startswith("//"):
+                    resultScript.append(line)
+
+            resultScript = "".join(resultScript)
+
+            return resultScript
+        else:
+            return script
+
 
     def _waitForAE(self, timeout=180):
         '''
@@ -109,6 +184,7 @@ class AESocket:
         '''
         Send a script to the AERender daemon.
         '''
+        script = self._prepScript(script)
         if self._checkConnectionActive():
             self._waitForAE(timeout)
             logger.info("Sending script: %s" % name)
@@ -143,7 +219,7 @@ class AESocket:
 
     def runScript(self, script, name=""):
         '''
-        Run the supplied script.
+        Run the supplied script string.
         Input includes the name of the script, and the script as a string.
         '''
         if not name:
@@ -151,6 +227,19 @@ class AESocket:
         
         self._sendScript(script, name)
         return self.getResponse()
+    
+    def runScriptFile(self, script):
+        '''
+        Run the supplied script file.
+        Use the javascript $.evalFile, seems to work better.
+        '''
+        if os.path.exists(script):
+            script = "$.evalFile(\"%s\");" % script
+            name = os.path.basename(script)
+            return self.runScript(script, name)
+        else:
+            logging.error("Script doesn't exist. %s" % script)
+            return ""        
         
     def getResponse(self):
         '''
@@ -160,8 +249,8 @@ class AESocket:
             response = None
             response = self.socket.recv(1024)
             logger.debug("Received: %s" % response)
-            if response.strip() == "ERROR":
-                raise RuntimeError("Received error from After Effects.")
+            if "error" in response.lower():
+                raise AESocketError(response)
         
             return response
 

@@ -41,51 +41,14 @@ import logging
 import inspect
 import wx
 import wx.lib.filebrowsebutton
-import AESocket
+import AESubmitWidget
 
-# rootLogger = logging.getLogger()
-# rootLogger.setLevel(logging.DEBUG)
+
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.DEBUG)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/_submodules/')
 import Transcoder
-
-class aeProjectWidget(wx.Panel):
-    
-    def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
-        wx.Panel.__init__ (self, parent, id, pos, size, style)
-
-        self.SetMinSize(size)
-        
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        comps = ['1-CompA', '2-CompB']
-        self.projectFile = wx.lib.filebrowsebutton.FileBrowseButtonWithHistory(self, -1, labelText="", labelWidth=0, buttonText="Browse", toolTip="Choose After Effects Project.", dialogTitle="Choose your After Effects Project", fileMask="*.aep", fileMode=1, changeCallback=self.updateProjectFile, history=["test.aep","test2.aep"])
-        self.rqItemList = wx.CheckListBox(self, -1, choices=comps, size=(-1, 100))
-        
-        self.outputList = wx.ListBox(self, -1, choices=['OutputA.mov', 'OutputB_#####.png'], size=(-1, 50))
-        
-        sizer.Add( self.projectFile, 0, wx.EXPAND|wx.ALL, 2)
-        sizer.Add( self.rqItemList, 0, wx.EXPAND|wx.ALL, 2)
-        sizer.Add( self.outputList, 1, wx.EXPAND|wx.ALL, 2)
-        self.SetSizer(sizer)
-
-        # Cleanup the layout
-        self.SetAutoLayout(True)
-        self.Layout()
-        self.SetDimensions(-1, -1, size[0], size[1], wx.SIZE_USE_EXISTING)
-        
-        self.imageSequenceList = []
-        self.audioFileList = []
-
-    def GetValue(self):
-        pass
-
-    def updateProjectFile(self, itm):
-        value = self.projectFile.GetValue()
-        logging.info("Loaded project: %s" % value) 
-
-    def SetValue(self, items):
-        pass
 
 class aeScriptsWidget(wx.Panel):
     def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
@@ -149,12 +112,12 @@ class aeScriptsWidget(wx.Panel):
         pass
 
 def create():        
-    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, postDialog=postDialog, controlChanged=controlChanged)
+    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, controlChanged=controlChanged)
 
     # Project Information
     cmdjob.add_optionGroup('Main')
     cmdjob.add_option( 'rqItem', 'choice', label='\nProject Path\n\n\n\nRender Queue\nItems\n\n\n\nSelected Item\'s\nOutputs\n', required=True,
-                        editable=True, widget=aeProjectWidget)
+                        editable=True, widget=AESubmitWidget.AEProjectWidget)
         
     # Required
     cmdjob.add_optionGroup('Required')
