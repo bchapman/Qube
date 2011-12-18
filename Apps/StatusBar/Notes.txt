@@ -1,0 +1,16 @@
+Render Manager
+
+Menu
+
+Priority
+	Qube
+	Compressor
+Qube
+	Always on
+	Enable when idle 30 min
+	Disable for 24 hours
+Compressor
+	Always on
+	Enable when idle 30 min
+	Disable for 24 hours
+	
