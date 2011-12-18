@@ -315,6 +315,8 @@ def postDialog(cmdjob, values):
             outPaths = []
             for item in rqItem['outFilePaths']:
                 outPaths.append(str(item))
+            if ".mov" in ",".join(outPaths):
+                rqiValues['cpus'] = 1
             rqiPkg['outputFiles'] = ",".join(outPaths)
             logging.debug("Output File Paths: %s" % rqItem['outFilePaths'])
             agendaRange = str("%s-%s" % (rqItem['startTime'], rqItem['stopTime']))

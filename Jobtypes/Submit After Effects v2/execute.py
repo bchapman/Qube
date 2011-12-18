@@ -15,8 +15,10 @@ import traceback
 sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
 import AESocket
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 import AEScripts
 import Tools
 
@@ -76,7 +78,7 @@ def executeJob(job):
         aeSocket.launchAERender()
     
         script = AEScripts.getOpenProjectScript(pkg['renderProjectPath'])
-        aeSocket.runScript(script)
+        aeSocket.runScript(script[1], script[0])
 
         while 1:
             agendaItem = qb.requestwork()
@@ -100,20 +102,19 @@ def executeJob(job):
             Main
             '''
             if agendaItem['name'].strip() != '':
-                logger.debug("Working")
                 if '-' in agendaItem['name']:
                     startFrame, endFrame = agendaItem['name'].split('-')
                 else:
                     startFrame = endFrame = agendaItem['name']
                 logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
                 script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
-                outputString = aeSocket.runScript(script)
+                outputString = aeSocket.runScript(script[1], script[0])
                 outputs = outputString.replace("\n", "").split(',')
                 logger.debug("Outputs: " + str(outputs))
 
                 renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
                 script = AEScripts.getRenderAllScript()
-                aeSocket.sendScript(script, timeout=None) # Disable timeout here
+                aeSocket._sendScript(script[1], script[0], timeout=None) # Disable timeout here
                 monitorResult = renderTools.monitorRender(timeout=1800) # Max time for frame is 30min
                 socketResult = aeSocket.getResponse()
                 renderTools.alreadyComplete = True
