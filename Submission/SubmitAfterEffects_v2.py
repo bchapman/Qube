@@ -8,8 +8,11 @@
 
 DATAPREFIX = ".DATA."
 QUBESUBMISSIONSFOLDERNAME = "_Qube_Submissions"
+ELEVATEPREFSFILE = "~/Library/Preferences/qube/Elevate.plist"
 
 import os, sys
+
+ELEVATEPREFSFILE = os.path.expanduser(ELEVATEPREFSFILE)
 
 # == import qb ==
 # Determine qbdir (currently used for locating qb module and docs)
@@ -32,23 +35,25 @@ sys.path.append('%s/api/python' % qbdir)
 print 'Appending to python path "%s/api/python"' % qbdir
 import qb
 
-sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
-
 # --------------------------
 
 from simplecmd import SimpleSubmit
 import logging
-import inspect
 import wx
 import wx.lib.filebrowsebutton
-import AESubmitWidget
+import time
+import shutil
+import plistlib
+import qbCache
+import copy
 
+sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+
+import AESubmitWidget
+import Transcoder
 
 rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.DEBUG)
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/_submodules/')
-import Transcoder
+# rootLogger.setLevel(logging.DEBUG)
 
 class aeScriptsWidget(wx.Panel):
     def __init__(self, parent, id=wx.ID_ANY, value=wx.EmptyString, pos=wx.DefaultPosition, size=wx.DefaultSize, style=0, *args, **kwargs):
@@ -58,10 +63,9 @@ class aeScriptsWidget(wx.Panel):
 
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.listbox = wx.ListBox(self, -1) # size=(250, 110)
+        self.listbox = wx.ListBox(self, -1)
 
         btnPanel = wx.Panel(self, -1, style=0)
-        # btnPanel.SetMinSize(wx.DefaultSize)
         btnSizer = wx.BoxSizer(wx.VERTICAL)
         
         self.addButton = wx.Button(btnPanel, -1, "Add", size=(75, 24))
@@ -112,137 +116,254 @@ class aeScriptsWidget(wx.Panel):
         pass
 
 def create():        
-    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, controlChanged=controlChanged)
+    cmdjob = SimpleSubmit('Submit After Effects v2', hasRange=False, canChunk=False, help='After Effects rendering with progress and more.', category="2D", preDialog=preDialog, postDialog=postDialog, controlChanged=controlChanged)
 
     # Project Information
     cmdjob.add_optionGroup('Main')
-    cmdjob.add_option( 'rqItem', 'choice', label='\nProject Path\n\n\n\nRender Queue\nItems\n\n\n\nSelected Item\'s\nOutputs\n', required=True,
-                        editable=True, widget=AESubmitWidget.AEProjectWidget)
-        
+    cmdjob.add_option( 'aeProject', 'file', label='\nProject Path\n\n\n\nRender Queue\nItems\n\n\n\nSelected Item\'s\nOutputs\n', required=True, editable=True, widget=AESubmitWidget.AEProjectWidget)
+
     # Required
     cmdjob.add_optionGroup('Required')
     cmdjob.add_option( 'notes', 'string', 'Notes about render', label='Notes',
                         required=True, lines=3, default=' ')
-    cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email', editable=True, required=True, multi=True, choices=["brennan.chapman","collin.brooks"])
+    cmdjob.add_option( 'email', 'string', 'Notification Email Address(s)', label='Email', editable=True, required=True, multi=False, choices=[])
 
     # Transcoder
-    cmdjob.add_optionGroup('Transcoder', collapsed=False)
-    Transcoder.addTranscodeWidgetToDlg(cmdjob)
+    # cmdjob.add_optionGroup('Transcoder', collapsed=False)
+    # Transcoder.addTranscodeWidgetToDlg(cmdjob)
 
     # Advanced
     cmdjob.add_optionGroup('Advanced')
     cmdjob.add_option( 'quality', 'choice', label="Quality", required=True, editable=True, choices=["High", "Medium", "Low"])
-    cmdjob.add_option( 'script', 'choice', label="Scripts", required=False, editable=True, widget=aeScriptsWidget)
-    cmdjob.add_option( 'multProcs', 'bool', 'Use Multiple Processors', label='Multiple Processors',
-                        required=False, default=False)
+    # cmdjob.add_option( 'scripts', 'choice', label="Scripts", required=False, editable=True, widget=aeScriptsWidget)
+    # cmdjob.add_option( 'multProcs', 'bool', 'Use Multiple Processors', label='Multiple Processors', required=False, default=False)
+    # cmdjob.add_option( 'chunkSize', 'int', 'Chunk size for agenda.', label='Frames Per Task', default=10, required=True)
 
     # Additional properties to set
     cmdjob.properties['flagsstring'] = 'disable_windows_job_object'  # Needs to be disabled for Windows
-    
-    # Set some default job options
-    cmdjob.properties['hostorder'] = '+host.memory.avail'
-    cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
-    cmdjob.properties['retrysubjob'] = 3
-    cmdjob.properties['retrywork'] = 3
-    cmdjob.properties['cpus'] = 10
-    cmdjob.properties['priority'] = 100
-    cmdjob.package.setdefault('shell', '/bin/bash')
-    
+
     return [cmdjob]
 
 
-def controlChanged(cmdjob, values, optionName, value, dlg, container):
-    logging.info("Value changed")
-
-
-# Setup the submission dialog
 def preDialog(cmdjob, values):
-	# Clear our any saved dependencies
-	values['dependency'] = ''
-
-
-# Cleanup & create copy of project to render from
-def postDialog(cmdjob, values):
-    
     valuesPkg = values.setdefault('package', {})
-    ctrl = cmdjob.ctrl
-
-    #################################################################################################################
-    #
-    # Create a copy of the original project to render from
-    #
-    #################################################################################################################
+	# Clear our any saved dependencies
+    values['dependency'] = ''
     
-    sourceFilePath = valuesPkg.get('projectPath', '')
+    # Set required defaults, we don't want previous settings
+    # to mess with these.
+    cmdjob.properties['retrysubjob'] = 3
+    cmdjob.properties['retrywork'] = 3
+    values['priority'] = 100
+    values['cpus'] = 10
+    cmdjob.properties['hostorder'] = '+host.memory.avail'
+    cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
+    cmdjob.package.setdefault('shell', '/bin/bash')
 	
-    newFilePath = ctrl.makeCopyOfProject(sourceFilePath, QUBESUBMISSIONSFOLDERNAME)
+    try:
+        elevatePrefs = plistlib.readPlist(ELEVATEPREFSFILE)
+        
+        cmdjob.options['email']['choices'] = elevatePrefs['emailHistory']
+        projectHistory = set(elevatePrefs['projectHistory'])
+        logging.debug("Found Project History in Prefs: %s" % projectHistory)
+        if valuesPkg.has_key('sourceProjectPath'):
+            projectHistory.add(valuesPkg['sourceProjectPath'])
+            logging.debug("Found sourceProjectPath: %s" % valuesPkg['sourceProjectPath'])
+        
+        projectHistory = list(projectHistory)
+        projectHistory.reverse()
+        valuesPkg['aeProject'] = {'projectHistory':projectHistory}
+        
+        valuesPkg['notes'] = values['notes']
+        
+        logging.warning("Loaded Elevate Prefs.")
+        
+    except Exception, e:
+        logging.warning("Unable to load Elevate Prefs. %s" % e)
 
-    # Store the translated projectPaths
-    valuesPkg['projectPath'] = ctrl.translatePath(sourceFilePath)
-    valuesPkg['renderProjectPath'] = ctrl.translatePath(newFilePath)
 
+
+def controlChanged(cmdjob, values, optionName, value, dlg, container):
+    logging.debug("Value changed. %s" % optionName)
     
-    #################################################################################################################
-    #
-    # Add the email callbacks
-    #
-    #################################################################################################################
+    if optionName == "aeProject":
+        newName = os.path.splitext(os.path.basename(value['projectPath']))[0]
+        logging.debug("New Job name: %s" % newName)
+        values['name'] = newName
+
+
+def postDialog(cmdjob, values):
+    '''
+    Prepare the output of the dialog.
+    Each rqitem is separated into its own job.
+    Store all history related info to a separate plist file
+        Project History
+        Email History
     
-    mail = valuesPkg.get('email', '')
-    # If there is no @ specified, supply @fellowshipchurch.com
-    if not ("@" in mail):
-        mail = mail + "@fellowshipchurch.com"
-    values['mailaddress'] = mail
-    values['callbacks'] = [{'triggers':'done-job-self', 'language':'mail'}]
-    # logging.info("Callbacks: " + str(values['callbacks']))
-    # If I delete the email here, the Qube GUI Submission dialog won't remember it for next time
-    # if valuesPkg.has_key('email'):     del valuesPkg['email'] # Delete the original option for cleanlinesss
+    Contents of each job:
+        Universal:
+            sourceProjectPath - original AE project file
+            renderProjectPath - AE Project to render from
+            user - set to email address contents before @
+            email - set to @fellowshipchurch.com if @ not specified.
+            notes - user specified notes for the job
+            chunkSize - chunk size for the agenda
+            quality - render quality for the project, based on a custom script
+            callbacks:
+                mail
 
-    # Use the email as the user in Qube
-    values['user'] = mail.split('@')[0]
+        RQ Item Specific:
+            rqIndex - rqIndex to render
+            cpus - based on output type (only 1 if mov)
+            outputFiles - list of outputFiles for that rqItem
+            agenda - frames split up based on chunkSize for the job
+            frameCount - total number of frames to render
+    '''
+    valuesPkg = values.setdefault('package', {})
 
-    #################################################################################################################
-    #
-    # Move the notes to the qube notes field
-    #
-    #################################################################################################################
-
-    notes = valuesPkg.get('notes', '')
-    values['notes'] = notes
-    # If I delete the notes here, the Qube GUI Submission dialog won't remember it for next time
-    # if valuesPkg.has_key('notes'):     del valuesPkg['notes'] # Delete the original option for cleanlinesss
-
-    #################################################################################################################
-    #
-    # Set up the Agenda to record percent progress.
-    # We'll use a percentage based of 1-100.
-    # I've tried setting this to frames, but the backend was
-    # having trouble keeping up with qb.reportwork() on fast renders
-    #
-    #################################################################################################################
-
-    values['agenda'] = qb.genframes("1-100")
+    pValue = 0
+    pIncrement = 20
+    pDlg = wx.ProgressDialog ( 'Submitting Project...', 'Saving prefs...', maximum = 100)
+    pDlg.SetSize((300, -1))
     
-    # Load the output paths
-    rqItem = ctrl.getRQIndex(valuesPkg['rqIndex'].split('.')[0])
-    valuesPkg['outputs'] = str(rqItem.getOutputPaths())
-    # Store the output paths in the first agenda item as well
-    values['agenda'][0]['resultpackage'] = { 'outputPaths': str(rqItem.getOutputPaths()) }
-    
-    # Store the paths to aerender for mac and pc
-    valuesPkg['aerenderwin'] = ctrl.getAERenderPath(sysOS='win32')
-    valuesPkg['aerendermac'] = ctrl.getAERenderPath(sysOS='darwin')
+    try:
+        '''
+        ----------------------------------------------------------------------------------------
+        First, save any history related items to the Elevate Plist
+        ----------------------------------------------------------------------------------------
+        '''
+        elevatePrefs = {}
 
+        elevatePrefs['projectHistory'] = valuesPkg['aeProject']['projectHistory']
+        emailList = set(cmdjob.options['email']['choices'])
+        emailList.add(valuesPkg['email'])
+        if len(emailList) > 10:
+            emailList = emailList[0:9]
+        elevatePrefs['emailHistory'] = list(emailList)
+        logging.debug("emailHistory: %s" % elevatePrefs['emailHistory'])
+        plistlib.writePlist(elevatePrefs, ELEVATEPREFSFILE)
+
+        '''
+        ----------------------------------------------------------------------------------------
+        Second, setup everything that will apply to all the rqItems
+        ----------------------------------------------------------------------------------------
+        '''
+        pValue += pIncrement
+        pDlg.Update(pValue, "Copying original project...")
+
+        '''
+        Create a copy of the original project to render from
+        '''
+        sourceProjPath = valuesPkg['aeProject']['projectPath']
+    
+        logging.debug("Making a copy of the project for rendering...")
+
+        #Create the time string to be placed on the end of the AE file
+        fileTimeStr = time.strftime("_%m%d%y_%H%M%S", time.gmtime())
+
+        #Copy the file to the project files folder and add the time on the end
+        sourceFolderPath, sourceProjName = os.path.split(sourceProjPath)
+        newFolderPath = os.path.join(sourceFolderPath, QUBESUBMISSIONSFOLDERNAME)
+        newProjName = os.path.splitext(sourceProjName)[0] + fileTimeStr + '.aep'
+        newProjPath = os.path.join(newFolderPath, newProjName)
+
+        try:
+            if not (os.path.exists(newFolderPath)):
+                os.mkdir(newFolderPath)
+        except:
+            raise("Unable to create the folder %s" % newFolderPath)
+
+        try:
+            shutil.copy2(sourceProjPath, newProjPath)
+            logging.info("Project file copied to %s" % newProjPath)
+        except:
+            raise("Unable to create a copy of the project under %s" % newProjPath)
+
+        valuesPkg['sourceProjectPath'] = str(sourceProjPath)
+        logging.debug("sourceProjectPath: %s" % valuesPkg['sourceProjectPath'])
+        valuesPkg['renderProjectPath'] = str(newProjPath)
+        logging.debug("renderProjectPath: %s" % valuesPkg['renderProjectPath'])
+
+        '''
+        Setup the email, user, notes, chunkSize, quality, and callbacks.
+        '''
+        pValue += pIncrement
+        pDlg.Update(pValue, "Setting up qube jobs...")
+    
+        if "@" not in valuesPkg['email']:
+            valuesPkg['email'] += "@fellowshipchurch.com"
+        values['mailaddress'] = valuesPkg['email']
+        values['user'] = valuesPkg['email'].split("@")[0]
+        values['notes'] = valuesPkg.get('notes', '').strip()
+        values['callbacks'] = [{'triggers':'done-job-self', 'language':'mail'}]    
+
+        '''
+        ----------------------------------------------------------------------------------------
+        Third, setup each rqItem's job
+        ----------------------------------------------------------------------------------------
+        '''
+    
+        '''
+        Setup the name, rqIndex, outputFiles, agenda and cpus.
+        '''
+        rqJobs = []
+        for rqItem in valuesPkg['aeProject']['rqItems']:
+            rqiValues = copy.deepcopy(values)
+            rqiPkg = rqiValues.setdefault('package', {})
+            rqiPkg['rqIndex'] = str(rqItem['index'])
+            rqiValues['name'] = "%s #%s" % (values['name'], rqItem['index'])
+            outPaths = []
+            for item in rqItem['outFilePaths']:
+                outPaths.append(str(item))
+            rqiPkg['outputFiles'] = ",".join(outPaths)
+            logging.debug("Output File Paths: %s" % rqItem['outFilePaths'])
+            agendaRange = str("%s-%s" % (rqItem['startTime'], rqItem['stopTime']))
+            logging.debug("Agenda Range: %s" % agendaRange)
+            rqiValues['agenda'] = qb.genchunks(str(10), agendaRange)
+            logging.debug("Agenda: %s" % rqiValues['agenda'])
+            rqiValues['agenda'][-1]['resultpackage'] = {'outputPaths':",".join(outPaths)}
+            rqiPkg['frameCount'] = int(rqItem['stopTime']) - int(rqItem['startTime'])
+
+            '''
+            Delete any unecessary attributes
+            '''
+            rqiPkg['aeProject'] = None
+            del rqiPkg['aeProject']
+            rqiPkg['notes'] = None
+            del rqiPkg['notes']
+        
+            rqJobs.append(rqiValues)
+    
+        logging.debug("rqJobs: %s" % rqJobs)
+
+        pValue += pIncrement
+        pDlg.Update(pValue, "Submitting Jobs to qube...")
+
+        submittedJobs = qb.submit(rqJobs)
+        logging.debug("Submitted Jobs: %s" % submittedJobs)
+
+        pValue += pIncrement
+        pDlg.Update(pValue, "Refreshing Qube...")
+
+        # Update the Qube GUI
+        request = qbCache.QbServerRequest(action="jobinfo", value=[i['id'] for i in submittedJobs], method='reload')
+        qbCache.QbServerRequestQueue.put(request)
+
+        pDlg.Update(100, "Complete!")
+    except Exception, e:
+        dlg = wx.MessageDialog(None, "Unable to submit jobs %s" % e, "Error", wx.OK | wx.ICON_ERROR)
+        dlg.ShowModal()
+
+    pDlg.Destroy()
+
+    # Cancel the rest of submission because we already submitted the jobs.
+    raise Exception, "All jobs submitted successfully."
 
 if __name__ == '__main__':
     import simplecmd
-    # import logging
-    # import sys
-    # import submit
     logging.basicConfig(level=logging.DEBUG)
     app = simplecmd.TestApp(redirect=False)
     cmds = create()
-    logging.info("Monkey")
     for cmd in cmds:
         simplecmd.createSubmitDialog(cmd)
     app.MainLoop()

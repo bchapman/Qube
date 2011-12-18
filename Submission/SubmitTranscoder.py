@@ -7,13 +7,12 @@ import os, sys
 
 from simplecmd import SimpleSubmit
 import logging
-import inspect
+
+sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+import Transcoder
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + '/SubmitTranscoder_Files/')
-import Transcoder
 
 def create():        
     cmdjob = SimpleSubmit('Submit Transcoder', hasRange=False, canChunk=False, help='Cluster based transcoder using blender.', postDialog=postDialog, category="2D")
