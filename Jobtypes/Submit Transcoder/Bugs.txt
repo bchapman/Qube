@@ -1,0 +1,12 @@
+Transcoder Bugs/Additions
+
+*Add ability to duplicate a job in the list
+*Add ability to create previews
+	qt_export seems too slow
+	could use imagemagick on the image sequence, then run it through blender?
+		might take too long.
+	
+*Add notes and email to Transcoder submission
+*Fill missing frames seems to be on no matter what.
+*Clean up logging
+*Add progress dialog for submission

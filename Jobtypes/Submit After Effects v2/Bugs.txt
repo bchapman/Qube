@@ -1,0 +1,18 @@
+AE Render v2 Bugs
+
+If there are missing footage files, the segment is still marked as complete.
+If we lose connection the aerender, things get messed up.
+If we lose connection to theGrill, the job hangs.
+Corrupt frame checker is working.
+
+Layer-based in a _Script_Globals comp found in the assets folder.
+Integrate into the folder setup script.
+Add time info to measure how long each action takes.
+Change the info messages for AE communication to debug messages
+
+*With checking for existing frames on submission, we might skip segments with corrupt frames.
+	Would it be better to check for this while setting up each segment?
+
+*Need to add the in-app submission for After Effects
+*Need to add support for submission via the droplet
+*Add support to cancel creating data file.
