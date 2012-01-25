@@ -73,7 +73,7 @@ f2 = SingleLevelFilter(logging.INFO, True)
 h2.addFilter(f2)
 rootLogger.addHandler(h2)
 
-rootLogger.setLevel(logging.DEBUG)
+# rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
@@ -199,7 +199,9 @@ def executeJob(control):
 
                     ''' Load the frame range from the work package '''
                     frameRangeString = agendaItem['package']['frameRange']
+                    logging.debug("FrameRangeString: %s" % frameRangeString)
                     frameRange = sequenceTools.loadFrameRange(frameRangeString)
+                    logging.debug("Loaded frameRange: %s" % frameRange)
 
                     ''' Check for Missing Frames '''
                     mySequence = control.getSequence()
@@ -233,25 +235,25 @@ def executeJob(control):
 
                             logger.debug('Loading current modification times...')
                             currentModTimes = mySequence.getModTimes(frameRange)
-                            logger.debug('Current modication times loaded.')
+                            logger.debug('Current modication times loaded. %s' % currentModTimes)
 
-                            logger.debug('Comparing modification times...')
+                            logger.debug('Comparing modification times for frame range %s...' % frameRange)
                             compare = mySequence.compare(modTimeDBFile, frameRange, currentModTimes=currentModTimes)
-                            logger.debug('Sequence Differences: ' + str(compare))
+                            logger.debug('Sequence Differences: %s' % str(compare))
 
                             differences = ''
                             if len(compare['Added']) > 0:
                                 frameNumbers = mySequence.getFramesFromFilenames(compare['Added'])
-                                differences += '\n\tAdded: ' + mySequence.convertListToRanges(frameNumbers)
+                                differences += '\n\tAdded: %s' % mySequence.convertListToRanges(frameNumbers)
                             if len(compare['Deleted']) > 0:
                                 frameNumbers = mySequence.getFramesFromFilenames(compare['Deleted'])
-                                differences += '\n\tDeleted: ' + mySequence.convertListToRanges(frameNumbers)
+                                differences += '\n\tDeleted: %s' % mySequence.convertListToRanges(frameNumbers)
                             if len(compare['Modified']) > 0:
                                 frameNumbers = mySequence.getFramesFromFilenames(compare['Modified'])
-                                differences += '\n\tModified: ' + mySequence.convertListToRanges(frameNumbers)    
+                                differences += '\n\tModified: %s' % mySequence.convertListToRanges(frameNumbers)    
                             
                             if differences:
-                                logger.info('Sequence Differences:' + differences)
+                                logger.info('Sequence Differences: %s' % differences)
                                 render = True
 
                         else:
@@ -268,7 +270,7 @@ def executeJob(control):
                             error = True
 
                     if render:
-                        logger.info('Transcoding Segment ' + agendaItem['name'])
+                        logger.info('Transcoding Segment %s' % agendaItem['name'])
                         cmd = control.getSegmentCMD(agendaItem)
                         returnCode = runCMD(cmd)
                         logger.info('Transcoding Segment Complete! (' + str(returnCode) + ')')

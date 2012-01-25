@@ -24,7 +24,8 @@ import sequenceTools
 ''' Setup the logger. '''
 logging.basicConfig()
 logger = logging.getLogger('InitSequence Script')
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 def main():
     logger.info("Blender Loaded, Processing...")

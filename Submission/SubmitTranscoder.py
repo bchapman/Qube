@@ -25,13 +25,21 @@ def create():
     cmdjob.properties['flagsstring'] = 'disable_windows_job_object'  # Needs to be disabled for Windows
     
     # Set some default job options
-    cmdjob.properties['hostorder'] = '+host.memory.avail'
-    cmdjob.properties['reservations'] = 'host.processors=2'
-    cmdjob.properties['retrysubjob'] = 3
-    cmdjob.properties['retrywork'] = 3
     cmdjob.package.setdefault('shell', '/bin/bash')
     
     return [cmdjob]
+
+def preDialog(cmdjob, values):
+    '''
+    Set required defaults.
+    '''
+    values['hostorder'] = '+host.memory.avail'
+    values['reservations'] = 'host.processors=2'
+    values['retrysubjob'] = 3
+    values['retrywork'] = 3
+    values['cpus'] = 50
+    values['priority'] = 100
+
 
 def postDialog(cmdjob, values):
 

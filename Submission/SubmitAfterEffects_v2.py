@@ -8,7 +8,7 @@
 
 DATAPREFIX = ".DATA."
 QUBESUBMISSIONSFOLDERNAME = "_Qube_Submissions"
-ELEVATEPREFSFILE = "~/Library/Preferences/qube/Elevate.plist"
+ELEVATEPREFSFILE = "~/Library/Preferences/qube/Elevate_AfterEffects.plist"
 
 import os, sys
 
@@ -46,11 +46,15 @@ import shutil
 import plistlib
 import qbCache
 import copy
+import re
+import traceback
 
-sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+# sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+sys.path.append("/Volumes/theGrill/.qube/Modules/")
 
 import AESubmitWidget
 import Transcoder
+import sequenceTools
 
 rootLogger = logging.getLogger()
 # rootLogger.setLevel(logging.DEBUG)
@@ -152,13 +156,16 @@ def preDialog(cmdjob, values):
     
     # Set required defaults, we don't want previous settings
     # to mess with these.
-    cmdjob.properties['retrysubjob'] = 3
-    cmdjob.properties['retrywork'] = 3
+    values['retrysubjob'] = 3
+    values['retrywork'] = 3
     values['priority'] = 100
     values['cpus'] = 10
-    cmdjob.properties['hostorder'] = '+host.memory.avail'
-    cmdjob.properties['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
+    values['hostorder'] = '+host.memory.avail'
+    values['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
     cmdjob.package.setdefault('shell', '/bin/bash')
+    values['cluster'] = "/Animation"
+	
+    aeProjPkg = {}
 	
     try:
         elevatePrefs = plistlib.readPlist(ELEVATEPREFSFILE)
@@ -172,7 +179,7 @@ def preDialog(cmdjob, values):
         
         projectHistory = list(projectHistory)
         projectHistory.reverse()
-        valuesPkg['aeProject'] = {'projectHistory':projectHistory}
+        aeProjPkg['projectHistory'] = projectHistory
         
         valuesPkg['notes'] = values['notes']
         
@@ -180,6 +187,15 @@ def preDialog(cmdjob, values):
         
     except Exception, e:
         logging.warning("Unable to load Elevate Prefs. %s" % e)
+
+    if valuesPkg.has_key('setProjectPath'):
+        logging.debug("Found setProjectPath: %s" % valuesPkg['setProjectPath'])
+        aeProjPkg['setProjectPath'] = valuesPkg['setProjectPath']
+        valuesPkg['gui'] = False
+    else:
+        valuesPkg['gui'] = True
+        logging.debug("Did not find setProjectPath.")
+    valuesPkg['aeProject'] = aeProjPkg
 
 
 
@@ -222,8 +238,9 @@ def postDialog(cmdjob, values):
     valuesPkg = values.setdefault('package', {})
 
     pValue = 0
-    pIncrement = 20
-    pDlg = wx.ProgressDialog ( 'Submitting Project...', 'Saving prefs...', maximum = 100)
+    pIncrement = 10
+    maxProgress = len(valuesPkg['aeProject']['rqItems']) * pIncrement * 2 + 50
+    pDlg = wx.ProgressDialog ( 'Submitting Project...', 'Saving prefs...', maximum = maxProgress)
     pDlg.SetSize((300, -1))
     
     try:
@@ -307,24 +324,72 @@ def postDialog(cmdjob, values):
         Setup the name, rqIndex, outputFiles, agenda and cpus.
         '''
         rqJobs = []
+        seqPattern = re.compile("\[#+\]")        
         for rqItem in valuesPkg['aeProject']['rqItems']:
+
+            outPaths = []
+            for item in rqItem['outFilePaths']:
+                outPaths.append(str(item))
+
+            sequence = True
+            if ".mov" in ",".join(outPaths):
+                sequence = False
+
+            pValue += pIncrement
+            pDlg.Update(pValue, "Setting up RQ Item: %s..." % rqItem['comp'])
+            
             rqiValues = copy.deepcopy(values)
             rqiPkg = rqiValues.setdefault('package', {})
             rqiPkg['rqIndex'] = str(rqItem['index'])
             rqiValues['name'] = "%s #%s" % (values['name'], rqItem['index'])
-            outPaths = []
-            for item in rqItem['outFilePaths']:
-                outPaths.append(str(item))
-            if ".mov" in ",".join(outPaths):
-                rqiValues['cpus'] = 1
             rqiPkg['outputFiles'] = ",".join(outPaths)
             logging.debug("Output File Paths: %s" % rqItem['outFilePaths'])
-            agendaRange = str("%s-%s" % (rqItem['startTime'], rqItem['stopTime']))
+            agendaRange = str("%s-%s" % (rqItem['startTime'], int(rqItem['stopTime'])-1))
             logging.debug("Agenda Range: %s" % agendaRange)
-            rqiValues['agenda'] = qb.genchunks(str(10), agendaRange)
+            chunkSize = 15
+            if not sequence:
+                rqiValues['cpus'] = 1
+                chunkSize = 1000000
+            rqiValues['agenda'] = qb.genchunks(chunkSize, agendaRange)
             logging.debug("Agenda: %s" % rqiValues['agenda'])
             rqiValues['agenda'][-1]['resultpackage'] = {'outputPaths':",".join(outPaths)}
-            rqiPkg['frameCount'] = int(rqItem['stopTime']) - int(rqItem['startTime'])
+            rqiPkg['frameCount'] = int(rqItem['stopTime']) - int(rqItem['startTime']) - 1
+
+            '''
+            If it's a sequence, mark all existing frames as complete.
+            '''
+            if sequence:
+                
+                for path in outPaths:
+                    pValue += pIncrement
+                    pDlg.Update(pValue, "Finding missing frames for %s..." % os.path.basename(path))
+                
+                    seqPad = len(seqPattern.findall(path)[-1]) - 2
+                    initFrame = sequenceTools.padFrame(rqItem['startTime'], seqPad)
+                    initPath = seqPattern.sub(initFrame, path)
+                    logging.debug("initPath: %s" % initPath)
+                    seq = sequenceTools.Sequence(initPath, frameRange=agendaRange)
+                    missingFrames = seq.getMissingFrames()
+                    logging.debug("Missing Frames: %s" % missingFrames)
+
+                    for task in rqiValues['agenda']:
+                        logging.debug("Name: %s" % task['name'])
+                        if "-" in task['name']:
+                            tStart, tEnd = task['name'].split("-")
+                        else:
+                            tStart = tEnd = task['name']
+                        tRange = range(int(tStart), int(tEnd) + 1)
+                        found = False
+                        for frame in tRange:
+                            if frame in missingFrames:
+                                found = True
+                        if not found:
+                            task['status'] = 'complete'
+                            if task.has_key("resultPackage"):
+                                task['resultpackage']['progress'] = '1' # 100% chunk progress
+                            else:
+                                task['resultpackage'] = {'progress':'1'}
+                            logging.debug("Marking task as complete: %s" % task)
 
             '''
             Delete any unecessary attributes
@@ -333,6 +398,8 @@ def postDialog(cmdjob, values):
             del rqiPkg['aeProject']
             rqiPkg['notes'] = None
             del rqiPkg['notes']
+            rqiPkg['gui'] = None
+            del rqiPkg['gui']
         
             rqJobs.append(rqiValues)
     
@@ -351,15 +418,22 @@ def postDialog(cmdjob, values):
         request = qbCache.QbServerRequest(action="jobinfo", value=[i['id'] for i in submittedJobs], method='reload')
         qbCache.QbServerRequestQueue.put(request)
 
-        pDlg.Update(100, "Complete!")
+        pDlg.Update(maxProgress, "Complete!")
     except Exception, e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
         dlg = wx.MessageDialog(None, "Unable to submit jobs %s" % e, "Error", wx.OK | wx.ICON_ERROR)
+        logging.error(repr(traceback.format_exception(exc_type, exc_value,exc_traceback)))
         dlg.ShowModal()
 
     pDlg.Destroy()
 
     # Cancel the rest of submission because we already submitted the jobs.
-    raise Exception, "All jobs submitted successfully."
+    if valuesPkg['gui']:
+        # Raise an exception if submittion via gui
+        raise Exception, "All jobs submitted successfully."
+    else:
+        # If submitting elsewhere, exit
+        sys.exit(0)
 
 if __name__ == '__main__':
     import simplecmd

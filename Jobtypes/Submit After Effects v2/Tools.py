@@ -18,9 +18,9 @@ import sequenceTools
 '''
 Setup this files logging settings
 '''
-logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
-logger.setLevel(logging.DEBUG)
+# logging = logging.getlogging(__name__)
+# logging.setLevel(logging.INFO)
+# logging.setLevel(logging.DEBUG)
 
 class Tools:
     def __init__(self, agendaItem, outputs, logFilePath, startFrame, endFrame):
@@ -33,7 +33,7 @@ class Tools:
         self.duration = int(endFrame) - int(startFrame)
 
         self.logFilePath = logFilePath
-        logger.info("LogFilePath: " + str(self.logFilePath))
+        logging.debug("LogFilePath: " + str(self.logFilePath))
         self.readLogFile = open(self.logFilePath,'r')
         # Find the size of the file and move to the end
         st_results = os.stat(self.logFilePath)
@@ -48,6 +48,7 @@ class Tools:
 
         self.progressPattern = re.compile('(?<=^PROGRESS:  )(?:\(Skipping \d+\)|\d+?|\d;.*?) \((.*?)\).*$')
         self.completePattern = re.compile('(Total Time Elapsed)')
+        self.closedPattern = re.compile('(Daemon closed)')
 
         self.currFrame = None
         self.alreadyComplete = False
@@ -61,10 +62,10 @@ class Tools:
                 try:
                     os.remove(output)
                 except:
-                    logger.warning("Unable to delete existing output. " + str(output))
+                    logging.warning("Unable to delete existing output. " + str(output))
 
     def monitorRender(self, timeout=1800):
-        logger.debug("Monitoring Render...")
+        logging.debug("Monitoring Render...")
 
         mainIdleTime = time.time()
         frameIdleTime = time.time()
@@ -87,12 +88,12 @@ class Tools:
                 self.currFrame = self.reSearch(self.progressPattern, line)
                 if self.currFrame != "":
                     self.currFrame = str(int(self.startFrame) + int(self.currFrame) - 1)
-                    # logger.debug("Last Completed Frame: " + currFrame)
+                    # logging.debug("Last Completed Frame: " + currFrame)
                     if not self.isOutputMovie:
                         self.verifyCurrFrame()
                     if not self.alreadyComplete:
                         if time.time() - frameIdleTime > self.chunkProgressDelay:
-                            logger.debug("Chunk Progress: " + str(self.getChunkProgress()))
+                            logging.debug("Chunk Progress: " + str(self.getChunkProgress()))
                             resultPackage = {'progress':str(self.getChunkProgress())}
                             self.agendaItem['resultpackage'] = resultPackage
                             qb.reportwork(self.agendaItem)
@@ -100,6 +101,10 @@ class Tools:
 
                 complete = self.reSearch(self.completePattern, line)
                 if complete:
+                    break
+                
+                closed = self.reSearch(self.closedPattern, line)
+                if closed:
                     break
                 
 
@@ -112,11 +117,11 @@ class Tools:
     def getChunkProgress(self):
         myFrame = float(int(self.currFrame) - int(self.startFrame))
         myDuration = float(self.duration + 1)
-        logger.info("Current Progress: " + str(round(myFrame / myDuration * 100)))
+        logging.info("Current Progress: " + str(round(myFrame / myDuration * 100)))
         return myFrame / myDuration
 
     def verifyCurrFrame(self):
-        # logger.debug("Verifying frame " + str(frame))
+        # logging.debug("Verifying frame " + str(frame))
         if not self.mySequences:
             self.setupSequences()
         for sequence in self.mySequences:
@@ -127,27 +132,37 @@ class Tools:
         for frame in self.corruptFrames:
             for sequence in self.mySequences:
                 framePath = sequence.getFrameFilename(frame)
-                logger.debug("Deleting corrupt frame: " + os.path.basename(framePath))
+                logging.debug("Deleting corrupt frame: " + os.path.basename(framePath))
                 try:
                     os.remove(framePath)
                 except:
-                    logger.error("Unable to delete corrupt frame: " + os.path.basename(framePath))
+                    logging.error("Unable to delete corrupt frame: " + os.path.basename(framePath))
 
     def setupSequences(self):
         self.mySequences = []
         for outputPath in self.outputs:
-            logger.info("Output Path: " + str(outputPath))
+            logging.debug("Output Path: " + str(outputPath))
             firstFrame = outputPath.replace("[", "").replace("]", "")
             firstFrame = firstFrame.replace("#", "0")
             self.mySequences.append(sequenceTools.Sequence(firstFrame))
 
+    def checkIfSequence(self):
+        result = True
+        for outputPath in self.outputs:
+            if ".mov" in outputPath:
+                result = False
+        return result
+
     def getOutputPaths(self, startFrame, endFrame):
         outputPaths = []
-        if not self.mySequences:
-            self.setupSequences()
-        for sequence in self.mySequences:
-            paths = sequence.getFrameFilenames(range(int(startFrame), int(endFrame)+1), includeFolder=True)
-            outputPaths.extend(paths)
+        if self.checkIfSequence():
+            if not self.mySequences:
+                self.setupSequences()
+            for sequence in self.mySequences:
+                paths = sequence.getFrameFilenames(range(int(startFrame), int(endFrame)+1), includeFolder=True)
+                outputPaths.extend(paths)
+        else:
+            outputPaths.extend(self.outputs)
         return outputPaths
 
     def reSearch(self, pattern, data):

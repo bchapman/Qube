@@ -1,4 +1,4 @@
 #!/bin/bash
 echo "Installing After Effects Jobtype"
-ditto -V Scripts_To_Install/ /Applications/Adobe\ After\ Effects\ CS5.5/Scripts/Startup/
+ditto -V Scripts_To_Install/ /Applications/Adobe\ After\ Effects\ CS5/Scripts/Startup/
 echo "After Effects Jobtype Installed!"

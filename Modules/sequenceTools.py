@@ -52,9 +52,26 @@ def loadFrameRange(frameRange):
     if type(frameRange) is str:
         result = list(set(sum(((list(range(*[int(j) + k for k,j in enumerate(i.split('-'))]))
             if '-' in i else [int(i)]) for i in frameRange.replace(' ','').split(',')), [])))
+        result = sorted(result)
+        logging.debug("loadFrameRange:result1: %s" % result)
         return result
     else:
-        return frameRange
+        result = sorted(frameRange)
+        logging.debug("loadFrameRange:result2: %s" % result)
+        return result
+
+def padFrame(self, frame, pad=5):
+    '''
+    Pad the input value
+    Ex: 1 with a pad of 5 -> 00001
+    '''
+
+    # If no padding is supplied, use the sequence settings
+    if not pad:
+        pad = self.padding
+
+    frame = int(round(float(frame)))
+    return '0' * (pad - len(str(frame))) + str(frame)
 
 class Sequence:
     def __init__(self, fileName, frameRange='ALL'):
@@ -138,13 +155,13 @@ class Sequence:
         if PIL:
             for frame in framesToVerify:
                 filePath = self.getFrameFilename(frame)
-                # logger.debug("Opening image: " + str(filePath))
+                logger.debug("Opening image: " + str(filePath))
                 try:
                     img = Image.open(filePath)
                     img.verify()
-                    # logger.debug("Image verified: " + filePath)
+                    logger.debug("Image verified: " + filePath)
                 except:
-                    logger.debug("Corrupt image path: " + filePath)
+                    logger.debug("Corrupt image path: %s." % (filePath))
                     corruptFrames.append(frame)
             if corruptFrames:
                 logger.warning("Corrupt Frame Numbers: " + self.convertListToRanges(corruptFrames))
@@ -200,16 +217,14 @@ class Sequence:
 
     def getFrames(self, frameRange='ALL', excludeMissing=False, onlyMissing=False, fillMissing=False):
         '''
-        Generate a list of all possible frame numbers in the sequence.
-        This is returned either as frame filenames or frame numbers.
         Get a list of frames for the sequence returned in a list.
-        If a frame range is supplied, only those frames are returned.
-        Check missing will check for missing frames.
+        If a frame range is supplied, only frames in that range are returned.
         Fill missing frames will repeat the latest frame if a frame is missing.
         '''
         
-        myFrameRange = self.loadFrameRange(frameRange)
-        result = range(myFrameRange[0], myFrameRange[-1]+1)
+        logging.debug("getFrames:frameRange: %s" % frameRange)
+        result = self.loadFrameRange(frameRange)
+        logging.debug("getFrames:result1: %s" % result)
         
         if not excludeMissing and not fillMissing and not onlyMissing:
             return result
@@ -456,13 +471,19 @@ class Sequence:
         '''
 
         result = {}
+        logging.debug("getModTimes:frameRange: %s" % frameRange)
         frames = sorted(self.getFrames(frameRange))
+        logging.debug("getModTimes:getFrames: %s" % frames)
 
         for frame in frames:
             frameFilename = self.getFrameFilename(frame)
+            logging.debug("getModTimes:frameFilename: %s" % frameFilename)
             modTime = os.stat(frameFilename).st_mtime
+            logging.debug("getModTimes:modTime: %s" % modTime)
             frameName = os.path.basename(frameFilename)
+            logging.debug("getModTimes:frameName: %s" % frameName)
             result[frameName] = modTime
+            logging.debug("getModTimes:result: %s" % result[frameName])
         return result
 
     def loadModTimesFromDB(self, filename, frameRange='ALL'):

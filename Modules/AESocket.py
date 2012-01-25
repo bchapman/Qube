@@ -15,7 +15,7 @@ terminateConnection()
     FUTURE: Ensure any related aerendercore processes
     are shutdown.
 '''
-AERENDER = "\"/Applications/Adobe After Effects CS5.5/aerender\""
+AERENDER = "\"/Applications/Adobe After Effects CS5/aerender\""
 
 import os
 import socket
@@ -39,8 +39,8 @@ class SingleLevelFilter(logging.Filter):
 Setup this files logging settings
 '''
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.INFO)
 
 class AESocketError(Exception):
     def __init__(self, value):
@@ -132,7 +132,7 @@ class AESocket:
                 logger.debug("Unable to connect on port %s\n%s" % (str(openPort), str(e)))
             openPort += 1
     
-        logger.info("Found open port: " + str(openPort))
+        logger.debug("Found open port: " + str(openPort))
 
         return openPort
 
@@ -156,7 +156,7 @@ class AESocket:
             return script
 
 
-    def _waitForAE(self, timeout=180):
+    def _waitForAE(self, timeout=600):
         '''
         Wait for AE to send response.
         '''
@@ -180,14 +180,14 @@ class AESocket:
             
         logger.debug("Total wait time: %s" % str(time.time() - startTime))
 
-    def _sendScript(self, script, name, timeout=60):
+    def _sendScript(self, script, name, timeout=600):
         '''
         Send a script to the AERender daemon.
         '''
         script = self._prepScript(script)
         if self._checkConnectionActive():
             self._waitForAE(timeout)
-            logger.info("Sending script: %s" % name)
+            logger.debug("Sending script: %s" % name)
             logger.debug("Script Contents: %s" % script)
             self.socket.send("%s\n" % script)
         else:
@@ -207,7 +207,7 @@ class AESocket:
 
         if self.aerender:
             if not self.aerender.poll():
-                logging.info("Connection Active.")
+                logging.debug("Connection Active.")
                 result = True
 
         return result
@@ -259,7 +259,7 @@ class AESocket:
         Launch the aerender daemon.
         Uses the custom aerender commandLineRenderer with the -daemon flag.
         '''
-        cmd = AERENDER + " -daemon " + str(self.port)
+        cmd = AERENDER + " -v ERRORS_AND_PROGRESS -daemon " + str(self.port)
         logger.debug("AERender CMD: %s" % cmd)
         
         '''

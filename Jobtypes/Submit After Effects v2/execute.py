@@ -15,13 +15,13 @@ import traceback
 sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
 
-sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
+sys.path.append("/Volumes/theGrill/.qube/Modules/")
 import AESocket
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
-import AEScripts
 import Tools
 
+RENDERTOOLS = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) + "/Scripts_Remote/RenderTools.jsx"
 
 class SingleLevelFilter(logging.Filter):
     def __init__(self, passlevel, reject):
@@ -76,9 +76,19 @@ def executeJob(job):
     try:
         aeSocket = AESocket.AESocket()
         aeSocket.launchAERender()
-    
-        script = AEScripts.getOpenProjectScript(pkg['renderProjectPath'])
-        aeSocket.runScript(script[1], script[0])
+
+        # Load the render tools
+        script = "$.evalFile(new File(\"%s\"));\"Render Tools Loaded\"" % os.path.abspath(RENDERTOOLS)
+        logging.debug("Render Tools Script: %s" % script)
+        aeSocket.runScript(script, "Render Tools Setup")
+
+        script = "RenderTools.openProject(\"%s\");" % pkg['renderProjectPath']
+        result = aeSocket.runScript(script, "Open Project")
+        logging.debug("Open Project Result: %s" % script)
+
+        # script = "RenderTools.setRenderQuality(\"%s\");" % pkg['quality']
+        # result = aeSocket.runScript(script, "Set Render Quality")
+        # logging.debug("Set Render Quality Result: %s" % script)
 
         while 1:
             agendaItem = qb.requestwork()
@@ -95,7 +105,7 @@ def executeJob(job):
                 blocked -- perhaps item is part of a dependency
                 '''
                 jobstate = agendaItem['status']
-                logger.info('Job %s state is now %s' % (job['id'], jobstate))
+                logger.debug('Job %s state is now %s' % (job['id'], jobstate))
                 break
 
             '''
@@ -107,14 +117,16 @@ def executeJob(job):
                 else:
                     startFrame = endFrame = agendaItem['name']
                 logger.debug("startFrame: " + str(startFrame) + " endFrame: " + str(endFrame))
-                script = AEScripts.getSetupSegmentScript(startFrame, endFrame, pkg['rqIndex'])
-                outputString = aeSocket.runScript(script[1], script[0])
-                outputs = outputString.replace("\n", "").split(',')
+                
+                script = "RenderTools.setupSegment(%s, %s, %s);" % (startFrame, endFrame, pkg['rqIndex'])
+                logging.debug("Setup Segment Script: %s" % script)
+                aeSocket.runScript(script, "Setup Segment")
+                outputs = pkg['outputFiles'].split(",")
                 logger.debug("Outputs: " + str(outputs))
 
                 renderTools = Tools.Tools(agendaItem, outputs, aeSocket.logFilePath, startFrame, endFrame)
-                script = AEScripts.getRenderAllScript()
-                aeSocket._sendScript(script[1], script[0], timeout=None) # Disable timeout here
+                script = "RenderTools.renderQueued();"
+                aeSocket._sendScript(script, "Render Queued", timeout=None) # Disable timeout here
                 monitorResult = renderTools.monitorRender(timeout=1800) # Max time for frame is 30min
                 socketResult = aeSocket.getResponse()
                 renderTools.alreadyComplete = True
