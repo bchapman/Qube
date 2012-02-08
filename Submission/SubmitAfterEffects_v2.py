@@ -139,6 +139,7 @@ def create():
     # Advanced
     cmdjob.add_optionGroup('Advanced')
     cmdjob.add_option( 'quality', 'choice', label="Quality", required=True, editable=True, choices=["High", "Medium", "Low"])
+    cmdjob.add_option( 'complexity', 'choice', label="Complexity", required=True, editable=True, choices=["Complex", "Normal", "Simple"], default="Normal")
     # cmdjob.add_option( 'scripts', 'choice', label="Scripts", required=False, editable=True, widget=aeScriptsWidget)
     # cmdjob.add_option( 'multProcs', 'bool', 'Use Multiple Processors', label='Multiple Processors', required=False, default=False)
     # cmdjob.add_option( 'chunkSize', 'int', 'Chunk size for agenda.', label='Frames Per Task', default=10, required=True)
