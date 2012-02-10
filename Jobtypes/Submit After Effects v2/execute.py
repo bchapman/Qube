@@ -37,32 +37,32 @@ class SingleLevelFilter(logging.Filter):
 '''
 Set the root logging settings
 '''
-# rootLogger = logging.getLogger()            
-# 
-# h1 = logging.StreamHandler(sys.stdout)
-# h1_formatter = logging.Formatter(
-#         "%(levelname)s: %(message)s")
-# h1.setFormatter(h1_formatter)
-# f1 = SingleLevelFilter(logging.INFO, False)
-# h1.addFilter(f1)
-# rootLogger.addHandler(h1)
-# 
-# h2 = logging.StreamHandler(sys.stderr)
-# h2_formatter = logging.Formatter(
-#         "%(levelname)s:%(name)s:%(funcName)s: %(message)s")
-# h2.setFormatter(h2_formatter)
-# f2 = SingleLevelFilter(logging.INFO, True)
-# h2.addFilter(f2)
-# rootLogger.addHandler(h2)
+rootLogger = logging.getLogger()            
+
+h1 = logging.StreamHandler(sys.stdout)
+h1_formatter = logging.Formatter(
+        "%(levelname)s: %(message)s")
+h1.setFormatter(h1_formatter)
+f1 = SingleLevelFilter(logging.INFO, False)
+h1.addFilter(f1)
+rootLogger.addHandler(h1)
+
+h2 = logging.StreamHandler(sys.stderr)
+h2_formatter = logging.Formatter(
+        "%(levelname)s:%(name)s:%(funcName)s: %(message)s")
+h2.setFormatter(h2_formatter)
+f2 = SingleLevelFilter(logging.INFO, True)
+h2.addFilter(f2)
+rootLogger.addHandler(h2)
 
 # rootLogger.setLevel(logging.INFO)
-# rootLogger.setLevel(logging.DEBUG)
+rootLogger.setLevel(logging.DEBUG)
 
 '''
 Setup this files logging settings
 '''
-# logger = logging.getLogger(__name__)
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+# logger = logging.getLogger()
 
 def executeJob(job):
     '''
@@ -75,8 +75,37 @@ def executeJob(job):
     # logger.debug("Qube Job: " + str(job))
 
     try:
+        # Setup multiprocessing
+        multProcs = True
+        ramPerCPU = 2
+        # Get the host ram in Gigabytes
+        hostName = os.uname()[1]
+        hostRAM = int(qb.hostinfo(name=hostName)[0]["resources"].split(",")[0].split("/")[1])/1024
+        logging.info("Host RAM: %d" % hostRAM)
+        if (hostRAM > 8):
+            logging.info("passed first test")
+            if (pkg.has_key("complexity")):
+                complexValue = pkg["complexity"].lower()
+                if complexValue == "normal":
+                    multProcs = True
+                    logging.info("normal");
+                elif complexValue == "complex":
+                    multProcs = True
+                    ramPerCPU = 3
+                    logging.info("complex");
+                elif complexValue == "simple":
+                    logging.info("simple");
+                    pass
+        else:
+            multProcs = False
+        script = "RenderTools.setMultiprocessing(\"%s\",%d);" % (multProcs, ramPerCPU)
+        if (multProcs):
+            logging.info("Multiprocessing: %s - %dGB per CPU" % (multProcs, ramPerCPU))
+        else:
+            logging.info("Multiprocessing: %s" % multProcs)
+
         aeSocket = AESocket.AESocket()
-        aeSocket.launchAERender()
+        aeSocket.launchAERender(multProcs)
 
         # Load the render tools
         script = "$.evalFile(new File(\"%s\"));\"Render Tools Loaded\"" % os.path.abspath(RENDERTOOLS)
@@ -86,7 +115,11 @@ def executeJob(job):
         script = "RenderTools.openProject(\"%s\");" % pkg['renderProjectPath']
         result = aeSocket.runScript(script, "Open Project")
         logging.debug("Open Project Result: %s" % script)
-
+        
+        # Finalize multiprocessing setting
+        # result = aeSocket.runScript(script, "Set Multiprocessing")
+        # logging.debug("Set Multiprocessing Result: %s" % result)
+         
         # script = "RenderTools.setRenderQuality(\"%s\");" % pkg['quality']
         # result = aeSocket.runScript(script, "Set Render Quality")
         # logging.debug("Set Render Quality Result: %s" % script)

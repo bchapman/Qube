@@ -342,7 +342,7 @@ def postDialog(cmdjob, values):
             rqiValues = copy.deepcopy(values)
             rqiPkg = rqiValues.setdefault('package', {})
             rqiPkg['rqIndex'] = str(rqItem['index'])
-            rqiValues['name'] = "%s #%s" % (values['name'], rqItem['index'])
+            rqiValues['name'] = "%s %s-%s" % (values['name'], rqItem['index'], rqItem['comp'])
             rqiPkg['outputFiles'] = ",".join(outPaths)
             logging.debug("Output File Paths: %s" % rqItem['outFilePaths'])
             agendaRange = str("%s-%s" % (rqItem['startTime'], int(rqItem['stopTime'])-1))

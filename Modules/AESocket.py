@@ -15,7 +15,7 @@ terminateConnection()
     FUTURE: Ensure any related aerendercore processes
     are shutdown.
 '''
-AERENDER = "\"/Applications/Adobe After Effects CS5/aerender\""
+AERENDER = "\"/Applications/Adobe After Effects CS5.5/aerender\""
 
 import os
 import socket
@@ -254,12 +254,14 @@ class AESocket:
         
             return response
 
-    def launchAERender(self):
+    def launchAERender(self, multProcs=False):
         '''
         Launch the aerender daemon.
         Uses the custom aerender commandLineRenderer with the -daemon flag.
         '''
         cmd = AERENDER + " -v ERRORS_AND_PROGRESS -daemon " + str(self.port)
+        if (multProcs):
+            cmd += " -mp"
         logger.debug("AERender CMD: %s" % cmd)
         
         '''
