@@ -79,6 +79,16 @@ def create():
         else:
             cmdJob.options['--nukeX']['editable'] = False
             values.setdefault('package', {})['--nukeX'] = False
+            
+        values['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
+        values['cluster'] = "/Video"
+        cmdjob.package.setdefault('shell', '/bin/bash')
+        values['hostorder'] = '+host.memory.avail'
+        values['cpus'] = 10
+        values['retrysubjob'] = 3
+        values['retrywork'] = 3
+        values['priority'] = 100
+        values['dependency'] = ''
 
     def postDialog(cmdjob, values):
         

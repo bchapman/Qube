@@ -165,6 +165,7 @@ def preDialog(cmdjob, values):
     values['reservations'] = 'host.processors=1+' # Reserve all cpus for the one job
     cmdjob.package.setdefault('shell', '/bin/bash')
     values['cluster'] = "/Animation"
+    values['group'] = "AfterEffects"
 	
     aeProjPkg = {}
 	
@@ -347,7 +348,7 @@ def postDialog(cmdjob, values):
             logging.debug("Output File Paths: %s" % rqItem['outFilePaths'])
             agendaRange = str("%s-%s" % (rqItem['startTime'], int(rqItem['stopTime'])-1))
             logging.debug("Agenda Range: %s" % agendaRange)
-            chunkSize = 15
+            chunkSize = 30
             if not sequence:
                 rqiValues['cpus'] = 1
                 chunkSize = 1000000

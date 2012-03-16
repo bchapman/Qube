@@ -11,6 +11,7 @@ import sys
 import inspect
 import logging
 import traceback
+import re
 
 sys.path.append('/Applications/pfx/qube/api/python/')
 import qb
@@ -64,6 +65,33 @@ Setup this files logging settings
 logger = logging.getLogger(__name__)
 # logger = logging.getLogger()
 
+def getAvailableRAM():
+    
+    # Get AE's reserved RAM settings
+    dlmSettingsPath = "~/Library/Preferences/Adobe/dynamiclinkmanager/2.0/memorybalancercs55v2.xml"
+    dlmSettingsPath = os.path.expanduser(dlmSettingsPath)
+    if os.path.exists(dlmSettingsPath):
+        logging.info("dlmSettings Exists")
+        dlmSettingsFile = open(dlmSettingsPath, 'r')
+        dlmSettings = dlmSettingsFile.read()
+        reservedRAM = int(re.findall("(memorytouseforotherapplications)</key>\n\D+'64'>(\d+)", dlmSettings)[0][1]) / 1073741824
+        logging.info("AE Reserved RAM: %dGB" % reservedRAM)
+    
+        # Get the total host RAM
+        hostName = os.uname()[1]
+        logging.debug("Host Name: %s" % hostName)
+        hostResources = qb.hostinfo(name=hostName)[0]["resources"]
+        logging.debug("Host resources: %s" % hostResources)
+        hostRAM = int(re.findall("(host.memory=\d+/)(\d+)", hostResources)[0][1])/1024
+        logging.info("Host RAM: %dGB" % hostRAM)
+
+        availRAM = hostRAM - reservedRAM
+        logging.info("Available RAM: %dGB" % availRAM)
+        
+        return availRAM
+    else:
+        return 0
+
 def executeJob(job):
     '''
     Execute the transcoding process.
@@ -78,24 +106,17 @@ def executeJob(job):
         # Setup multiprocessing
         multProcs = True
         ramPerCPU = 2
-        # Get the host ram in Gigabytes
-        hostName = os.uname()[1]
-        hostRAM = int(qb.hostinfo(name=hostName)[0]["resources"].split(",")[0].split("/")[1])/1024
-        logging.info("Host RAM: %d" % hostRAM)
-        if (hostRAM > 8):
-            logging.info("passed first test")
+        if (getAvailableRAM() > 7):
             if (pkg.has_key("complexity")):
+                logging.info("complexity found")
                 complexValue = pkg["complexity"].lower()
                 if complexValue == "normal":
-                    multProcs = True
-                    logging.info("normal");
+                    pass
                 elif complexValue == "complex":
                     multProcs = True
                     ramPerCPU = 3
-                    logging.info("complex");
                 elif complexValue == "simple":
-                    logging.info("simple");
-                    pass
+                    multProcs = False
         else:
             multProcs = False
         script = "RenderTools.setMultiprocessing(\"%s\",%d);" % (multProcs, ramPerCPU)
@@ -170,11 +191,16 @@ def executeJob(job):
                 if not monitorResult:
                     returnCode = 2
 
+                outputPaths = renderTools.getOutputPaths(startFrame, endFrame)
+                for path in outputPaths:
+                    if not os.path.exists(path):
+                        logging.error("Frame doesn't exist: %s" % path)
+                        returnCode = 3
+
                 '''
                 Update the work status based on the return code.
                 '''
-                if returnCode == 0:
-                    outputPaths = renderTools.getOutputPaths(startFrame, endFrame)
+                if returnCode == 0:    
                     agendaItem['resultpackage'] = {'outputPaths': ','.join(outputPaths),'progress':'1'}
                     agendaItem['status'] = 'complete'
                 else:
