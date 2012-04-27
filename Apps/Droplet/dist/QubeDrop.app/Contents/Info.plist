@@ -22,7 +22,7 @@
 	<key>CFBundleExecutable</key>
 	<string>QubeDrop</string>
 	<key>CFBundleIconFile</key>
-	<string>PythonApplet.icns</string>
+	<string>Qube_Drop_Icon.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>org.pythonmac.unspecified.QubeDrop</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -78,7 +78,7 @@
 	<key>PythonInfoDict</key>
 	<dict>
 		<key>PythonExecutable</key>
-		<string>/usr/bin/python</string>
+		<string>/System/Library/Frameworks/Python.framework/Versions/2.7/Resources/Python.app/Contents/MacOS/Python</string>
 		<key>PythonLongVersion</key>
 		<string>2.7.1 (r271:86832, Jun 16 2011, 16:59:05) 
 [GCC 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2335.15.00)]</string>
