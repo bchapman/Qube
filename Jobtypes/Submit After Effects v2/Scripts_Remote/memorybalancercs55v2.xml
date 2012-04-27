@@ -1,0 +1,44 @@
+<?xml version='1.0'?>
+<prop.map version='4'>
+<prop.list>
+<prop.pair>
+<key>defaultReserved</key>
+<array>
+<array.type><int type='unsigned' size='64'/></array.type>
+<int type='unsigned' size='64'>805306368</int>
+<int type='unsigned' size='64'>1610612736</int>
+<int type='unsigned' size='64'>2147483648</int>
+<int type='unsigned' size='64'>3221225472</int>
+<int type='unsigned' size='64'>5368709120</int>
+<int type='unsigned' size='64'>6442450944</int>
+</array>
+</prop.pair>
+<prop.pair>
+<key>memorytouseforotherapplications</key>
+<int type='unsigned' size='64'>17179869184</int>
+</prop.pair>
+<prop.pair>
+<key>minReserved</key>
+<array>
+<array.type><int type='unsigned' size='64'/></array.type>
+<int type='unsigned' size='64'>805306368</int>
+<int type='unsigned' size='64'>1610612736</int>
+<int type='unsigned' size='64'>1610612736</int>
+<int type='unsigned' size='64'>1610612736</int>
+<int type='unsigned' size='64'>3221225472</int>
+<int type='unsigned' size='64'>3221225472</int>
+</array>
+</prop.pair>
+<prop.pair>
+<key>rangeTop</key>
+<array>
+<array.type><int type='unsigned' size='64'/></array.type>
+<int type='unsigned' size='64'>4294967296</int>
+<int type='unsigned' size='64'>7516192768</int>
+<int type='unsigned' size='64'>9663676416</int>
+<int type='unsigned' size='64'>12884901888</int>
+<int type='unsigned' size='64'>18253611008</int>
+</array>
+</prop.pair>
+</prop.list>
+</prop.map>

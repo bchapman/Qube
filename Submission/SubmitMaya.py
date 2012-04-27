@@ -213,6 +213,8 @@ def postDialog(cmdjob, values):
 
     valuesPkg = values.setdefault('package', {})
     
+    values['reservations'] = 'host.processors=1+'
+    
     #################################################################################################################
     #
     # Add the email callbacks

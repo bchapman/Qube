@@ -18,7 +18,7 @@ import logging
 
 import bpy
 
-sys.path.append('/Volumes/theGrill/.qube/Modules/')
+sys.path.append('/Volumes/Grill/.qube/Modules/')
 import sequenceTools
 
 ''' Setup the logger. '''

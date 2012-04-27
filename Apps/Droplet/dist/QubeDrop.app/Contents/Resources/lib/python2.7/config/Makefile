@@ -29,16 +29,14 @@ VERSION=	2.7
 srcdir=		.
 
 
-CC=		/Developer/usr/bin/llvm-gcc-4.2
-CXX=		/Developer/usr/bin/llvm-g++-4.2
+CC=		llvm-gcc-4.2
+CXX=		llvm-g++-4.2
 MAINCC=		$(CC)
 LINKCC=		$(PURIFY) $(MAINCC)
 AR=		ar
 RANLIB=		ranlib
+LIBTOOL=	$(CC) -dynamiclib -all_load $(CFLAGS)
 SVNVERSION=	svnversion $(srcdir)
-HGVERSION=	
-HGTAG=		
-HGBRANCH=	
 
 GNULD=          no
 
@@ -61,18 +59,19 @@ INSTALL_SHARED= ${INSTALL} -m 555
 MAKESETUP=      $(srcdir)/Modules/makesetup
 
 # Compiler options
-OPT=		-DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes
+OPT=		-DNDEBUG -g -fwrapv -Os -Wall -Wstrict-prototypes
+EXTRA_CFLAGS=	 -DENABLE_DTRACE
 BASECFLAGS=	 -fno-strict-aliasing -fno-common -dynamic
-CFLAGS=		$(BASECFLAGS) -pipe -O2  $(OPT) $(EXTRA_CFLAGS)
+CFLAGS=		$(BASECFLAGS) -g -Os -pipe -fno-common -fno-strict-aliasing -fwrapv -mno-fused-madd -DENABLE_DTRACE -DMACOSX -DNDEBUG -Wall -Wstrict-prototypes -Wshorten-64-to-32 $(OPT) $(EXTRA_CFLAGS)
 # Both CPPFLAGS and LDFLAGS need to contain the shell's value for setup.py to
 # be able to build extension modules using the directories specified in the
 # environment variables
-CPPFLAGS=	-I. -IInclude -I$(srcdir)/Include -I/opt/local/include
-LDFLAGS=	-L/opt/local/lib 
+CPPFLAGS=	-I. -IInclude -I$(srcdir)/Include 
+LDFLAGS=	-Wl,-F.
 LDLAST=		
 SGI_ABI=	
-CCSHARED=	
-LINKFORSHARED=	-u _PyMac_Error  $(PYTHONFRAMEWORKINSTALLDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)
+CCSHARED=	-pipe
+LINKFORSHARED=	-u _PyMac_Error /System/Library/Frameworks/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)
 ARFLAGS=	rc
 # Extra C flags added for building the interpreter object files.
 CFLAGSFORSHARED=$(CCSHARED)
@@ -84,7 +83,7 @@ PY_CFLAGS=	$(CFLAGS) $(CPPFLAGS) $(CFLAGSFORSHARED) -DPy_BUILD_CORE
 MACHDEP=	darwin
 
 # Install prefix for architecture-independent files
-prefix=		/opt/local/Library/Frameworks/Python.framework/Versions/2.7
+prefix=		/System/Library/Frameworks/Python.framework/Versions/2.7
 
 # Install prefix for architecture-dependent files
 exec_prefix=	${prefix}
@@ -93,9 +92,9 @@ exec_prefix=	${prefix}
 datarootdir=    ${prefix}/share
 
 # Expanded directories
-BINDIR=		${exec_prefix}/bin
+BINDIR=		/usr/local/bin
 LIBDIR=		${exec_prefix}/lib
-MANDIR=		${datarootdir}/man
+MANDIR=		/usr/share/man
 INCLUDEDIR=	${prefix}/include
 CONFINCLUDEDIR=	$(exec_prefix)/include
 SCRIPTDIR=	$(prefix)/lib
@@ -109,21 +108,23 @@ LIBP=		$(LIBDIR)/python$(VERSION)
 
 # Symbols used for using shared libraries
 SO=		.so
-LDSHARED=	$(CC) -bundle -undefined dynamic_lookup $(LDFLAGS)
-BLDSHARED=	$(CC) -bundle -undefined dynamic_lookup $(LDFLAGS)
-LDCXXSHARED=	$(CXX) -bundle -undefined dynamic_lookup
+LDSHARED=	$(CC) $(LDFLAGS) -bundle -undefined dynamic_lookup $(LDFLAGS)
+BLDSHARED=	$(CC) $(LDFLAGS) -bundle -undefined dynamic_lookup $(LDFLAGS)
+LDCXXSHARED=	$(CXX) $(LDFLAGS) -bundle -undefined dynamic_lookup
 DESTSHARED=	$(BINLIBDEST)/lib-dynload
 
 # Executable suffix (.exe on Windows and Mac OS X)
 EXE=		
-BUILDEXE=	.exe
+BUILDEXE = .exe
+
+LIBPYTHON=	/Library/Python/$(VERSION)
 
 # Short name and location for Mac OS X Python framework
 UNIVERSALSDK=
 PYTHONFRAMEWORK=	Python
 PYTHONFRAMEWORKDIR=	Python.framework
-PYTHONFRAMEWORKPREFIX=	/opt/local/Library/Frameworks
-PYTHONFRAMEWORKINSTALLDIR= /opt/local/Library/Frameworks/Python.framework
+PYTHONFRAMEWORKPREFIX=	/System/Library/Frameworks
+PYTHONFRAMEWORKINSTALLDIR= /System/Library/Frameworks/Python.framework
 # Deployment target selected during configure, to be checked
 # by distutils. The export statement is needed to ensure that the
 # deployment target is active during build.
@@ -134,7 +135,7 @@ export MACOSX_DEPLOYMENT_TARGET
 OTHER_LIBTOOL_OPT=
 
 # Environment to run shared python without installed libraries
-RUNSHARED=       DYLD_FRAMEWORK_PATH=/opt/local/var/macports/build/_opt_local_var_macports_sources_rsync.macports.org_release_ports_lang_python27/python27/work/Python-2.7.2:
+RUNSHARED=       DYLD_FRAMEWORK_PATH=/private/var/tmp/python/python-56~121/2.7/python:
 
 # Modes for directories, executables and data files created by the
 # install process.  Default to user-only-writable for all file types.
@@ -143,7 +144,7 @@ EXEMODE=	755
 FILEMODE=	644
 
 # configure script arguments
-CONFIG_ARGS=	 '--prefix=/opt/local' '--enable-framework=/opt/local/Library/Frameworks' '--enable-ipv6' 'CC=/Developer/usr/bin/llvm-gcc-4.2' 'CFLAGS=-pipe -O2 ' 'LDFLAGS=-L/opt/local/lib ' 'CPPFLAGS=-I/opt/local/include'
+CONFIG_ARGS=	 '--prefix=/usr' '--mandir=/usr/share/man' '--infodir=/usr/share/info' '--disable-dependency-tracking' '--enable-ipv6' '--with-system-expat' '--with-threads' '--enable-framework=/System/Library/Frameworks' '--enable-toolbox-glue' '--with-system-ffi' '--with-gcc=llvm-gcc-4.2' 'CC=llvm-gcc-4.2' 'CXX=llvm-g++-4.2' 'CFLAGS=-g -Os -pipe -fno-common -fno-strict-aliasing -fwrapv -mno-fused-madd -DENABLE_DTRACE -DMACOSX -DNDEBUG -Wall -Wstrict-prototypes -Wshorten-64-to-32' 'LDFLAGS=-Wl,-F.'
 
 
 # Subdirectories with code
@@ -194,9 +195,10 @@ LOCALMODLIBS=
 BASEMODLIBS=
 GLHACK=-Dclear=__GLclear
 PYTHONPATH=$(COREPYTHONPATH)
-COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)$(MACHDEPPATH)$(EXTRAMACHDEPPATH)$(TKPATH)$(OLDPATH)
+COREPYTHONPATH=$(DESTPATH)$(SITEPATH)$(TESTPATH)$(MACHDEPPATH)$(EXTRAMACHDEPPATH)$(EXTRASPATH)$(TKPATH)$(OLDPATH)
 OLDPATH=:lib-old
 TKPATH=:lib-tk
+EXTRASPATH=:../../Extras/lib/python
 EXTRAMACHDEPPATH=
 MACHDEPPATH=:plat-$(MACHDEP)
 TESTPATH=
@@ -225,7 +227,7 @@ GRAMMAR_C=	$(srcdir)/Python/graminit.c
 GRAMMAR_INPUT=	$(srcdir)/Grammar/Grammar
 
 
-LIBFFI_INCLUDEDIR=	
+LIBFFI_INCLUDEDIR=	/usr/include/ffi
 
 ##########################################################################
 # Parser
@@ -423,8 +425,8 @@ platform: $(BUILDPYTHON)
 # Build the shared modules
 sharedmods: $(BUILDPYTHON)
 	@case $$MAKEFLAGS in \
-	*s*) $(RUNSHARED) CC='$(CC)' LDSHARED='$(BLDSHARED)' OPT='$(OPT)' ./$(BUILDPYTHON) -E $(srcdir)/setup.py -q --no-user-cfg build;; \
-	*) $(RUNSHARED) CC='$(CC)' LDSHARED='$(BLDSHARED)' OPT='$(OPT)' ./$(BUILDPYTHON) -E $(srcdir)/setup.py --no-user-cfg build;; \
+	*s*) $(RUNSHARED) CC='$(CC) $(RC_CFLAGS)' LDSHARED='$(BLDSHARED)' OPT='$(OPT)' ./$(BUILDPYTHON) -E $(srcdir)/setup.py build;; \
+	*) $(RUNSHARED) CC='$(CC)' LDSHARED='$(BLDSHARED)' OPT='$(OPT)' ./$(BUILDPYTHON) -E $(srcdir)/setup.py build;; \
 	esac
 
 # Build static library
@@ -473,11 +475,17 @@ $(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK): \
 		$(LIBRARY) \
 		$(RESSRCDIR)/Info.plist
 	$(INSTALL) -d -m $(DIRMODE) $(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)
-	$(CC) -o $(LDLIBRARY) $(LDFLAGS)  -dynamiclib \
-		-all_load $(LIBRARY) -Wl,-single_module \
-		-install_name $(DESTDIR)$(PYTHONFRAMEWORKINSTALLDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK) \
-		-compatibility_version $(VERSION) \
-		-current_version $(VERSION);
+	if test "${UNIVERSALSDK}"; then \
+		$(CC) -o $(LDLIBRARY)  -dynamiclib \
+			-isysroot "${UNIVERSALSDK}" \
+			-all_load $(LIBRARY) -Wl,-single_module \
+			-install_name $(DESTDIR)$(PYTHONFRAMEWORKINSTALLDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK) \
+			-compatibility_version $(VERSION) \
+			-current_version $(VERSION); \
+        else \
+		$(LIBTOOL) -o $(LDLIBRARY) -dynamic $(OTHER_LIBTOOL_OPT) $(LIBRARY) \
+			 -lSystem -install_name $(PYTHONFRAMEWORKINSTALLDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK) -compatibility_version $(VERSION) -current_version $(PYTHON_CURRENT_VERSION) ;\
+	fi
 	$(INSTALL) -d -m $(DIRMODE)  \
 		$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/Resources/English.lproj
 	$(INSTALL_DATA) $(RESSRCDIR)/Info.plist \
@@ -535,12 +543,7 @@ Modules/getbuildinfo.o: $(PARSER_OBJS) \
 		$(SIGNAL_OBJS) \
 		$(MODOBJS) \
 		$(srcdir)/Modules/getbuildinfo.c
-	$(CC) -c $(PY_CFLAGS) \
-	      -DSVNVERSION="\"`LC_ALL=C $(SVNVERSION)`\"" \
-	      -DHGVERSION="\"`LC_ALL=C $(HGVERSION)`\"" \
-	      -DHGTAG="\"`LC_ALL=C $(HGTAG)`\"" \
-	      -DHGBRANCH="\"`LC_ALL=C $(HGBRANCH)`\"" \
-	      -o $@ $(srcdir)/Modules/getbuildinfo.c
+	$(CC) -c $(PY_CFLAGS) -DSVNVERSION="\"`LC_ALL=C $(SVNVERSION)`\"" -o $@ $(srcdir)/Modules/getbuildinfo.c
 
 Modules/getpath.o: $(srcdir)/Modules/getpath.c Makefile
 	$(CC) -c $(PY_CFLAGS) -DPYTHONPATH='"$(PYTHONPATH)"' \
@@ -554,12 +557,9 @@ Modules/python.o: $(srcdir)/Modules/python.c
 	$(MAINCC) -c $(PY_CFLAGS) -o $@ $(srcdir)/Modules/python.c
 
 
-# Use a stamp file to prevent make -j invoking pgen twice
-$(GRAMMAR_H) $(GRAMMAR_C): Parser/pgen.stamp
-Parser/pgen.stamp: $(PGEN) $(GRAMMAR_INPUT)
+$(GRAMMAR_H) $(GRAMMAR_C): $(PGEN) $(GRAMMAR_INPUT)
 		-@$(INSTALL) -d Include
-		$(PGEN) $(GRAMMAR_INPUT) $(GRAMMAR_H) $(GRAMMAR_C)
-		-touch Parser/pgen.stamp
+		-$(PGEN) $(GRAMMAR_INPUT) $(GRAMMAR_H) $(GRAMMAR_C)
 
 $(PGEN):	$(PGENOBJS)
 		$(CC) $(OPT) $(LDFLAGS) $(PGENOBJS) $(LIBS) -o $(PGEN)
@@ -865,12 +865,11 @@ PLATMACDIRS= plat-mac plat-mac/Carbon plat-mac/lib-scriptpackages \
 	plat-mac/lib-scriptpackages/Finder \
 	plat-mac/lib-scriptpackages/Netscape \
 	plat-mac/lib-scriptpackages/StdSuites \
-	plat-mac/lib-scriptpackages/SystemEvents \
-	plat-mac/lib-scriptpackages/Terminal 
+	plat-mac/lib-scriptpackages/SystemEvents
 PLATMACPATH=:plat-mac:plat-mac/lib-scriptpackages
 LIBSUBDIRS=	lib-tk lib-tk/test lib-tk/test/test_tkinter \
-		lib-tk/test/test_ttk site-packages test test/data \
-		test/cjkencodings test/decimaltestdata test/xmltestdata test/subprocessdata \
+                lib-tk/test/test_ttk site-packages test test/data \
+		test/decimaltestdata test/xmltestdata \
 		test/tracedmodules \
 		encodings compiler hotshot \
 		email email/mime email/test email/test/data \
@@ -898,7 +897,7 @@ libinstall:	build_all $(srcdir)/Lib/$(PLATDIR)
 	do \
 		a=$(srcdir)/Lib/$$d; \
 		if test ! -d $$a; then continue; else true; fi; \
-		b=$(LIBDEST)/$$d; \
+		if test $$d = site-packages; then b=$(LIBPYTHON)/$$d; else b=$(LIBDEST)/$$d; fi; \
 		if test ! -d $(DESTDIR)$$b; then \
 			echo "Creating directory $$b"; \
 			$(INSTALL) -d -m $(DIRMODE) $(DESTDIR)$$b; \
@@ -920,7 +919,7 @@ libinstall:	build_all $(srcdir)/Lib/$(PLATDIR)
 		a=$(srcdir)/Lib/$$d; \
 		if test ! -d $$a; then continue; else true; fi; \
 		if test `ls $$a | wc -l` -lt 1; then continue; fi; \
-		b=$(LIBDEST)/$$d; \
+		if test $$d = site-packages; then b=$(LIBPYTHON)/$$d; else b=$(LIBDEST)/$$d; fi; \
 		for i in $$a/*; \
 		do \
 			case $$i in \
@@ -953,12 +952,12 @@ libinstall:	build_all $(srcdir)/Lib/$(PLATDIR)
 		$(DESTDIR)$(LIBDEST)
 	-PYTHONPATH=$(DESTDIR)$(LIBDEST)  $(RUNSHARED) \
 		./$(BUILDPYTHON) -Wi -t $(DESTDIR)$(LIBDEST)/compileall.py \
-		-d $(LIBDEST)/site-packages -f \
-		-x badsyntax $(DESTDIR)$(LIBDEST)/site-packages
+		-d $(LIBPYTHON)/site-packages -f \
+		-x badsyntax $(DESTDIR)$(LIBPYTHON)/site-packages
 	-PYTHONPATH=$(DESTDIR)$(LIBDEST) $(RUNSHARED) \
 		./$(BUILDPYTHON) -Wi -t -O $(DESTDIR)$(LIBDEST)/compileall.py \
-		-d $(LIBDEST)/site-packages -f \
-		-x badsyntax $(DESTDIR)$(LIBDEST)/site-packages
+		-d $(LIBPYTHON)/site-packages -f \
+		-x badsyntax $(DESTDIR)$(LIBPYTHON)/site-packages
 	-PYTHONPATH=$(DESTDIR)$(LIBDEST) $(RUNSHARED) \
 		./$(BUILDPYTHON) -Wi -t -c "import lib2to3.pygram, lib2to3.patcomp;lib2to3.patcomp.PatternCompiler()"
 
@@ -1065,11 +1064,11 @@ libainstall:	all python-config
 # Install the dynamically loadable modules
 # This goes into $(exec_prefix)
 sharedinstall: sharedmods
-	$(RUNSHARED) ./$(BUILDPYTHON) -E $(srcdir)/setup.py --no-user-cfg install \
+	$(RUNSHARED) ./$(BUILDPYTHON) -E $(srcdir)/setup.py install \
 	   	--prefix=$(prefix) \
 		--install-scripts=$(BINDIR) \
 		--install-platlib=$(DESTSHARED) \
-		--root=$(DESTDIR)/
+		--root=/$(DESTDIR)
 
 # Here are a couple of targets for MacOSX again, to install a full
 # framework-based Python. frameworkinstall installs everything, the
@@ -1117,31 +1116,43 @@ frameworkinstallmaclib:
 	ln -fs "../../../$(PYTHONFRAMEWORK)" "$(DESTDIR)$(prefix)/lib/python$(VERSION)/config/libpython$(VERSION).a"
 	ln -fs "../../../$(PYTHONFRAMEWORK)" "$(DESTDIR)$(prefix)/lib/python$(VERSION)/config/libpython$(VERSION).dylib"
 	ln -fs "../$(PYTHONFRAMEWORK)" "$(DESTDIR)$(prefix)/lib/libpython$(VERSION).dylib"
-	cd Mac && $(MAKE) installmacsubtree DESTDIR="$(DESTDIR)"
+	cd Mac && $(MAKE) installmacsubtree DESTDIR="$(DESTDIR)" BUILDEXE=$(BUILDEXE) CC=$(WITH_GCC)
 
 # This installs the IDE, the Launcher and other apps into /Applications
+# Temporarily replace EasyDialogs.py, so that it won't talk
+# to the Window Server (and fail if CoreGraphics versions don't match)
 frameworkinstallapps:
-	cd Mac && $(MAKE) installapps DESTDIR="$(DESTDIR)"
+	@for i in $(srcdir)/Lib/plat-mac/EasyDialogs.py*; do \
+		echo mv $$i $$i.bak; \
+		mv -f $$i $$i.bak; \
+	done
+	cp $(SRCROOT)/fix/EasyDialogs.py $(srcdir)/Lib/plat-mac/EasyDialogs.py
+	cd Mac && $(MAKE) installapps DESTDIR="$(DESTDIR)" BUILDEXE=$(BUILDEXE) CC=$(WITH_GCC)
+	@for i in $(srcdir)/Lib/plat-mac/EasyDialogs.py*.bak; do \
+		j=`echo $$i | sed 's/\.bak$$//'`; \
+		echo mv $$i $$j; \
+		mv -f $$i $$j; \
+	done
 
 # This install the unix python and pythonw tools in /usr/local/bin
 frameworkinstallunixtools:
-	cd Mac && $(MAKE) installunixtools DESTDIR="$(DESTDIR)"
+	cd Mac && $(MAKE) installunixtools DESTDIR="$(DESTDIR)" BUILDEXE=$(BUILDEXE) CC=$(WITH_GCC)
 
 frameworkaltinstallunixtools:
-	cd Mac && $(MAKE) altinstallunixtools DESTDIR="$(DESTDIR)"
+	cd Mac && $(MAKE) altinstallunixtools DESTDIR="$(DESTDIR)" BUILDEXE=$(BUILDEXE) CC=$(WITH_GCC)
 
 # This installs the Demos and Tools into the applications directory.
 # It is not part of a normal frameworkinstall
 frameworkinstallextras:
-	cd Mac && $(MAKE) installextras DESTDIR="$(DESTDIR)"
+	cd Mac && $(MAKE) installextras DESTDIR="$(DESTDIR)" BUILDEXE=$(BUILDEXE) CC=$(WITH_GCC)
 
 # This installs a few of the useful scripts in Tools/scripts
 scriptsinstall:
 	SRCDIR=$(srcdir) $(RUNSHARED) \
-	./$(BUILDPYTHON) $(srcdir)/Tools/scripts/setup.py --no-user-cfg install \
+	./$(BUILDPYTHON) $(srcdir)/Tools/scripts/setup.py install \
 	--prefix=$(prefix) \
 	--install-scripts=$(BINDIR) \
-	--root=$(DESTDIR)/
+	--root=/$(DESTDIR)
 
 # Build the toplevel Makefile
 Makefile.pre: Makefile.pre.in config.status
@@ -1205,7 +1216,7 @@ profile-removal:
 
 clobber: clean profile-removal
 	-rm -f $(BUILDPYTHON) $(PGEN) $(LIBRARY) $(LDLIBRARY) $(DLLLIBRARY) \
-		tags TAGS Parser/pgen.stamp \
+		tags TAGS \
 		config.cache config.log pyconfig.h Modules/config.c
 	-rm -rf build platform
 	-rm -rf $(PYTHONFRAMEWORKDIR)
@@ -1219,7 +1230,7 @@ distclean: clobber
 	done
 	-rm -f core Makefile Makefile.pre config.status \
 		Modules/Setup Modules/Setup.local Modules/Setup.config \
-		Modules/ld_so_aix Modules/python.exp Misc/python.pc
+		Modules/ld_so_aix Misc/python.pc
 	-rm -f python*-gdb.py
 	find $(srcdir) '(' -name '*.fdc' -o -name '*~' \
 			   -o -name '[@,#]*' -o -name '*.old' \

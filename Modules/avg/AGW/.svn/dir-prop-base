@@ -1,0 +1,8 @@
+K 10
+svn:ignore
+V 41
+CountLines.py
+FindUpdates.py
+otherPython
+
+END

@@ -1,0 +1,11 @@
+K 10
+svn:ignore
+V 41
+2to3
+_BACKUP
+_rst_hack
+docs
+fonts
+sphinx
+
+END

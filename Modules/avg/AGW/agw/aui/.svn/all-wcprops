@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/wx/!svn/ver/69982/wxPython/3rdParty/AGW/agw/aui
+END
+aui_utilities.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/wx/!svn/ver/69086/wxPython/3rdParty/AGW/agw/aui/aui_utilities.py
+END
+auibook.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/wx/!svn/ver/69627/wxPython/3rdParty/AGW/agw/aui/auibook.py
+END
+aui_constants.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/wx/!svn/ver/68475/wxPython/3rdParty/AGW/agw/aui/aui_constants.py
+END
+tabart.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/wx/!svn/ver/69382/wxPython/3rdParty/AGW/agw/aui/tabart.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/wx/!svn/ver/69982/wxPython/3rdParty/AGW/agw/aui/__init__.py
+END
+tabmdi.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/wx/!svn/ver/63994/wxPython/3rdParty/AGW/agw/aui/tabmdi.py
+END
+auibar.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/wx/!svn/ver/69982/wxPython/3rdParty/AGW/agw/aui/auibar.py
+END
+framemanager.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/wx/!svn/ver/69627/wxPython/3rdParty/AGW/agw/aui/framemanager.py
+END
+aui_switcherdialog.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/wx/!svn/ver/62856/wxPython/3rdParty/AGW/agw/aui/aui_switcherdialog.py
+END
+dockart.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/wx/!svn/ver/69294/wxPython/3rdParty/AGW/agw/aui/dockart.py
+END

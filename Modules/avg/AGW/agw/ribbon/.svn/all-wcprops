@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/wx/!svn/ver/69086/wxPython/3rdParty/AGW/agw/ribbon
+END
+art_default.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/wx/!svn/ver/63108/wxPython/3rdParty/AGW/agw/ribbon/art_default.py
+END
+art_msw.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/wx/!svn/ver/69086/wxPython/3rdParty/AGW/agw/ribbon/art_msw.py
+END
+page.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/page.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/__init__.py
+END
+gallery.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/gallery.py
+END
+panel.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/panel.py
+END
+buttonbar.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/wx/!svn/ver/69086/wxPython/3rdParty/AGW/agw/ribbon/buttonbar.py
+END
+control.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/wx/!svn/ver/63108/wxPython/3rdParty/AGW/agw/ribbon/control.py
+END
+art_internal.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/wx/!svn/ver/63108/wxPython/3rdParty/AGW/agw/ribbon/art_internal.py
+END
+toolbar.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/toolbar.py
+END
+art_aui.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/wx/!svn/ver/69086/wxPython/3rdParty/AGW/agw/ribbon/art_aui.py
+END
+bar.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/bar.py
+END
+art.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/wx/!svn/ver/68881/wxPython/3rdParty/AGW/agw/ribbon/art.py
+END

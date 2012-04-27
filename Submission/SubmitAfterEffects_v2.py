@@ -50,7 +50,7 @@ import re
 import traceback
 
 # sys.path.append("/Users/bchapman/Projects/Scripts+Apps/_Qube/_localRepo/Modules/")
-sys.path.append("/Volumes/theGrill/.qube/Modules/")
+sys.path.append("/Volumes/Grill/.qube/Modules/")
 
 import AESubmitWidget
 import Transcoder

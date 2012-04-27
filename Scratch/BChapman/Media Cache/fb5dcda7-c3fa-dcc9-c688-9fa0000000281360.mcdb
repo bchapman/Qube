@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PremiereData Version="3">
+	<MediaAcceleratorDatabaseEntry ObjectRef="1"/>
+	<MediaAcceleratorDatabaseEntry ObjectID="1" ClassID="e727e14d-731c-47f8-9d24-2cb69e8c5323" Version="3">
+		<Stream.ID1>0</Stream.ID1>
+		<Item.Path1>/Volumes/Grill/.qube/Scratch/BChapman/Media Cache Files/GS KIDS BL GR T_59.mov 48000_9.pek</Item.Path1>
+		<Item.Key1>pek48000</Item.Key1>
+		<Item.ModDate1 Encoding="base64" Checksum="2374864269">n7tIFQAAAAA=</Item.ModDate1>
+		<Item.CanBeCopied1>false</Item.CanBeCopied1>
+		<Item.Count1>1</Item.Count1>
+		<Item.ContentState>0a65c5fd-1612-5cbc-bde0-481b00000028</Item.ContentState>
+		<Stream.Count>1</Stream.Count>
+		<OriginalPath>/Volumes/Grill/Elevate_Series/Game_Show/Kids/Video/FCP_Docs/Capture Scratch/BibleLessons/Tight/GS KIDS BL GR T_59.mov</OriginalPath>
+	</MediaAcceleratorDatabaseEntry>
+</PremiereData>

@@ -18,6 +18,7 @@ terminateConnection()
 AERENDER = "\"/Applications/Adobe After Effects CS5.5/aerender\""
 
 import os
+import getpass
 import socket
 import time
 import logging
@@ -160,7 +161,7 @@ class AESocket:
         '''
         Wait for AE to send response.
         '''
-        logger.info("Waiting for After Effects...")
+        logger.info("--> Waiting for After Effects...")
         
         startTime = time.time()
         while True:
@@ -187,7 +188,7 @@ class AESocket:
         script = self._prepScript(script)
         if self._checkConnectionActive():
             self._waitForAE(timeout)
-            logger.debug("Sending script: %s" % name)
+            logger.info("Running Script: %s" % name)
             logger.debug("Script Contents: %s" % script)
             self.socket.send("%s\n" % script)
         else:
@@ -254,21 +255,26 @@ class AESocket:
         
             return response
 
-    def launchAERender(self, multProcs=False):
+    def launchAERender(self, multProcs=False, projectFile=None):
         '''
         Launch the aerender daemon.
         Uses the custom aerender commandLineRenderer with the -daemon flag.
         '''
-        cmd = AERENDER + " -v ERRORS_AND_PROGRESS -daemon " + str(self.port)
+        cmd = AERENDER + " -v ERRORS_AND_PROGRESS"
         if (multProcs):
             cmd += " -mp"
+        if (projectFile):
+            cmd += " -project \"" + projectFile + "\""
+        cmd += " -daemon " + str(self.port)
         logger.debug("AERender CMD: %s" % cmd)
+        logger.debug("Launching After Effects")
         
         '''
         We will store the log output to a file,
         then have another process read it back in.
         '''
-        self.logFilePath = '/tmp/aerender.%s.log' % str(self.port)
+        user = getpass.getuser()
+        self.logFilePath = '/tmp/aerender.%s.%s.log' % (user, str(self.port))
         
         if os.path.exists(self.logFilePath):
             try:

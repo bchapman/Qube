@@ -18,7 +18,7 @@ import sequenceTools
 '''
 Setup this files logging settings
 '''
-# logging = logging.getlogging(__name__)
+logger = logging.getLogger(__name__)
 # logging.setLevel(logging.INFO)
 # logging.setLevel(logging.DEBUG)
 
@@ -117,7 +117,7 @@ class Tools:
     def getChunkProgress(self):
         myFrame = float(int(self.currFrame) - int(self.startFrame))
         myDuration = float(self.duration + 1)
-        logging.info("Current Progress: " + str(round(myFrame / myDuration * 100)))
+        logger.info("Current Progress: " + str(round(myFrame / myDuration * 100)))
         return myFrame / myDuration
 
     def verifyCurrFrame(self):

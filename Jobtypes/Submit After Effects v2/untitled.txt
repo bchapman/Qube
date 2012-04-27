@@ -1,0 +1,17 @@
+After Effects jobtype updates:
+
+Single process renders:
+	When background rendering.
+	On machines with less than 8GB of memory.
+	User specified.
+
+Multiple process renders:
+	Only machines with more than 8GB of memory
+	Default.
+	User can set standard 2GB per process (Normal) or 3GB per process (Complex)
+
+If rendering in the background, limit the render users dynamiclinkmanager memory to half the available ram.
+Make sure aeselflink is shutdown
+	'killall aeselflink' on the render users account will shutdown only that users renders.
+Make sure aerendercore is shutdown
+	'killall aerendercore' on the render users account will shutdown only that users renders.

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PremiereData Version="3">
+	<MediaAcceleratorDatabaseEntry ObjectRef="1"/>
+	<MediaAcceleratorDatabaseEntry ObjectID="1" ClassID="e727e14d-731c-47f8-9d24-2cb69e8c5323" Version="3">
+		<Stream.ID1>0</Stream.ID1>
+		<Item.Path1>/Volumes/Grill/.qube/Scratch/BChapman/Media Cache Files/GS_BL_QUESTIONMUSIC.aif 48000_4.pek</Item.Path1>
+		<Item.Key1>pek48000</Item.Key1>
+		<Item.ModDate1 Encoding="base64" Checksum="2374864269">FbtIFQAAAAA=</Item.ModDate1>
+		<Item.CanBeCopied1>false</Item.CanBeCopied1>
+		<Item.Count1>1</Item.Count1>
+		<Item.ContentState>e1dda0b7-2818-351b-df75-ad6200000028</Item.ContentState>
+		<Stream.Count>1</Stream.Count>
+		<OriginalPath>/Volumes/Grill/Elevate_Series/Game_Show/Kids/Video/Audio_Assets/GS_BL_QUESTIONMUSIC.aif</OriginalPath>
+	</MediaAcceleratorDatabaseEntry>
+</PremiereData>

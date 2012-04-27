@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PremiereData Version="3">
+	<MediaAcceleratorDatabaseEntry ObjectRef="1"/>
+	<MediaAcceleratorDatabaseEntry ObjectID="1" ClassID="e727e14d-731c-47f8-9d24-2cb69e8c5323" Version="3">
+		<Item.Count1>1</Item.Count1>
+		<Item.CanBeCopied1>true</Item.CanBeCopied1>
+		<Item.ModDate1 Encoding="base64" Checksum="2374864269">BLtIFQAAAAA=</Item.ModDate1>
+		<Item.Key1>qtindex</Item.Key1>
+		<Item.Path1>/Volumes/Grill/.qube/Scratch/BChapman/Media Cache Files/GS KIDS BL GR T_42.qtindex</Item.Path1>
+		<Stream.ID1>0</Stream.ID1>
+		<Item.ContentState>9519ea99-35f3-33f2-6c51-14f300000084</Item.ContentState>
+		<Stream.Count>1</Stream.Count>
+		<OriginalPath>/Volumes/Grill/Elevate_Series/Game_Show/Kids/Video/FCP_Docs/Capture Scratch/BibleLessons/Tight/GS KIDS BL GR T_42.mov</OriginalPath>
+	</MediaAcceleratorDatabaseEntry>
+</PremiereData>

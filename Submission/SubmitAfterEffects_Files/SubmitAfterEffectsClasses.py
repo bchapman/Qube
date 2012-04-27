@@ -17,8 +17,8 @@ AERENDERPATH['CS5'] = { 'win32':'c:/Program Files/Adobe/Adobe After Effects CS5/
                         'darwin':'/Applications/Adobe After Effects CS5/aerender'}
 
 PATHTRANSLATIONS = {}
-PATHTRANSLATIONS['/Volumes/theGrill/'] = '//10.1.111.161/theGrill/'
-PATHTRANSLATIONS['g:/'] = '//10.1.111.161/theGrill/'
+# PATHTRANSLATIONS['/Volumes/Grill/'] = '//10.1.111.161/theGrill/'
+# PATHTRANSLATIONS['g:/'] = '//10.1.111.161/theGrill/'
 
 # Dependent JSX Scripts
 SCRIPTS = {}
