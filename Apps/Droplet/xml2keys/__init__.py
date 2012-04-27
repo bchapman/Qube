@@ -7,6 +7,7 @@ import xmeml
 from operator import itemgetter, attrgetter
 import shutil
 import subprocess
+import re
 
 import inspect
 
@@ -99,15 +100,24 @@ class FrameRange:
         return self.convertListToRanges(self.frameRange)
 
 class Key:
-    def __init__(self, id, footageFile, frameRange):
+    def __init__(self, id, footageFile, frameRange, xmlFile):
         self.id = id
         self.footageFile = footageFile
         self.frameRange = FrameRange(frameRange)
+        self.xmlFile = xmlFile
         
     def getProjectPath(self, projectFolder):
-        subpath = self.footageFile.split("Capture_Scratch/")[1]
+        print "projectFolder: %s" % projectFolder
+        print "footageFile: %s" % self.footageFile
+        print "frameRange: %s" % self.frameRange
+        print "id: %s" % self.id
+        patt = re.compile("Capture.Scratch", re.IGNORECASE)
+        subpath = patt.split(self.footageFile)[1]
+        print "subpath: %s" % subpath
+        print "xmlFile: %s" % os.path.basename(self.xmlFile)
         subpath, ext = os.path.splitext(subpath)
-        result = os.path.join(projectFolder, subpath) + ".nk"
+        result = projectFolder +"/" + os.path.basename(self.xmlFile) + "/" + subpath + ".nk"
+        print "getProjectPath result: %s" % result
         return result
 
     def addRange(self, frameRange):
@@ -124,7 +134,9 @@ class XMLDialog(wx.Dialog):
         # Add a panel so it looks correct on all platforms
         self.panel = wx.Panel(self, wx.ID_ANY)
  
+        print "PATH: %s" % sys.path
         imageFile = "xml2keys.jpg"
+        print "Exists: %s" % os.path.exists(imageFile)
         jpg = wx.Image(imageFile, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
         title = wx.StaticBitmap(self.panel, wx.ID_ANY, jpg, (10 + jpg.GetWidth(), 5), (jpg.GetWidth(), jpg.GetHeight()))
         # title = wx.StaticText(self.panel, wx.ID_ANY, title)
@@ -301,9 +313,10 @@ class XMLDialog(wx.Dialog):
             self.listBox.SetSelection(count)
             count += 1
 
-    def addKey(self, id, file, frameRange, keys):
+    def addKey(self, id, file, frameRange, keys, xmlFile):
+        print "addKey\nid:%s\nfile:%s\nframeRange:%s\nkeys:%s" % (id, file, frameRange, keys)
         if file:
-            keys.append(Key(id.strip(), file, frameRange))
+            keys.append(Key(id.strip(), file, frameRange, xmlFile))
             # print "ADD KEY - ID: %s  File: %s : %s" % (id, file, frameRange)
         else:
             newID = id.rsplit(" ",1)[0]
@@ -331,7 +344,8 @@ class XMLDialog(wx.Dialog):
                             for t in n.childNodes:
                                 if t.nodeType==1 and t.tagName in ('pathurl'):
                                     filePath = xmeml.xml2dict(t).replace("file://localhost", "")
-                    self.addKey(item.id, filePath, "%s-%s" % (item.in_frame, item.out_frame), keys)
+                                    filePath = filePath.replace("%20", " ")
+                    self.addKey(item.id, filePath, "%s-%s" % (item.in_frame, item.out_frame), keys, xmlFile)
             except:
                 pass
 

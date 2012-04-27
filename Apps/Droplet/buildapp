@@ -1,1 +1,11 @@
-python2.7 setup.py py2app --iconfile Qube_Drop_Icon.icns -r gfx/xml2Keys.jpg
+#!/bin/bash
+# Build the Qube Droplet
+
+# Clean the build directories
+rm -R ./dist/*
+rm -R ./build/*
+
+# Build
+python2.7 setup.py py2app --iconfile Qube_Drop_Icon.icns -r gfx/xml2keys.jpg
+mv dist/QubeDrop.app dist/QubeDrop_64.app
+ditto --rsrc --arch i386 dist/QubeDrop_64.app dist/QubeDrop.app
